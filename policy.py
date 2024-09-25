@@ -1,80 +1,154 @@
 from datetime import datetime, timedelta
 
-# Attribute Annotations
-def annotate_calendar(endpoint_func):
-    def wrapper(self, *args, **kwargs):
-        attributes = {
-            'granular_data': get_hierarchy(kwargs['start_time'], kwargs['duration']),
-            'data_access': get_access_level(endpoint_func.__name__),
-            'time': get_time_period(kwargs['start_time'])
-        }
-        return endpoint_func(self, attributes, *args, **kwargs)
-    return wrapper
+# Policy System class to manage policy rules and attribute definitions
 
-def get_hierarchy(start_time, duration):
-    end_time = start_time + duration
-    if (end_time - start_time).days > 365:
-        return 'Year'
-    elif (end_time - start_time).days > 30:
-        return 'Month'
-    elif (end_time - start_time).days > 7:
-        return 'Week'
-    elif (end_time - start_time).days > 1:
-        return 'Day'
-    else:
-        return 'Hour'
-
-def get_access_level(endpoint_name):
-    read_only_endpoints = ['read', 'check_available']
-    write_only_endpoints = ['reserve']
-
-    if endpoint_name in read_only_endpoints and endpoint_name in write_only_endpoints:
-        return 'Read/Write'
-    if endpoint_name in read_only_endpoints:
-        return 'Read'
-    elif endpoint_name in write_only_endpoints:
-        return 'Write'
-
-def get_time_period(start_time):
-    current_time = datetime.now()
-    if start_time < current_time:
-        return 'Past'
-    elif start_time.date() == current_time.date():
-        return 'Present'
-    else:
-        return 'Future'
-
-# Policy System
 class PolicySystem:
-    def __init__(self, policy_rules):
-        self.policy_rules = policy_rules
+    def __init__(self):
+        self.policy_rules = []
+        self.attribute_definitions = {}
+
+    def register_api(self, api_class):
+        # Extract attribute definitions from the API class
+        api_class = api_class()
+        if hasattr(api_class, 'get_attributes'):
+            attributes = api_class.get_attributes()
+            for attr_type, values in attributes.items():
+                if attr_type in self.attribute_definitions:
+                    # Merge attributes without duplication
+                    existing_values = self.attribute_definitions[attr_type]
+                    if isinstance(values, list):
+                        for value in values:
+                            if isinstance(value, AttributeTree):
+                                existing_values.append(value)
+                            else:
+                                if value not in existing_values:
+                                    existing_values.append(value)
+                else:
+                    self.attribute_definitions[attr_type] = values
+
+    def add_policy(self, policy_rule):
+        self.policy_rules.append(policy_rule)
 
     def is_action_allowed(self, attributes):
         for rule in self.policy_rules:
-            if all(rule[attr] == attributes.get(attr) for attr in rule):
+            if self.check_subsumption(rule, attributes):
                 return True
         return False
 
-# Example policy rules
-policy_rules = [
-    {"granular_data": "Month", "data_access": "Read", "time": "Future"},
-    {"granular_data": "Year", "data_access": "Read", "time": "Past"},
-    # Other rules can be added here
-]
+    def check_subsumption(self, rule, attributes):
+        for attr in rule:
+            if not self.validate_attribute(rule[attr], attributes.get(attr), attr):
+                return False
+        return True
 
-policy_system = PolicySystem(policy_rules)
+    def validate_attribute(self, rule_value, attribute_value, attribute_type):
+        if attribute_type in self.attribute_definitions:
+            hierarchy = self.attribute_definitions[attribute_type]
+            if isinstance(hierarchy[0], AttributeTree):
+                # Hierarchical structure, convert to flat list and check subsumption
+                values_list = hierarchy[0].to_list()
+                return values_list.index(rule_value) <= values_list.index(attribute_value)
+            elif isinstance(hierarchy, list):
+                # Disjoint sets, must match exactly
+                return rule_value == attribute_value
+        return False
 
-# Policy Interceptor
+    def export_attributes(self):
+        return self.attribute_definitions
+
 def policy_interceptor(api_func):
     def wrapper(self, attributes, *args, **kwargs):
         if policy_system.is_action_allowed(attributes):
             return api_func(self, *args, **kwargs)
         else:
             raise PermissionError("Action not authorized for given resource.")
+    wrapper.original_name = api_func.__name__
     return wrapper
 
+# AttributeTree class to represent hierarchical attribute definitions
 
-# Calendar API class
+class AttributeTree:
+    def __init__(self, value, children=None):
+        self.value = value
+        self.children = children if children else []
+
+    def to_list(self):
+        if not self.children:
+            return [self.value]
+        result = [self.value]
+        for child in self.children:
+            result.extend(child.to_list())
+        return result
+
+# Calendar API class with policy annotations
+class CalendarAPIAttributes__:
+    def __init__(self):
+        pass
+
+    def export_attributes(self):
+        return {
+            'granular_data': [AttributeTree('Year', [
+                AttributeTree('Month', [
+                    AttributeTree('Week', [
+                        AttributeTree('Day', [
+                            AttributeTree('Hour')
+                        ])
+                    ])
+                ])
+            ])],
+            'data_access': ['Read', 'Write'],
+            'time': ['Past', 'Present', 'Future']
+        }
+
+    def get_hierarchy(self, start_time, duration):
+        end_time = start_time + duration
+        if (end_time - start_time).days >= 365:
+            return 'Year'
+        elif (end_time - start_time).days >= 30:
+            return 'Month'
+        elif (end_time - start_time).days >= 7:
+            return 'Week'
+        elif (end_time - start_time).days >= 1:
+            return 'Day'
+        else:
+            return 'Hour'
+
+    def get_access_level(self, endpoint_name):
+        return 'Read' if 'read' in endpoint_name else 'Write'
+
+    def get_time_period(self, start_time):
+        current_time = datetime.now()
+        if start_time < current_time:
+            return 'Past'
+        elif start_time.date() == current_time.date():
+            return 'Present'
+        else:
+            return 'Future'
+
+def annotate_calendar(endpoint_func):
+    CalendarAPIAttributes = CalendarAPIAttributes__()
+    def wrapper(self, *args, **kwargs):
+        attributes = {
+            'granular_data': CalendarAPIAttributes.get_hierarchy(kwargs['start_time'], kwargs['duration']),
+            'data_access': CalendarAPIAttributes.get_access_level(endpoint_func.original_name),
+            'time': CalendarAPIAttributes.get_time_period(kwargs['start_time'])
+        }
+        return endpoint_func(self, attributes, *args, **kwargs)
+
+    wrapper.original_name = endpoint_func.__name__
+    return wrapper
+
+def export_attributes(endpoint_func):
+    CalendarAPIAttributes = CalendarAPIAttributes__()
+    def wrapper(self, *args, **kwargs):
+        return endpoint_func(self, *args, **kwargs)
+    wrapper.attributes = CalendarAPIAttributes.export_attributes()
+    return wrapper
+
+# Calendar API class with policy annotations
+
+# annotate_calender(policy_interceptor(CalendarAPI.reserve))
+
 class CalendarAPI:
     @annotate_calendar
     @policy_interceptor
@@ -91,25 +165,35 @@ class CalendarAPI:
     def check_available(self, *args, **kwargs):
         print("Checking availability with:", kwargs)
 
+    @export_attributes
+    def get_attributes(self):
+        return self.get_attributes.attributes
 
-# Testing the Implementation
 if __name__ == "__main__":
-    import pdb; pdb.set_trace()
+    policy_system = PolicySystem()
+
+    # Register CalendarAPI with the policy system
+    policy_system.register_api(CalendarAPI)
+
+    # Add example policy rules
+    policy_system.add_policy({"granular_data": "Year", "data_access": "Read", "time": "Future"})
+    policy_system.add_policy({"granular_data": "Month", "data_access": "Read", "time": "Future"})
+
     calendar_api = CalendarAPI()
 
-    # Test a valid read operation
+    # Test a valid read operation (should be allowed because "Month" subsumes "Hour")
     try:
         start_time = datetime.now() + timedelta(days=30)  # Future date
-        duration = timedelta(days=1)
+        duration = timedelta(hours=1)
         calendar_api.read(start_time=start_time, duration=duration)
         print("Read operation allowed.")
     except PermissionError as e:
         print(e)
 
-    # Test an invalid write operation
+    # Test an invalid write operation (should not be allowed for past dates)
     try:
         start_time = datetime.now() - timedelta(days=365)  # Past date
-        duration = timedelta(days=1)
+        duration = timedelta(hours=1)
         calendar_api.reserve(start_time=start_time, duration=duration, desc="Meeting")
         print("Reserve operation allowed.")
     except PermissionError as e:

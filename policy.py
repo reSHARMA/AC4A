@@ -8,23 +8,29 @@ class PolicySystem:
         self.attribute_definitions = {}
 
     def register_api(self, api_class):
+        # Define the list of allowed attributes
+        allowed_attributes = ['granular_data', 'data_access', 'time']
+
         # Extract attribute definitions from the API class
         api_class = api_class()
         if hasattr(api_class, 'get_attributes'):
             attributes = api_class.get_attributes()
             for attr_type, values in attributes.items():
-                if attr_type in self.attribute_definitions:
-                    # Merge attributes without duplication
-                    existing_values = self.attribute_definitions[attr_type]
-                    if isinstance(values, list):
-                        for value in values:
-                            if isinstance(value, AttributeTree):
-                                existing_values.append(value)
-                            else:
-                                if value not in existing_values:
+                if attr_type in allowed_attributes:
+                    if attr_type in self.attribute_definitions:
+                        # Merge attributes without duplication
+                        existing_values = self.attribute_definitions[attr_type]
+                        if isinstance(values, list):
+                            for value in values:
+                                if isinstance(value, AttributeTree):
                                     existing_values.append(value)
+                                else:
+                                    if value not in existing_values:
+                                        existing_values.append(value)
+                    else:
+                        self.attribute_definitions[attr_type] = values
                 else:
-                    self.attribute_definitions[attr_type] = values
+                    print(f"Warning: Attribute '{attr_type}' is not allowed and will be ignored.")
 
     def add_policy(self, policy_rule):
         self.policy_rules.append(policy_rule)
@@ -119,7 +125,8 @@ class CalendarAPIAttributes__:
                 ])
             ])],
             'data_access': ['Read', 'Write'],
-            'time': ['Past', 'Present', 'Future']
+            'time': ['Past', 'Present', 'Future'],
+            'expiration': ['Expired', 'Valid']
         }
 
     def get_namespace(self):

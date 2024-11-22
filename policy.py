@@ -107,19 +107,41 @@ class AttributeTree:
             result.extend(child.to_list())
         return result
 
-# Calendar API class with policy annotations
-class CalendarAPIAttributes__:
-    def __init__(self):
-        pass
+class APIAnnotationBase:
+    def __init__(self, namespace, attributes):
+        self.namespace = namespace
+        self.attributes = attributes
 
     def export_attributes(self):
-        namespace = self.get_namespace()
-        return {
-            'granular_data': [AttributeTree(f'{namespace}:Year', [
-                AttributeTree(f'{namespace}:Month', [
-                    AttributeTree(f'{namespace}:Week', [
-                        AttributeTree(f'{namespace}:Day', [
-                            AttributeTree(f'{namespace}:Hour')
+        return self.attributes
+
+    @staticmethod
+    def annotate(endpoint_func):
+        def wrapper(self, *args, **kwargs):
+            attributes = self.annotation.generate_attributes(kwargs, endpoint_func.original_name)
+            return endpoint_func(self, attributes, *args, **kwargs)
+
+        wrapper.original_name = endpoint_func.__name__
+        return wrapper
+
+    def export(endpoint_func):
+        def wrapper(self, *args, **kwargs):
+            wrapper.attributes = self.annotation.export_attributes()
+            return endpoint_func(self, *args, **kwargs)
+        return wrapper
+
+    def generate_attributes(self, kwargs, endpoint_name):
+        raise NotImplementedError("Subclasses should implement this method.")
+
+
+class CalendarAPIAnnotation(APIAnnotationBase):
+    def __init__(self):
+        super().__init__("Calendar", {
+            'granular_data': [AttributeTree(f'Calendar:Year', [
+                AttributeTree(f'Calendar:Month', [
+                    AttributeTree(f'Calendar:Week', [
+                        AttributeTree(f'Calendar:Day', [
+                            AttributeTree(f'Calendar:Hour')
                         ])
                     ])
                 ])
@@ -127,24 +149,20 @@ class CalendarAPIAttributes__:
             'data_access': ['Read', 'Write'],
             'time': ['Past', 'Present', 'Future'],
             'expiration': ['Expired', 'Valid']
-        }
-
-    def get_namespace(self):
-        return "Calendar"
+        })
 
     def get_hierarchy(self, start_time, duration):
-        namespace = self.get_namespace()
         end_time = start_time + duration
         if (end_time - start_time).days >= 365:
-            return f'{namespace}:Year'
+            return f'{self.namespace}:Year'
         elif (end_time - start_time).days >= 30:
-            return f'{namespace}:Month'
+            return f'{self.namespace}:Month'
         elif (end_time - start_time).days >= 7:
-            return f'{namespace}:Week'
+            return f'{self.namespace}:Week'
         elif (end_time - start_time).days >= 1:
-            return f'{namespace}:Day'
+            return f'{self.namespace}:Day'
         else:
-            return f'{namespace}:Hour'
+            return f'{self.namespace}:Hour'
 
     def get_access_level(self, endpoint_name):
         return 'Read' if 'read' in endpoint_name else 'Write'
@@ -158,49 +176,35 @@ class CalendarAPIAttributes__:
         else:
             return 'Future'
 
-def annotate_calendar(endpoint_func):
-    CalendarAPIAttributes = CalendarAPIAttributes__()
-    def wrapper(self, *args, **kwargs):
-        attributes = {
-            'granular_data': CalendarAPIAttributes.get_hierarchy(kwargs['start_time'], kwargs['duration']),
-            'data_access': CalendarAPIAttributes.get_access_level(endpoint_func.original_name),
-            'time': CalendarAPIAttributes.get_time_period(kwargs['start_time'])
+    def generate_attributes(self, kwargs, endpoint_name):
+        return {
+            'granular_data': self.get_hierarchy(kwargs['start_time'], kwargs['duration']),
+            'data_access': self.get_access_level(endpoint_name),
+            'time': self.get_time_period(kwargs['start_time'])
         }
-        return endpoint_func(self, attributes, *args, **kwargs)
-
-    wrapper.original_name = endpoint_func.__name__
-    return wrapper
-
-def export_attributes(endpoint_func):
-    CalendarAPIAttributes = CalendarAPIAttributes__()
-    def wrapper(self, *args, **kwargs):
-        return endpoint_func(self, *args, **kwargs)
-    wrapper.attributes = CalendarAPIAttributes.export_attributes()
-    return wrapper
-
-# Calendar API class with policy annotations
-
-# annotate_calender(policy_interceptor(CalendarAPI.reserve))
-
+# Combined Calendar API class with policy annotations and attribute management
 class CalendarAPI:
-    @annotate_calendar
+    def __init__(self):
+        self.annotation = CalendarAPIAnnotation()
+
+    @CalendarAPIAnnotation.export
+    def get_attributes(self):
+        return self.annotation.attributes
+
+    @CalendarAPIAnnotation.annotate
     @policy_interceptor
     def reserve(self, *args, **kwargs):
         print("Reserving an entry with:", kwargs)
 
-    @annotate_calendar
+    @CalendarAPIAnnotation.annotate
     @policy_interceptor
     def read(self, *args, **kwargs):
         print("Reading entries with:", kwargs)
 
-    @annotate_calendar
+    @CalendarAPIAnnotation.annotate
     @policy_interceptor
     def check_available(self, *args, **kwargs):
         print("Checking availability with:", kwargs)
-
-    @export_attributes
-    def get_attributes(self):
-        return self.get_attributes.attributes
 
 if __name__ == "__main__":
     policy_system = PolicySystem()

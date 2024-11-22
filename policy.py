@@ -37,7 +37,23 @@ class PolicySystem:
 
     def check_subsumption(self, rule, attributes):
         for attr in rule:
-            if not self.validate_attribute(rule[attr], attributes.get(attr), attr):
+            rule_value = rule[attr]
+            attribute_value = attributes.get(attr)
+
+            # Split the resource type and value for comparison
+            if ':' in rule_value:
+                rule_resource, rule_specific = rule_value.split(':')
+                attr_resource, attr_specific = attribute_value.split(':')
+
+                # Check for namespace match or wildcard
+                if rule_resource != attr_resource and rule_resource != '*':
+                    return False
+
+                # Check for specific match or wildcard
+                if rule_specific != attr_specific and rule_specific != '*':
+                    return False
+
+            if not self.validate_attribute(rule_value, attribute_value, attr):
                 return False
         return True
 
@@ -47,6 +63,11 @@ class PolicySystem:
             if isinstance(hierarchy[0], AttributeTree):
                 # Hierarchical structure, convert to flat list and check subsumption
                 values_list = hierarchy[0].to_list()
+                
+                namespace = values_list[0].split(':')[0]
+                if rule_value == f'{namespace}:*' and attribute_value.startswith(namespace):
+                    return True
+
                 return values_list.index(rule_value) <= values_list.index(attribute_value)
             elif isinstance(hierarchy, list):
                 # Disjoint sets, must match exactly
@@ -86,12 +107,13 @@ class CalendarAPIAttributes__:
         pass
 
     def export_attributes(self):
+        namespace = self.get_namespace()
         return {
-            'granular_data': [AttributeTree('Year', [
-                AttributeTree('Month', [
-                    AttributeTree('Week', [
-                        AttributeTree('Day', [
-                            AttributeTree('Hour')
+            'granular_data': [AttributeTree(f'{namespace}:Year', [
+                AttributeTree(f'{namespace}:Month', [
+                    AttributeTree(f'{namespace}:Week', [
+                        AttributeTree(f'{namespace}:Day', [
+                            AttributeTree(f'{namespace}:Hour')
                         ])
                     ])
                 ])
@@ -100,18 +122,22 @@ class CalendarAPIAttributes__:
             'time': ['Past', 'Present', 'Future']
         }
 
+    def get_namespace(self):
+        return "Calendar"
+
     def get_hierarchy(self, start_time, duration):
+        namespace = self.get_namespace()
         end_time = start_time + duration
         if (end_time - start_time).days >= 365:
-            return 'Year'
+            return f'{namespace}:Year'
         elif (end_time - start_time).days >= 30:
-            return 'Month'
+            return f'{namespace}:Month'
         elif (end_time - start_time).days >= 7:
-            return 'Week'
+            return f'{namespace}:Week'
         elif (end_time - start_time).days >= 1:
-            return 'Day'
+            return f'{namespace}:Day'
         else:
-            return 'Hour'
+            return f'{namespace}:Hour'
 
     def get_access_level(self, endpoint_name):
         return 'Read' if 'read' in endpoint_name else 'Write'
@@ -175,13 +201,13 @@ if __name__ == "__main__":
     # Register CalendarAPI with the policy system
     policy_system.register_api(CalendarAPI)
 
-    # Add example policy rules
-    policy_system.add_policy({"granular_data": "Year", "data_access": "Read", "time": "Future"})
-    policy_system.add_policy({"granular_data": "Month", "data_access": "Read", "time": "Future"})
+    # Add example policy rules with more specific resource identifiers
+    policy_system.add_policy({"granular_data": "Calendar:*", "data_access": "Read", "time": "Future"})
+    policy_system.add_policy({"granular_data": "Calendar:Month", "data_access": "Read", "time": "Future"})
 
     calendar_api = CalendarAPI()
 
-    # Test a valid read operation (should be allowed because "Month" subsumes "Hour")
+    # Test a valid read operation (should be allowed because "Calendar:Month" subsumes "Calendar:Hour")
     try:
         start_time = datetime.now() + timedelta(days=30)  # Future date
         duration = timedelta(hours=1)

@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import time
 
 # Policy System class to manage policy rules and attribute definitions
 
@@ -33,6 +34,10 @@ class PolicySystem:
                     print(f"Warning: Attribute '{attr_type}' is not allowed and will be ignored.")
 
     def add_policy(self, policy_rule):
+        # Calculate and store fixed times for symbolic expressions
+        for attr, value in policy_rule.items():
+            if callable(value):
+                policy_rule[attr] = value()
         self.policy_rules.append(policy_rule)
 
     def is_action_allowed(self, attributes):
@@ -45,6 +50,21 @@ class PolicySystem:
         for attr in rule:
             rule_value = rule[attr]
             attribute_value = attributes.get(attr)
+
+            # Handle expiry datetime objects separately
+            if attr == 'expiry':
+                if not isinstance(attribute_value, datetime):
+                    return False
+                # Compare datetime values directly
+                if datetime.now() >= rule_value:
+                    return False
+                continue
+
+            # Handle time attribute with Past, Present, Future
+            if attr == 'time':
+                if rule_value != attribute_value and rule_value != '*':
+                    return False
+                continue
 
             # Split the resource type and value for comparison
             if ':' in rule_value:
@@ -88,7 +108,7 @@ def policy_interceptor(api_func):
         if policy_system.is_action_allowed(attributes):
             return api_func(self, *args, **kwargs)
         else:
-            raise PermissionError("Action not authorized for given resource.")
+            raise PermissionError(f"Action not authorized for given resources.")
     wrapper.original_name = api_func.__name__
     return wrapper
 
@@ -148,8 +168,7 @@ class CalendarAPIAnnotation(APIAnnotationBase):
             ])],
             'actions': ['reserve', 'read', 'check_available'],
             'data_access': ['Read', 'Write'],
-            'time': ['Past', 'Present', 'Future'],
-            'expiration': ['Expired', 'Valid']
+            'time': ['Past', 'Present', 'Future']
         })
 
     def get_hierarchy(self, start_time, duration):
@@ -170,20 +189,26 @@ class CalendarAPIAnnotation(APIAnnotationBase):
 
     def get_time_period(self, start_time):
         current_time = datetime.now()
-        if start_time < current_time:
+        time_difference = abs((current_time - start_time).total_seconds())
+        if start_time < current_time and time_difference >= 60:
             return 'Past'
-        elif start_time.date() == current_time.date():
+        elif time_difference < 60:
             return 'Present'
         else:
             return 'Future'
 
     def generate_attributes(self, kwargs, endpoint_name):
+        start_time = kwargs['start_time']
+        duration = kwargs['duration']
         return {
-            'granular_data': self.get_hierarchy(kwargs['start_time'], kwargs['duration']),
+            'granular_data': self.get_hierarchy(start_time, duration),
             'data_access': self.get_access_level(endpoint_name),
-            'time': self.get_time_period(kwargs['start_time']),
-            'actions': endpoint_name
+            'time': self.get_time_period(start_time),
+            'actions': endpoint_name,
+            # TODO: expiry must not be set by the API dev
+            'expiry': datetime.now()
         }
+
 # Combined Calendar API class with policy annotations and attribute management
 class CalendarAPI:
     def __init__(self):
@@ -196,17 +221,58 @@ class CalendarAPI:
     @CalendarAPIAnnotation.annotate
     @policy_interceptor
     def reserve(self, *args, **kwargs):
-        print("Reserving an entry with:", kwargs)
+        pass
 
     @CalendarAPIAnnotation.annotate
     @policy_interceptor
     def read(self, *args, **kwargs):
-        print("Reading entries with:", kwargs)
+        pass
 
     @CalendarAPIAnnotation.annotate
     @policy_interceptor
     def check_available(self, *args, **kwargs):
-        print("Checking availability with:", kwargs)
+        pass
+
+class TimeUtils:
+    @staticmethod
+    def next_minutes(n):
+        """Returns a datetime object n minutes from now."""
+        return datetime.now() + timedelta(minutes=n)
+
+    @staticmethod
+    def past_minutes(n):
+        """Returns a datetime object n minutes in the past."""
+        return datetime.now() - timedelta(minutes=n)
+
+    @staticmethod
+    def next_hours(n):
+        """Returns a datetime object n hours from now."""
+        return datetime.now() + timedelta(hours=n)
+
+    @staticmethod
+    def past_hours(n):
+        """Returns a datetime object n hours in the past."""
+        return datetime.now() - timedelta(hours=n)
+
+    @staticmethod
+    def next_days(n):
+        """Returns a datetime object n days from now."""
+        return datetime.now() + timedelta(days=n)
+
+    @staticmethod
+    def past_days(n):
+        """Returns a datetime object n days in the past."""
+        return datetime.now() - timedelta(days=n)
+
+    @staticmethod
+    def next_weeks(n):
+        """Returns a datetime object n weeks from now."""
+        return datetime.now() + timedelta(weeks=n)
+
+    @staticmethod
+    def past_weeks(n):
+        """Returns a datetime object n weeks in the past."""
+        return datetime.now() - timedelta(weeks=n)
 
 if __name__ == "__main__":
     policy_system = PolicySystem()
@@ -214,26 +280,55 @@ if __name__ == "__main__":
     # Register CalendarAPI with the policy system
     policy_system.register_api(CalendarAPI)
 
-    # Add example policy rules with more specific resource identifiers
-    policy_system.add_policy({"granular_data": "Calendar:*", "actions": "reserve", "data_access": "Read", "time": "Future"})
-    policy_system.add_policy({"granular_data": "Calendar:Month", "data_access": "Read", "time": "Future"})
+    # Add example policy rules with fixed time calculations
+    policy_system.add_policy({
+        "granular_data": "Calendar:*",
+        "actions": "*",
+        "data_access": "Read",
+        "time": "Future",  # Allow actions in the present time
+        "expiry": datetime.now() + timedelta(seconds=10)  # Policy expires in 10 seconds
+    })
 
     calendar_api = CalendarAPI()
 
-    # Test a valid read operation (should be allowed because "Calendar:Month" subsumes "Calendar:Hour")
+    # Test a valid read operation (should be allowed if within 5 minutes)
     try:
-        start_time = datetime.now() + timedelta(days=30)  # Future date
-        duration = timedelta(hours=1)
+        start_time = datetime.now() + timedelta(minutes=3)  # Within the next 5 minutes
+        duration = timedelta(minutes=1)
         calendar_api.read(start_time=start_time, duration=duration)
         print("Read operation allowed.")
     except PermissionError as e:
         print(e)
 
-    # Test an invalid write operation (should not be allowed for past dates)
+    # Test an invalid read operation (should not be allowed if after 5 minutes)
     try:
-        start_time = datetime.now() - timedelta(days=365)  # Past date
-        duration = timedelta(hours=1)
-        calendar_api.reserve(start_time=start_time, duration=duration, desc="Meeting")
-        print("Reserve operation allowed.")
+        start_time = datetime.now() + timedelta(minutes=10)  # After the next 5 minutes
+        duration = timedelta(minutes=1)
+        calendar_api.read(start_time=start_time, duration=duration)
+        print("Read operation allowed.")
     except PermissionError as e:
         print(e)
+
+    # Test case for policy expiry in 10 seconds
+    print("\nTesting policy expiry in 10 seconds:")
+
+    # Test a valid read operation (should be allowed immediately)
+    try:
+        start_time = datetime.now() + timedelta(seconds=65)  # Within the next 10 seconds
+        duration = timedelta(seconds=1)
+        calendar_api.read(start_time=start_time, duration=duration)
+        print("Read operation allowed immediately.")
+    except PermissionError as e:
+        print("Read operation not allowed immediately:", e)
+
+    # Wait for 10 seconds to let the policy expire
+    time.sleep(13)
+
+    # Test an invalid read operation (should not be allowed after 10 seconds)
+    try:
+        start_time = datetime.now() + timedelta(seconds=111)  # After the policy expiry
+        duration = timedelta(seconds=1)
+        calendar_api.read(start_time=start_time, duration=duration)
+        print("Read operation allowed after expiry.")
+    except PermissionError as e:
+        print("Read operation not allowed after expiry:", e)

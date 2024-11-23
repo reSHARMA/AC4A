@@ -77,10 +77,7 @@ class PolicySystem:
                 return values_list.index(rule_value) <= values_list.index(attribute_value)
             elif isinstance(hierarchy, list):
                 # Disjoint sets, must match exactly
-                return rule_value == attribute_value
-            elif attribute_type == 'actions':
-                # Direct comparison for actions
-                return rule_value in attribute_value
+                return rule_value == attribute_value or rule_value == '*'
         return False
 
     def export_attributes(self):

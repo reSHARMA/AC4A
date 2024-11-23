@@ -9,7 +9,7 @@ class PolicySystem:
 
     def register_api(self, api_class):
         # Define the list of allowed attributes
-        allowed_attributes = ['granular_data', 'data_access', 'time']
+        allowed_attributes = ['granular_data', 'actions', 'data_access', 'time']
 
         # Extract attribute definitions from the API class
         api_class = api_class()
@@ -78,6 +78,9 @@ class PolicySystem:
             elif isinstance(hierarchy, list):
                 # Disjoint sets, must match exactly
                 return rule_value == attribute_value
+            elif attribute_type == 'actions':
+                # Direct comparison for actions
+                return rule_value in attribute_value
         return False
 
     def export_attributes(self):
@@ -146,6 +149,7 @@ class CalendarAPIAnnotation(APIAnnotationBase):
                     ])
                 ])
             ])],
+            'actions': ['reserve', 'read', 'check_available'],
             'data_access': ['Read', 'Write'],
             'time': ['Past', 'Present', 'Future'],
             'expiration': ['Expired', 'Valid']
@@ -180,7 +184,8 @@ class CalendarAPIAnnotation(APIAnnotationBase):
         return {
             'granular_data': self.get_hierarchy(kwargs['start_time'], kwargs['duration']),
             'data_access': self.get_access_level(endpoint_name),
-            'time': self.get_time_period(kwargs['start_time'])
+            'time': self.get_time_period(kwargs['start_time']),
+            'actions': endpoint_name
         }
 # Combined Calendar API class with policy annotations and attribute management
 class CalendarAPI:
@@ -213,7 +218,7 @@ if __name__ == "__main__":
     policy_system.register_api(CalendarAPI)
 
     # Add example policy rules with more specific resource identifiers
-    policy_system.add_policy({"granular_data": "Calendar:*", "data_access": "Read", "time": "Future"})
+    policy_system.add_policy({"granular_data": "Calendar:*", "actions": "reserve", "data_access": "Read", "time": "Future"})
     policy_system.add_policy({"granular_data": "Calendar:Month", "data_access": "Read", "time": "Future"})
 
     calendar_api = CalendarAPI()

@@ -187,15 +187,15 @@ class CalendarAPIAnnotation(APIAnnotationBase):
     def get_access_level(self, endpoint_name):
         return 'r' if 'read' in endpoint_name else 'w'
 
-    def get_time_period(self, start_time):
+    def get_time_period(self, start_time, duration):
         current_time = datetime.now()
-        time_difference = abs((current_time - start_time).total_seconds())
-        if start_time < current_time and time_difference >= 60:
-            return 'Past'
-        elif time_difference < 60:
+        end_time = start_time + duration
+        if start_time < current_time < end_time:
             return 'Present'
-        else:
+        elif current_time < start_time:
             return 'Future'
+        else:
+            return 'Past'
 
     def generate_attributes(self, kwargs, endpoint_name):
         start_time = kwargs['start_time']
@@ -203,7 +203,7 @@ class CalendarAPIAnnotation(APIAnnotationBase):
         return {
             'granular_data': self.get_hierarchy(start_time, duration),
             'data_access': self.get_access_level(endpoint_name),
-            'time': self.get_time_period(start_time),
+            'time': self.get_time_period(start_time, duration),
             'actions': endpoint_name,
             # TODO: expiry must not be set by the API dev
             'expiry': datetime.now()
@@ -234,6 +234,16 @@ class CalendarAPI:
         pass
 
 class TimeUtils:
+    @staticmethod
+    def next_seconds(n):
+        """Returns a datetime object n seconds from now."""
+        return datetime.now() + timedelta(seconds=n)
+
+    @staticmethod
+    def past_seconds(n):
+        """Returns a datetime object n seconds in the past."""
+        return datetime.now() - timedelta(seconds=n)
+
     @staticmethod
     def next_minutes(n):
         """Returns a datetime object n minutes from now."""
@@ -286,7 +296,7 @@ if __name__ == "__main__":
         "actions": "*",
         "data_access": "r",
         "time": "Future",  # Allow actions in the present time
-        "expiry": datetime.now() + timedelta(seconds=10)  # Policy expires in 10 seconds
+        "expiry": TimeUtils.next_seconds(10)  # Policy expires in 10 seconds
     })
 
     calendar_api = CalendarAPI()

@@ -185,7 +185,7 @@ class CalendarAPIAnnotation(APIAnnotationBase):
             return f'{self.namespace}:Hour'
 
     def get_access_level(self, endpoint_name):
-        return 'Read' if 'read' in endpoint_name else 'Write'
+        return 'r' if 'read' in endpoint_name else 'w'
 
     def get_time_period(self, start_time):
         current_time = datetime.now()
@@ -284,7 +284,7 @@ if __name__ == "__main__":
     policy_system.add_policy({
         "granular_data": "Calendar:*",
         "actions": "*",
-        "data_access": "Read",
+        "data_access": "r",
         "time": "Future",  # Allow actions in the present time
         "expiry": datetime.now() + timedelta(seconds=10)  # Policy expires in 10 seconds
     })

@@ -49,17 +49,15 @@ class PolicySystem:
     def check_subsumption(self, rule, attributes):
         for attr in rule:
             rule_value = rule[attr]
-            attribute_value = attributes.get(attr)
 
             # Handle expiry datetime objects separately
             if attr == 'expiry':
-                if not isinstance(attribute_value, datetime):
-                    return False
                 # Compare datetime values directly
                 if datetime.now() >= rule_value:
                     return False
                 continue
 
+            attribute_value = attributes.get(attr)
             # Handle time attribute with Past, Present, Future
             if attr == 'time':
                 if rule_value != attribute_value and rule_value != '*':
@@ -205,8 +203,6 @@ class CalendarAPIAnnotation(APIAnnotationBase):
             'data_access': self.get_access_level(endpoint_name),
             'time': self.get_time_period(start_time, duration),
             'actions': endpoint_name,
-            # TODO: expiry must not be set by the API dev
-            'expiry': datetime.now()
         }
 
 # Combined Calendar API class with policy annotations and attribute management

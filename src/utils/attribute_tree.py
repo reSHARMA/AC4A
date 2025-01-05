@@ -1,8 +1,8 @@
 # AttributeTree class to represent hierarchical attribute definitions
 
 class AttributeTree:
-    def __init__(self, value, children=None):
-        self.value = value
+    def __init__(self, value, data='*', children=None):
+        self.value = {'value': value, 'data': data}
         self.children = children if children else []
 
     def to_list(self):

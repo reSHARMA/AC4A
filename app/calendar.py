@@ -73,5 +73,6 @@ class CalendarAPI:
         pass
 
     @CalendarAPIAnnotation.annotate
+    # start_time, duration
     def check_available(self, *args, **kwargs):
         pass

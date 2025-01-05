@@ -12,13 +12,19 @@ if __name__ == "__main__":
 
     # Add example policy rules with fixed time calculations
     policy_system.add_policy({
-        "granular_data": "Calendar:*",
+        "granular_data": "Calendar:Year",
         "actions": "*",
         "data_access": "r",
         "time": "Future",  # Allow actions in the present time
         "expiry": TimeUtils.next_seconds(10)  # Policy expires in 10 seconds
     })
 
+    # root (photos) 
+    # children (last 100 photos)
+    # children (last to last 100 photos)
+
+    # tree / grant perm in the tree / revoke perm in the tree / ands and ors to the perm granting 
+    #  
     calendar_api = CalendarAPI(policy_system)
 
     # Test a valid read operation (should be allowed if within 5 minutes)

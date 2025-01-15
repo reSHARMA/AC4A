@@ -12,11 +12,10 @@ if __name__ == "__main__":
 
     # Add example policy rules with fixed time calculations
     policy_system.add_policy({
-        "granular_data": "Calendar:Year",
-        "actions": "*",
+        "granular_data": "Calendar:Year(1995)::Calendar:Month(Oct)",
         "data_access": "r",
-        "time": "Future",  # Allow actions in the present time
-        "expiry": TimeUtils.next_seconds(10)  # Policy expires in 10 seconds
+        "time": "Future"  # Allow actions in the present time
+        # "expiry": TimeUtils.next_seconds(10)  # Policy expires in 10 seconds
     })
 
     # root (photos) 

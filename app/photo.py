@@ -14,7 +14,6 @@ class PhotoAPIAnnotation(APIAnnotationBase):
                     ])
                 ])
             ])],
-            'actions': ['upload', 'view', 'delete', 'edit', 'share'],
             'data_access': ['Read', 'Write'],
             'time': ['Past', 'Present', 'Future']
         })
@@ -53,7 +52,6 @@ class PhotoAPIAnnotation(APIAnnotationBase):
             'granular_data': self.get_hierarchy(start_time, duration),
             'data_access': self.get_access_level(endpoint_name),
             'time': self.get_time_period(start_time, duration),
-            'actions': endpoint_name,
         }
 
 class PhotoAPI:

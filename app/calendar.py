@@ -14,8 +14,10 @@ class CalendarAPIAnnotation(APIAnnotationBase):
                     ])
                 ])
             ])],
-            'actions': ['reserve', 'read', 'check_available'],
-            'data_access': ['Read', 'Write'],
+            'data_access': [
+                AttributeTree('Read'),
+                AttributeTree('Write')
+            ],
             'time': ['Past', 'Present', 'Future']
         })
 
@@ -49,10 +51,9 @@ class CalendarAPIAnnotation(APIAnnotationBase):
         start_time = kwargs['start_time']
         duration = kwargs['duration']
         return {
-            'granular_data': self.get_hierarchy(start_time, duration),
-            'data_access': self.get_access_level(endpoint_name),
+            'granular_data': {self.get_hierarchy(start_time, duration): '*'},
+            'data_access': {self.get_access_level(endpoint_name): '*'},
             'time': self.get_time_period(start_time, duration),
-            'actions': endpoint_name,
         }
 
 class CalendarAPI:

@@ -51,6 +51,12 @@ class PolicySystem:
         for attr in rule:
             rule_value = rule[attr]
 
+            if attr == 'expiry':
+                # Compare datetime values directly
+                if datetime.now() >= rule_value:
+                    return False
+                continue  
+
             parsed_rule_value = []
             print(f"Parsing rule value: {rule_value}")
             if "::" in rule_value:
@@ -74,14 +80,6 @@ class PolicySystem:
                 else:
                     parsed_rule_value.append({rule_value: '*'})
                     print(f"Parsed single rule with wildcard: {rule_value} - *")
-
-            # Now parsed_rule_value contains the parsed representation of rule_value
-            # Handle expiry datetime objects separately
-            # if attr == 'expiry':
-            #     # Compare datetime values directly
-            #     if datetime.now() >= rule_value:
-            #         return False
-            #     continue  
             
             print(f"Parsed rule value: {parsed_rule_value}")
 

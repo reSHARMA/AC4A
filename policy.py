@@ -14,8 +14,8 @@ if __name__ == "__main__":
     policy_system.add_policy({
         "granular_data": "Calendar:Year(1995)::Calendar:Month(Oct)",
         "data_access": "r",
-        "time": "Future"  # Allow actions in the present time
-        # "expiry": TimeUtils.next_seconds(10)  # Policy expires in 10 seconds
+        "time": "Future",  # Allow actions in the present time
+        "expiry": TimeUtils.next_seconds(10)  # Policy expires in 10 seconds
     })
 
     # root (photos) 
@@ -45,7 +45,8 @@ if __name__ == "__main__":
         print(e)
 
     # Test case for policy expiry in 10 seconds
-    print("\nTesting policy expiry in 10 seconds:")
+    print("\nTesting policy expiry in 5 seconds:")
+    time.sleep(5)
 
     # Test a valid read operation (should be allowed immediately)
     try:
@@ -57,7 +58,8 @@ if __name__ == "__main__":
         print("Read operation not allowed immediately:", e)
 
     # Wait for 10 seconds to let the policy expire
-    time.sleep(13)
+    print("\nTesting policy expiry in 11 seconds:")
+    time.sleep(6)
 
     # Test an invalid read operation (should not be allowed after 10 seconds)
     try:

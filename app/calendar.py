@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from src.policy_system.api_annotation import APIAnnotationBase
 from src.utils.attribute_tree import AttributeTree
+from src.utils.dummy_data import generate_dummy_data
 
 class CalendarAPIAnnotation(APIAnnotationBase):
     def __init__(self):
@@ -67,13 +68,13 @@ class CalendarAPI:
 
     @CalendarAPIAnnotation.annotate
     def reserve(self, *args, **kwargs):
-        pass
+        return generate_dummy_data("This method reserves a time slot in the calendar.", **kwargs)
 
     @CalendarAPIAnnotation.annotate
     def read(self, *args, **kwargs):
-        pass
+        return generate_dummy_data("This method reads calendar events within a specified time range.", **kwargs)
 
     @CalendarAPIAnnotation.annotate
     # start_time, duration
     def check_available(self, *args, **kwargs):
-        pass
+        return generate_dummy_data("This method checks the availability of a time slot in the calendar.", **kwargs)

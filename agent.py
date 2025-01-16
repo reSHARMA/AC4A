@@ -58,7 +58,7 @@ async def main() -> None:
         except Exception as e:
             print(f"Error: {e}")
             return "policy_err"
-        return "policies deployed"
+        return "all good!"
             
     class PermissionAgent(AssistantAgent):
         def __init__(self, *args, **kwargs):
@@ -165,16 +165,16 @@ async def main() -> None:
     )
 
     async def calendar_reserve(start_time: datetime, duration: timedelta, description: str) -> str:
-        calendar_api.reserve(start_time=start_time, duration=duration, description=description)
-        return "successfully reserved"
+        result = calendar_api.reserve(start_time=start_time, duration=duration, description=description)
+        return result
 
     async def calendar_read(start_time: datetime, duration: timedelta) -> str:
-        calendar_api.read(start_time=start_time, duration=duration)
-        return "no meetings"
+        result = calendar_api.read(start_time=start_time, duration=duration)
+        return result
 
     async def calendar_check_availability(start_time: datetime, duration: timedelta) -> str:
-        calendar_api.check_available(start_time=start_time, duration=duration)
-        return "available"
+        result = calendar_api.check_available(start_time=start_time, duration=duration)
+        return result
 
     calendar = AssistantAgent(
         name="Calendar",
@@ -186,40 +186,40 @@ async def main() -> None:
     )
 
     async def expedia_search_flights(from_location: str, to_location: str, departure_date: datetime, return_date: datetime = None, airline: str = None, round_trip: bool = True) -> str:
-        expedia_api.search_flights(from_location=from_location, to_location=to_location, departure_date=departure_date, return_date=return_date, airline=airline, round_trip=round_trip)
-        return "ok"
+        result = expedia_api.search_flights(from_location=from_location, to_location=to_location, departure_date=departure_date, return_date=return_date, airline=airline, round_trip=round_trip)
+        return result
 
     async def expedia_book_hotel(hotel_name: str, location: str, check_in_date: datetime, check_out_date: datetime, room_type: str = None) -> str:
-        expedia_api.book_hotel(hotel_name=hotel_name, location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
-        return "ok"
+        result = expedia_api.book_hotel(hotel_name=hotel_name, location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
+        return result
 
     async def expedia_rent_car(car_type: str, pickup_location: str, pickup_date: datetime, return_date: datetime, rental_company: str = None) -> str:
-        expedia_api.rent_car(car_type=car_type, pickup_location=pickup_location, pickup_date=pickup_date, return_date=return_date, rental_company=rental_company)
-        return "ok"
+        result = expedia_api.rent_car(car_type=car_type, pickup_location=pickup_location, pickup_date=pickup_date, return_date=return_date, rental_company=rental_company)
+        return result
 
     async def expedia_book_experience(experience_name: str, location: str, date: datetime, participants: int = 1) -> str:
-        expedia_api.book_experience(experience_name=experience_name, location=location, date=date, participants=participants)
-        return "ok"
+        result = expedia_api.book_experience(experience_name=experience_name, location=location, date=date, participants=participants)
+        return result
 
     async def expedia_book_cruise(cruise_name: str, departure_port: str, departure_date: datetime, return_date: datetime, cabin_type: str = None) -> str:
-        expedia_api.book_cruise(cruise_name=cruise_name, departure_port=departure_port, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
-        return "ok"
+        result = expedia_api.book_cruise(cruise_name=cruise_name, departure_port=departure_port, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
+        return result
 
     async def expedia_search_hotels(location: str, check_in_date: datetime, check_out_date: datetime, room_type: str = None) -> str:
-        expedia_api.search_hotels(location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
-        return "ok"
+        result = expedia_api.search_hotels(location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
+        return result
 
     async def expedia_search_rental_cars(pickup_location: str, pickup_date: datetime, return_date: datetime, car_type: str = None, rental_company: str = None) -> str:
-        expedia_api.search_rental_cars(pickup_location=pickup_location, pickup_date=pickup_date, return_date=return_date, car_type=car_type, rental_company=rental_company)
-        return "ok"
+        result = expedia_api.search_rental_cars(pickup_location=pickup_location, pickup_date=pickup_date, return_date=return_date, car_type=car_type, rental_company=rental_company)
+        return result
 
     async def expedia_search_experience(experience_name: str, location: str, date: datetime, participants: int = 1) -> str:
-        expedia_api.search_experience(experience_name=experience_name, location=location, date=date, participants=participants)
-        return "ok"
+        result = expedia_api.search_experience(experience_name=experience_name, location=location, date=date, participants=participants)
+        return result
 
     async def expedia_search_cruise(departure_port: str, departure_date: datetime, return_date: datetime, cabin_type: str = None) -> str:
-        expedia_api.search_cruise(departure_port=departure_port, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
-        return "ok"
+        result = expedia_api.search_cruise(departure_port=departure_port, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
+        return result
 
     expedia = AssistantAgent(
         name="Expedia",
@@ -233,24 +233,25 @@ async def main() -> None:
     termination = TextMentionTermination("terminate")
 
     def selector_func(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
-        print(f"Debug: Number of messages received: {len(messages)}")
+        # print(f"Debug: Number of messages received: {len(messages)}")
         if len(messages) == 0:
-            print("Debug: No messages, returning 'User'")
+            # print("Debug: No messages, returning 'User'")
             return "User"
         if len(messages) == 1: 
-            print("Debug: One message, returning 'Permission'")
+            # print("Debug: One message, returning 'Permission'")
             return "Permission"
         if "policy_err" in messages[-1].content:
-            print("Debug: 'policy_err' found in last message, returning 'Permission'")
+            # print("Debug: 'policy_err' found in last message, returning 'Permission'")
             return "Permission"
         if messages[-1].source == "Permission":
-            print("Debug: Last message from 'Permission', returning 'Planner'")
+            messages = [message for message in messages if message.source != "Permission"]
             return "Planner"
         if messages[-1].source == "Planner":
+            # print(messages)
             next_agent = messages[-1].content.split(":")[0]
-            print(f"Debug: Last message from 'Planner', returning '{next_agent}'")
+            # print(f"Debug: Last message from 'Planner', returning '{next_agent}'")
             return next_agent
-        print("Debug: Default case, returning 'Planner'")
+        # print("Debug: Default case, returning 'Planner'")
         return "Planner"
 
     groupchat = SelectorGroupChat([user, permission, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_func)

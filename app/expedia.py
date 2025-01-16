@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from src.policy_system.api_annotation import APIAnnotationBase
 from src.utils.attribute_tree import AttributeTree
+from src.utils.dummy_data import generate_dummy_data
 
 class ExpediaAPIAnnotation(APIAnnotationBase):
     def __init__(self):
@@ -68,49 +69,118 @@ class ExpediaAPI:
     # Args: from_location (str), to_location (str), departure_date (datetime), return_date (datetime, optional), airline (str, optional), round_trip (bool)
     @ExpediaAPIAnnotation.annotate
     def search_flights(self, from_location, to_location, departure_date, return_date=None, airline=None, round_trip=True):
-        pass
+        # Args: from_location (str), to_location (str), departure_date (datetime), return_date (datetime, optional), airline (str, optional), round_trip (bool)
+        return generate_dummy_data(
+            api_endpoint="search_flights",
+            from_location=from_location,
+            to_location=to_location,
+            departure_date=departure_date,
+            return_date=return_date,
+            airline=airline,
+            round_trip=round_trip
+        )
 
-    # Args: from_location (str), to_location (str), departure_date (datetime), return_date (datetime, optional), airline (str, optional), round_trip (bool)
     @ExpediaAPIAnnotation.annotate
     def book_flight(self, from_location, to_location, departure_date, return_date=None, airline=None, round_trip=True):
-        pass
+        # Args: from_location (str), to_location (str), departure_date (datetime), return_date (datetime, optional), airline (str, optional), round_trip (bool)
+        return generate_dummy_data(
+            api_endpoint="book_flight",
+            from_location=from_location,
+            to_location=to_location,
+            departure_date=departure_date,
+            return_date=return_date,
+            airline=airline,
+            round_trip=round_trip
+        )
 
-    # Args: location (str), check_in_date (datetime), check_out_date (datetime), room_type (str, optional)
     @ExpediaAPIAnnotation.annotate
     def search_hotels(self, location, check_in_date, check_out_date, room_type=None):
-        pass
+        # Args: location (str), check_in_date (datetime), check_out_date (datetime), room_type (str, optional)
+        return generate_dummy_data(
+            api_endpoint="search_hotels",
+            location=location,
+            check_in_date=check_in_date,
+            check_out_date=check_out_date,
+            room_type=room_type
+        )
 
-    # Args: hotel_name (str), location (str), check_in_date (datetime), check_out_date (datetime), room_type (str, optional)
     @ExpediaAPIAnnotation.annotate
     def book_hotel(self, hotel_name, location, check_in_date, check_out_date, room_type=None):
-        pass
+        # Args: hotel_name (str), location (str), check_in_date (datetime), check_out_date (datetime), room_type (str, optional)
+        return generate_dummy_data(
+            api_endpoint="book_hotel",
+            hotel_name=hotel_name,
+            location=location,
+            check_in_date=check_in_date,
+            check_out_date=check_out_date,
+            room_type=room_type
+        )
 
-    # Args: pickup_location (str), pickup_date (datetime), return_date (datetime), car_type (str, optional), rental_company (str, optional)
     @ExpediaAPIAnnotation.annotate
     def search_rental_cars(self, pickup_location, pickup_date, return_date, car_type=None, rental_company=None):
-        pass
+        # Args: pickup_location (str), pickup_date (datetime), return_date (datetime), car_type (str, optional), rental_company (str, optional)
+        return generate_dummy_data(
+            api_endpoint="search_rental_cars",
+            pickup_location=pickup_location,
+            pickup_date=pickup_date,
+            return_date=return_date,
+            car_type=car_type,
+            rental_company=rental_company
+        )
 
-    # Args: car_type (str), pickup_location (str), pickup_date (datetime), return_date (datetime), rental_company (str, optional)
     @ExpediaAPIAnnotation.annotate
     def rent_car(self, car_type, pickup_location, pickup_date, return_date, rental_company=None):
-        pass
+        # Args: car_type (str), pickup_location (str), pickup_date (datetime), return_date (datetime), rental_company (str, optional)
+        return generate_dummy_data(
+            api_endpoint="rent_car",
+            car_type=car_type,
+            pickup_location=pickup_location,
+            pickup_date=pickup_date,
+            return_date=return_date,
+            rental_company=rental_company
+        )
 
-    # Args: experience_name (str), location (str), date (datetime), participants (int, optional)
     @ExpediaAPIAnnotation.annotate
     def book_experience(self, experience_name, location, date, participants=1):
-        pass
+        # Args: experience_name (str), location (str), date (datetime), participants (int, optional)
+        return generate_dummy_data(
+            api_endpoint="book_experience",
+            experience_name=experience_name,
+            location=location,
+            date=date,
+            participants=participants
+        )
 
-    # Args: experience_name (str), location (str), date (datetime), participants (int, optional)
     @ExpediaAPIAnnotation.annotate
     def search_experience(self, experience_name, location, date, participants=1):
-        pass
+        # Args: experience_name (str), location (str), date (datetime), participants (int, optional)
+        return generate_dummy_data(
+            api_endpoint="search_experience",
+            experience_name=experience_name,
+            location=location,
+            date=date,
+            participants=participants
+        )
 
-    # Args: cruise_name (str), departure_port (str), departure_date (datetime), return_date (datetime), cabin_type (str, optional)
     @ExpediaAPIAnnotation.annotate
     def book_cruise(self, cruise_name, departure_port, departure_date, return_date, cabin_type=None):
-        pass
+        # Args: cruise_name (str), departure_port (str), departure_date (datetime), return_date (datetime), cabin_type (str, optional)
+        return generate_dummy_data(
+            api_endpoint="book_cruise",
+            cruise_name=cruise_name,
+            departure_port=departure_port,
+            departure_date=departure_date,
+            return_date=return_date,
+            cabin_type=cabin_type
+        )
 
-    # Args: departure_port (str), departure_date (datetime), return_date (datetime), cabin_type (str, optional)
     @ExpediaAPIAnnotation.annotate
     def search_cruise(self, departure_port, departure_date, return_date, cabin_type=None):
-        pass
+        # Args: departure_port (str), departure_date (datetime), return_date (datetime), cabin_type (str, optional)
+        return generate_dummy_data(
+            api_endpoint="search_cruise",
+            departure_port=departure_port,
+            departure_date=departure_date,
+            return_date=return_date,
+            cabin_type=cabin_type
+        )

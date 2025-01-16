@@ -38,6 +38,7 @@ async def main() -> None:
         List of the available application with description:
         Calendar: A normal calendar app with API to reserve, check availability and read the calendar data.
         Expedia: An application to search flights, book hotels, rent cars, and book experiences and cruises with a comprehensive travel API.
+        User: The user who is interacting with you. Must be asked for confirmation for irreversible tasks or when there are options available.
 
         First output the name of the application and then the description in the format, application: description.
 
@@ -159,6 +160,7 @@ async def main() -> None:
         })
 
         After creating the policies, call the tool function append_policy to register them with the policy engine.
+        Do not print anything.
     """,
         model_client = model_client,
         tools=[append_policy]

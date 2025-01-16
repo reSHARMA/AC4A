@@ -3,11 +3,14 @@ from autogen_agentchat.agents import AssistantAgent, UserProxyAgent
 from autogen_agentchat.teams import SelectorGroupChat
 from autogen_agentchat.conditions import TextMentionTermination
 from autogen_agentchat.ui import Console
+from autogen_agentchat.messages import AgentEvent, ChatMessage
 
 from app.calendar import CalendarAPI
+from app.expedia import ExpediaAPI
 from src.policy_system.policy_system import PolicySystem
 
 import os, asyncio
+from typing import Sequence
 from datetime import datetime, timedelta
 
 policy_system = PolicySystem()
@@ -26,31 +29,60 @@ async def main() -> None:
 
     model_client = ChatCompletionClient.load_component(config)
 
-    user = UserProxyAgent("user")
+    user = UserProxyAgent("User", input_func=input) 
 
     planner = AssistantAgent(
         name="Planner",
-        system_message="""You have access to multiple different applications which you must invoke to complete the user reuqest. Output the name of the application from the application given to you which must be invoked next. You will see the history of applications invoked and their results. Along with the name of the application, send a description of the task that application needs to perform with all the necessary data you have without explicitly sending the exact user request. 
+        system_message="""You have access to multiple different applications which you must invoke to complete the user reuqest. Output the name of the application from the application given to you which must be invoked next. You will see the history of applications invoked and their results. Along with the name of the application, send a description of the task that application needs to perform with all the necessary data you have without explicitly sending the exact user request. Only send the necessary information.
 
         List of the available application with description:
         Calendar: A normal calendar app with API to reserve, check availability and read the calendar data.
+        Expedia: An application to search flights, book hotels, rent cars, and book experiences and cruises with a comprehensive travel API.
 
-        If the task is completed return terminate.
+        First output the name of the application and then the description in the format, application: description.
+
+        If the task is completed or if you are not able to complete the task return terminate.
+        Always give reason for termination.
     """,
         model_client = model_client
     )
 
     calendar_api = CalendarAPI(policy_system)
+    expedia_api = ExpediaAPI(policy_system)
 
     async def append_policy(code: str) -> str:
         import re
-        print("Debug: Starting append_policy function")
-        print(f"Debug: Received code:\n{code}")
-        
-        eval(code, {"policy_system": policy_system})
-        print("Debug: Evaluation complete")
+        print(f"Policy: {code}")
+        try:
+            eval(code, {"policy_system": policy_system})
+        except Exception as e:
+            print(f"Error: {e}")
+            return "policy_err"
+        return "policies deployed"
             
-    permission = AssistantAgent(
+    class PermissionAgent(AssistantAgent):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.message_sent = False
+
+        async def process_request(self, request):
+            if not self.message_sent:
+                # Logic to process the request and generate a message
+                message = self.create_policy_message(request)
+                self.send_message(message)
+                self.message_sent = True
+            else:
+                print("Debug: Message already sent, skipping.")
+
+        def create_policy_message(self, request):
+            # Logic to create the policy message based on the request
+            return "Generated policy message"
+
+        def send_message(self, message):
+            # Logic to send the message
+            print(f"Sending message: {message}")
+
+    permission = PermissionAgent(
         name="Permission",
         system_message="""You are a permission agent, your task is to understand the user request carefully and think about what are the data the user is implcitly giving permission to the system to access. Based on the data implicitly allowed by the user based on the request, you are requested to create policies which allows for the use of the data restricted by various attributes.
 
@@ -77,18 +109,51 @@ async def main() -> None:
 
         The data and the attributes can be a tree or a list or a list of tree nodes. 
         '*' can be used to represent wildcard
-        data_access: '*' would imply any data acess
+        data_access: '*' would imply any data access
         Calendar:Month means Calendar:Month(*) would imply access to any month
-        Calendar:Month(Oct) would imply access to calendar month october
+        Calendar:Month(Oct) would imply access to calendar month October
 
         Since the data can sometimes be a tree, it is possible to represent access to calendar for 2026 Oct month by doing
         Calendar:Year(2026)::Calendar:Month(Oct) where :: represents sub-data.
+
+        For the Expedia application, the following are the available data and attributes
+        'granular_data': 
+        [AttributeTree(f'Expedia:Destination', [
+            AttributeTree(f'Expedia:Flight'),
+            AttributeTree(f'Expedia:Hotel'),
+            AttributeTree(f'Expedia:CarRental')
+        ]),
+        AttributeTree(f'Expedia:Experience', [
+            AttributeTree(f'Expedia:Cruise')
+        ])
+        ],
+        'data_access': [
+            AttributeTree('Read'),
+            AttributeTree('Write')
+        ],
+        'time': ['Past', 'Present', 'Future']
+
+        The data and the attributes can be a tree or a list or a list of tree nodes. 
+        '*' can be used to represent wildcard
+        data_access: '*' would imply any data access
+        Expedia:Flight means Expedia:Flight(*) would imply access to any flight
+        Expedia:Hotel would imply access to any hotel
+
+        Since the data can sometimes be a tree, it is possible to represent access to a specific travel type by doing
+        Expedia:Destination::Expedia:Flight where :: represents sub-data.
 
         Return a list of such policies as python code, for example:
 
         # read only access to the calendar for Oct 2025 (note that time future is redundant here and is not needed)
         policy_system.add_policy({
             "granular_data": "Calendar:Year(2025)::Calendar:Month(Oct)",
+            "data_access": "r",
+            "time": "Future"
+        })
+
+        # read only access to Expedia flights
+        policy_system.add_policy({
+            "granular_data": "Expedia:Destination::Expedia:Flight",
             "data_access": "r",
             "time": "Future"
         })
@@ -101,45 +166,101 @@ async def main() -> None:
 
     async def calendar_reserve(start_time: datetime, duration: timedelta, description: str) -> str:
         calendar_api.reserve(start_time=start_time, duration=duration, description=description)
-        return "ok"
+        return "successfully reserved"
 
     async def calendar_read(start_time: datetime, duration: timedelta) -> str:
         calendar_api.read(start_time=start_time, duration=duration)
-        return "ok"
+        return "no meetings"
 
     async def calendar_check_availability(start_time: datetime, duration: timedelta) -> str:
         calendar_api.check_available(start_time=start_time, duration=duration)
-        return "ok"
+        return "available"
 
     calendar = AssistantAgent(
         name="Calendar",
         system_message="""
-        You are a calendar app with access to calendar APIs as tools, you will be given a request to fulfill. Call the tools available to you to fulfill the request. 
+        You are a calendar app with access to calendar APIs as tools, you will be given a request to fulfill. Call the tools available to you to fulfill the request. Asume offset-naive datetime for simplicity.
     """,
         tools=[calendar_reserve, calendar_read, calendar_check_availability],
         model_client=model_client
     )
 
+    async def expedia_search_flights(from_location: str, to_location: str, departure_date: datetime, return_date: datetime = None, airline: str = None, round_trip: bool = True) -> str:
+        expedia_api.search_flights(from_location=from_location, to_location=to_location, departure_date=departure_date, return_date=return_date, airline=airline, round_trip=round_trip)
+        return "ok"
+
+    async def expedia_book_hotel(hotel_name: str, location: str, check_in_date: datetime, check_out_date: datetime, room_type: str = None) -> str:
+        expedia_api.book_hotel(hotel_name=hotel_name, location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
+        return "ok"
+
+    async def expedia_rent_car(car_type: str, pickup_location: str, pickup_date: datetime, return_date: datetime, rental_company: str = None) -> str:
+        expedia_api.rent_car(car_type=car_type, pickup_location=pickup_location, pickup_date=pickup_date, return_date=return_date, rental_company=rental_company)
+        return "ok"
+
+    async def expedia_book_experience(experience_name: str, location: str, date: datetime, participants: int = 1) -> str:
+        expedia_api.book_experience(experience_name=experience_name, location=location, date=date, participants=participants)
+        return "ok"
+
+    async def expedia_book_cruise(cruise_name: str, departure_port: str, departure_date: datetime, return_date: datetime, cabin_type: str = None) -> str:
+        expedia_api.book_cruise(cruise_name=cruise_name, departure_port=departure_port, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
+        return "ok"
+
+    async def expedia_search_hotels(location: str, check_in_date: datetime, check_out_date: datetime, room_type: str = None) -> str:
+        expedia_api.search_hotels(location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
+        return "ok"
+
+    async def expedia_search_rental_cars(pickup_location: str, pickup_date: datetime, return_date: datetime, car_type: str = None, rental_company: str = None) -> str:
+        expedia_api.search_rental_cars(pickup_location=pickup_location, pickup_date=pickup_date, return_date=return_date, car_type=car_type, rental_company=rental_company)
+        return "ok"
+
+    async def expedia_search_experience(experience_name: str, location: str, date: datetime, participants: int = 1) -> str:
+        expedia_api.search_experience(experience_name=experience_name, location=location, date=date, participants=participants)
+        return "ok"
+
+    async def expedia_search_cruise(departure_port: str, departure_date: datetime, return_date: datetime, cabin_type: str = None) -> str:
+        expedia_api.search_cruise(departure_port=departure_port, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
+        return "ok"
+
+    expedia = AssistantAgent(
+        name="Expedia",
+        system_message="""
+        You are an Expedia app with access to Expedia APIs as tools, you will be given a request to fulfill. Call the tools available to you to fulfill the request.
+    """,
+        tools=[expedia_search_flights, expedia_book_hotel, expedia_rent_car, expedia_book_experience, expedia_book_cruise, expedia_search_hotels, expedia_search_rental_cars, expedia_search_experience, expedia_search_cruise],
+        model_client=model_client
+    )
+
     termination = TextMentionTermination("terminate")
 
-    selector_prompt = """You are an expert personal assistant given a task to be fulfilled. There are multiple agents available to you which you can invoke to complete the given task. The following are the agents available to you:
-    {roles}
-    Follow these guidelines while selecting the next agent for the task:
-    1. For the first time always select the permission agent
-    2. Once the permission agent is done, that is, the second time, always select the planner agent.
-    3. The planner agent will select an application agent, select that application agent. 
-    4. Once the application agent is done, select the planner agent again so that the planner agent can either choose another application or check if the task is completed. 
-    5. Loop between the planner and application agents until the planner terminates.
-    6. Only output the name of the next agent and nothing else. 
-    7. Under any circumstances the permission agent must not be called more than once after the start.
+    def selector_func(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
+        print(f"Debug: Number of messages received: {len(messages)}")
+        if len(messages) == 0:
+            print("Debug: No messages, returning 'User'")
+            return "User"
+        if len(messages) == 1: 
+            print("Debug: One message, returning 'Permission'")
+            return "Permission"
+        if "policy_err" in messages[-1].content:
+            print("Debug: 'policy_err' found in last message, returning 'Permission'")
+            return "Permission"
+        if messages[-1].source == "Permission":
+            print("Debug: Last message from 'Permission', returning 'Planner'")
+            return "Planner"
+        if messages[-1].source == "Planner":
+            next_agent = messages[-1].content.split(":")[0]
+            print(f"Debug: Last message from 'Planner', returning '{next_agent}'")
+            return next_agent
+        print("Debug: Default case, returning 'Planner'")
+        return "Planner"
 
-    {history}
-    
-    Read the above conversation. Then select the next role from {participants} to complete the task as per the guidelines. Only return the name of the agent aka role.
-"""
+    groupchat = SelectorGroupChat([user, permission, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_func)
 
-    groupchat = SelectorGroupChat([permission, planner, calendar], termination_condition=termination, max_turns=10, model_client=model_client, selector_prompt=selector_prompt)
-    stream = groupchat.run_stream(task="Schedule a meeting for next Monday 8am with MSR folks. Today's date is 15th Jan 2025")
+    task = "Schedule a meeting for next Monday 8am with MSR folks. Today's date is 15th Jan 2025"
+    task = "Use Expedia to compare travel itineraries for a cruise to Alaska around mid-July, considering existing constraints on my calendar."
+
+    task += "Today's date is 15th Jan 2025"
+
+    stream = groupchat.run_stream()
     await Console(stream)
 
 asyncio.run(main())

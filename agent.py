@@ -2,7 +2,6 @@ from autogen_core.models import ChatCompletionClient
 from autogen_agentchat.agents import AssistantAgent, UserProxyAgent
 from autogen_agentchat.teams import SelectorGroupChat
 from autogen_agentchat.conditions import TextMentionTermination
-from autogen_agentchat.ui import Console
 from autogen_agentchat.messages import AgentEvent, ChatMessage
 
 from app.calendar import CalendarAPI
@@ -12,8 +11,10 @@ from src.policy_system.policy_system import PolicySystem
 import os, asyncio
 from typing import Sequence
 from datetime import datetime, timedelta
+import streamlit as st
 
 policy_system = PolicySystem()
+user_input = ""
 
 async def main() -> None:
     # Register CalendarAPI with the policy system
@@ -29,7 +30,19 @@ async def main() -> None:
 
     model_client = ChatCompletionClient.load_component(config)
 
-    user = UserProxyAgent("User", input_func=input) 
+    # Function to capture user input
+    def web_input_func(prompt: str) -> str:
+        global user_input
+        user_input = prompt
+        return user_input
+    
+    def web_input_func1(prompt: str) -> str:
+        global user_input
+        temp = user_input
+        user_input = ""
+        return temp 
+
+    user = UserProxyAgent("User", input_func=web_input_func1) 
 
     planner = AssistantAgent(
         name="Planner",
@@ -235,26 +248,57 @@ async def main() -> None:
     termination = TextMentionTermination("terminate")
 
     def selector_func(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
-        # print(f"Debug: Number of messages received: {len(messages)}")
+        print(f"Debug: Number of messages received: {len(messages)}")
+        print("****", messages)
+        
+        agent = ""
+
         if len(messages) == 0:
-            # print("Debug: No messages, returning 'User'")
-            return "User"
+            print("Debug: No messages, waiting for user input.")
+            user_input = None
+
+            user_input = st.text_input("Please enter your message:", key="user_input", value="Schedule a meeting for next Monday 8am with MSR folks. Today's date is 15th Jan 2025")
+            st.button("Submit", key="submit_button_state")
+            while not st.session_state.submit_button_state:
+                import time
+                animation_chars = ['|', '/', '-', '\\']
+                idx = 0
+                while not st.session_state.submit_button_state:
+                    print(f"\rWaiting {animation_chars[idx]}", end="")
+                    idx = (idx + 1) % len(animation_chars)
+                    time.sleep(0.1)  # Small delay to prevent busy-waiting
+                time.sleep(0.1)  # Small delay to prevent busy-waiting
+            if user_input:
+                print(f"Debug: User input received: {user_input}")
+                web_input_func(user_input)
+                agent = "User"
+        
         if len(messages) == 1: 
-            # print("Debug: One message, returning 'Permission'")
-            return "Permission"
-        if "policy_err" in messages[-1].content:
-            # print("Debug: 'policy_err' found in last message, returning 'Permission'")
-            return "Permission"
-        if messages[-1].source == "Permission":
+            print("Debug: Only one message, returning 'Permission'.")
+            agent = "Permission"
+        
+        if len(messages) > 0 and "policy_err" in messages[-1].content:
+            print("Debug: 'policy_err' found in the last message, returning 'Permission'.")
+            agent = "Permission"
+        
+        if len(messages) > 0 and messages[-1].source == "Permission":
+            print("Debug: Last message from 'Permission', filtering messages and returning 'Planner'.")
             messages = [message for message in messages if message.source != "Permission"]
-            return "Planner"
-        if messages[-1].source == "Planner":
-            # print(messages)
+            agent = "Planner"
+        
+        if len(messages) > 0 and messages[-1].source == "Planner":
             next_agent = messages[-1].content.split(":")[0]
-            # print(f"Debug: Last message from 'Planner', returning '{next_agent}'")
-            return next_agent
-        # print("Debug: Default case, returning 'Planner'")
-        return "Planner"
+            print(f"Debug: Last message from 'Planner', next agent determined as: {next_agent}")
+            agent =  next_agent
+        
+        if agent == "":
+            print("Debug: Default case, returning 'Planner'.")
+            agent = "Planner"
+
+        if len(messages) > 0:
+            st.write(f"{messages[-1].source} : {messages[-1].content}")
+
+        return agent
 
     groupchat = SelectorGroupChat([user, permission, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_func)
 
@@ -264,6 +308,7 @@ async def main() -> None:
     task += "Today's date is 15th Jan 2025"
 
     stream = groupchat.run_stream()
-    await Console(stream)
+    async for _ in stream:
+        pass
 
 asyncio.run(main())

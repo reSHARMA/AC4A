@@ -11,10 +11,14 @@ from src.policy_system.policy_system import PolicySystem
 import os, asyncio
 from typing import Sequence
 from datetime import datetime, timedelta
+
 import streamlit as st
 
 policy_system = PolicySystem()
 user_input = ""
+
+if 'messages' not in st.session_state:
+    st.session_state['messages'] = []
 
 async def main() -> None:
     # Register CalendarAPI with the policy system
@@ -44,6 +48,7 @@ async def main() -> None:
 
     user = UserProxyAgent("User", input_func=web_input_func1) 
 
+    # User: The user who is interacting with you. Must be asked for confirmation for irreversible tasks or when there are options available.
     planner = AssistantAgent(
         name="Planner",
         system_message="""You have access to multiple different applications which you must invoke to complete the user reuqest. Output the name of the application from the application given to you which must be invoked next. You will see the history of applications invoked and their results. Along with the name of the application, send a description of the task that application needs to perform with all the necessary data you have without explicitly sending the exact user request. Only send the necessary information.
@@ -51,12 +56,12 @@ async def main() -> None:
         List of the available application with description:
         Calendar: A normal calendar app with API to reserve, check availability and read the calendar data.
         Expedia: An application to search flights, book hotels, rent cars, and book experiences and cruises with a comprehensive travel API.
-        User: The user who is interacting with you. Must be asked for confirmation for irreversible tasks or when there are options available.
-
+        
         First output the name of the application and then the description in the format, application: description.
 
         If the task is completed or if you are not able to complete the task return terminate.
         Always give reason for termination.
+        You work fully autonomously, take best decision without disturbing the user with confirmation or clarification. 
     """,
         model_client = model_client
     )
@@ -248,30 +253,36 @@ async def main() -> None:
     termination = TextMentionTermination("terminate")
 
     def selector_func(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
+        if len(messages) == 0:
+            messages = st.session_state['messages'] 
+
         print(f"Debug: Number of messages received: {len(messages)}")
         print("****", messages)
-        
+
+        if len(messages) > 0:
+            name = messages[-1].source
+            print("*******", name)
+            avatar = "🤖"
+            if name == "User":
+                avatar = "🧑‍💼"
+            if name == "Permission":
+                avatar = "👮‍♀️"
+            if name == "Planner":
+                avatar = "🤔"
+    
+            message = st.chat_message(name=name, avatar=avatar)
+
+            text = messages[-1].content
+            message.write(text)
+
         agent = ""
 
         if len(messages) == 0:
             print("Debug: No messages, waiting for user input.")
-            user_input = None
-
-            user_input = st.text_input("Please enter your message:", key="user_input", value="Schedule a meeting for next Monday 8am with MSR folks. Today's date is 15th Jan 2025")
-            st.button("Submit", key="submit_button_state")
-            while not st.session_state.submit_button_state:
-                import time
-                animation_chars = ['|', '/', '-', '\\']
-                idx = 0
-                while not st.session_state.submit_button_state:
-                    print(f"\rWaiting {animation_chars[idx]}", end="")
-                    idx = (idx + 1) % len(animation_chars)
-                    time.sleep(0.1)  # Small delay to prevent busy-waiting
-                time.sleep(0.1)  # Small delay to prevent busy-waiting
-            if user_input:
-                print(f"Debug: User input received: {user_input}")
-                web_input_func(user_input)
-                agent = "User"
+            user_input = st.chat_input("Say something")
+            print(f"Debug: User input received: {user_input}")
+            web_input_func(user_input)
+            agent = "User"
         
         if len(messages) == 1: 
             print("Debug: Only one message, returning 'Permission'.")
@@ -279,6 +290,7 @@ async def main() -> None:
         
         if len(messages) > 0 and "policy_err" in messages[-1].content:
             print("Debug: 'policy_err' found in the last message, returning 'Permission'.")
+            messages = [message for message in messages if message.source != "Permission"]
             agent = "Permission"
         
         if len(messages) > 0 and messages[-1].source == "Permission":
@@ -290,13 +302,17 @@ async def main() -> None:
             next_agent = messages[-1].content.split(":")[0]
             print(f"Debug: Last message from 'Planner', next agent determined as: {next_agent}")
             agent =  next_agent
+
+            # if agent == "User":
+            #     prompt = st.chat_input("Say something", key="updates")
+            #     web_input_func(prompt)
+
+            if agent == "terminate":
+                agent = "Planner"
         
         if agent == "":
             print("Debug: Default case, returning 'Planner'.")
             agent = "Planner"
-
-        if len(messages) > 0:
-            st.write(f"{messages[-1].source} : {messages[-1].content}")
 
         return agent
 

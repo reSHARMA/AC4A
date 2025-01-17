@@ -8,7 +8,7 @@ from app.calendar import CalendarAPI
 from app.expedia import ExpediaAPI
 from src.policy_system.policy_system import PolicySystem
 
-import os, asyncio
+import os, asyncio, json, re, pprint
 from typing import Sequence
 from datetime import datetime, timedelta
 
@@ -19,6 +19,10 @@ user_input = ""
 
 if 'messages' not in st.session_state:
     st.session_state['messages'] = []
+
+if 'policies' not in st.session_state:
+    st.session_state['policies'] = []
+
 
 async def main() -> None:
     # Register CalendarAPI with the policy system
@@ -290,11 +294,22 @@ async def main() -> None:
         
         if len(messages) > 0 and "policy_err" in messages[-1].content:
             print("Debug: 'policy_err' found in the last message, returning 'Permission'.")
+
             messages = [message for message in messages if message.source != "Permission"]
             agent = "Permission"
         
         if len(messages) > 0 and messages[-1].source == "Permission":
             print("Debug: Last message from 'Permission', filtering messages and returning 'Planner'.")
+            for message in messages:
+                if message.source == "Permission" and message.type == "ToolCallRequestEvent":
+                    for msg in message.content:
+                        st.session_state["policies"].append(json.loads(msg.arguments)['code'])
+            
+            with st.sidebar:
+                st.header("Policies")
+                for policy in st.session_state["policies"]:
+                    st.code(pprint.pformat(policy, width=40), language="python")
+
             messages = [message for message in messages if message.source != "Permission"]
             agent = "Planner"
         

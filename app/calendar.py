@@ -19,7 +19,11 @@ class CalendarAPIAnnotation(APIAnnotationBase):
                 AttributeTree('Read'),
                 AttributeTree('Write')
             ],
-            'time': ['Past', 'Present', 'Future']
+            'position': [
+                AttributeTree('Previous'),
+                AttributeTree('Current'),
+                AttributeTree('Next')
+            ]
         })
 
     def get_hierarchy(self, start_time, duration):
@@ -36,17 +40,17 @@ class CalendarAPIAnnotation(APIAnnotationBase):
             return f'{self.namespace}:Hour'
 
     def get_access_level(self, endpoint_name):
-        return 'r' if 'read' in endpoint_name else 'w'
+        return 'Write' if 'reserve' in endpoint_name else 'Read'
 
     def get_time_period(self, start_time, duration):
         current_time = datetime.now()
         end_time = start_time + duration
         if start_time < current_time < end_time:
-            return 'Present'
+            return 'Current'
         elif current_time < start_time:
-            return 'Future'
+            return 'Next'
         else:
-            return 'Past'
+            return 'Previous'
 
     def generate_attributes(self, kwargs, endpoint_name):
         start_time = kwargs['start_time']
@@ -54,7 +58,7 @@ class CalendarAPIAnnotation(APIAnnotationBase):
         return {
             'granular_data': {self.get_hierarchy(start_time, duration): '*'},
             'data_access': {self.get_access_level(endpoint_name): '*'},
-            'time': self.get_time_period(start_time, duration),
+            'position': {self.get_time_period(start_time, duration): '*'}
         }
 
 class CalendarAPI:

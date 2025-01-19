@@ -4,7 +4,7 @@ from src.utils.time_utils import TimeUtils
 from src.policy_system.policy_system import PolicySystem
 import time
 
-if __name__ == "__main__":
+def test1():
     policy_system = PolicySystem()
 
     # Register CalendarAPI with the policy system
@@ -14,16 +14,10 @@ if __name__ == "__main__":
     policy_system.add_policy({
         "granular_data": "Calendar:Year(1995)::Calendar:Month(Oct)",
         "data_access": "r",
-        "time": "Future",  # Allow actions in the present time
+        "position": "Next",  # Allow actions in the present time
         "expiry": TimeUtils.next_seconds(10)  # Policy expires in 10 seconds
     })
 
-    # root (photos) 
-    # children (last 100 photos)
-    # children (last to last 100 photos)
-
-    # tree / grant perm in the tree / revoke perm in the tree / ands and ors to the perm granting 
-    #  
     calendar_api = CalendarAPI(policy_system)
 
     # Test a valid read operation (should be allowed if within 5 minutes)
@@ -69,3 +63,31 @@ if __name__ == "__main__":
         print("Read operation allowed after expiry.")
     except PermissionError as e:
         print("Read operation not allowed after expiry:", e)
+
+if __name__ == "__main__":
+    policy_system = PolicySystem()
+    policy_system.register_api(CalendarAPI)
+
+    policy_system.add_policy({
+        "granular_data": "Calendar:Month",
+        "data_access": "Read",
+        "position": "Next",  # Allow actions in the present time
+    })
+
+    calendar_api = CalendarAPI(policy_system)
+
+    try:
+        start_time = datetime.now() + timedelta(minutes=15) # Within the next 5 minutes
+        duration = timedelta(weeks=13)
+        calendar_api.read(start_time=start_time, duration=duration)
+        print("\033[1;32;40mRead operation allowed.\033[0m")
+    except PermissionError as e:
+        print("\033[1;31;40m", e, "\033[0m")
+
+    try:
+        start_time = datetime.now() + timedelta(minutes=15) # Within the next 5 minutes
+        duration = timedelta(weeks=13)
+        calendar_api.reserve(start_time=start_time, duration=duration)
+        print("\033[1;32;40mRead operation allowed.\033[0m")
+    except PermissionError as e:
+        print("\033[1;31;40m", e, "\033[0m")

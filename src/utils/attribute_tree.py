@@ -29,9 +29,12 @@ class AttributeTree:
                 return False
 
             # Check if the value of the current node in self is greater than or equal to the value in other_tree
-            if value1 < value2:
+            if value1 != value2:
                 print(f"Value of node1 is less than node2: {value1} < {value2}")
                 return False
+            
+            if key1 == key2 and (value1 == value2 or value1 == '*'):
+                return True
 
             # Compare children
             for child1 in node1.children:

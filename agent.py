@@ -109,10 +109,12 @@ async def main() -> None:
         name="Permission",
         system_message="""You are a permission agent, your task is to understand the user request carefully and think about what are the data the user is implcitly giving permission to the system to access. Based on the data implicitly allowed by the user based on the request, you are requested to create policies which allows for the use of the data restricted by various attributes.
 
-        The policy is made of up three attributes, granular_data, data_access and time.
+        The policy is made of up three attributes, granular_data, data_access and position.
         granular_data represents the data which is allowed to be used by the user request and is required in the policy.
         data_access is used for restricting the read or write access to the granular_data
-        time is used to restrict the temporal aspect of the granular_data
+        position is used to restrict the temporal aspect of the granular_data, like for calendar it represents the actual time.
+
+        Assume the current date is 15th Jan 2025, decide position based on this date when doing it for data related to time like calendar.
 
         For the calendar application, the following are the available data and attributes
         'granular_data': [AttributeTree(f'Calendar:Year', [
@@ -128,7 +130,11 @@ async def main() -> None:
             AttributeTree('Read'),
             AttributeTree('Write')
         ],
-        'time': ['Past', 'Present', 'Future']
+        'position': [
+            AttributeTree('Previous'),
+            AttributeTree('Current'),
+            AttributeTree('Next')
+        ] 
 
         The data and the attributes can be a tree or a list or a list of tree nodes. 
         '*' can be used to represent wildcard
@@ -154,7 +160,11 @@ async def main() -> None:
             AttributeTree('Read'),
             AttributeTree('Write')
         ],
-        'time': ['Past', 'Present', 'Future']
+        'position': [
+            AttributeTree('Previous'),
+            AttributeTree('Current'),
+            AttributeTree('Next')
+        ] 
 
         The data and the attributes can be a tree or a list or a list of tree nodes. 
         '*' can be used to represent wildcard
@@ -167,18 +177,18 @@ async def main() -> None:
 
         Return a list of such policies as python code, for example:
 
-        # read only access to the calendar for Oct 2025 (note that time future is redundant here and is not needed)
+        # read only access to the calendar for Oct 2025 (note that position next is redundant here and is not needed)
         policy_system.add_policy({
             "granular_data": "Calendar:Year(2025)::Calendar:Month(Oct)",
-            "data_access": "r",
-            "time": "Future"
+            "data_access": "Read",
+            "position": "Next"
         })
 
         # read only access to Expedia flights
         policy_system.add_policy({
             "granular_data": "Expedia:Destination::Expedia:Flight",
-            "data_access": "r",
-            "time": "Future"
+            "data_access": "Read",
+            "position": "Next"
         })
 
         After creating the policies, call the tool function append_policy to register them with the policy engine.
@@ -189,14 +199,17 @@ async def main() -> None:
     )
 
     async def calendar_reserve(start_time: datetime, duration: timedelta, description: str) -> str:
+        print("\033[1;34;40mCalling CalendarAPI reserve\033[0m")
         result = calendar_api.reserve(start_time=start_time, duration=duration, description=description)
         return result
 
     async def calendar_read(start_time: datetime, duration: timedelta) -> str:
+        print("\033[1;34;40mCalling CalendarAPI read\033[0m")
         result = calendar_api.read(start_time=start_time, duration=duration)
         return result
 
     async def calendar_check_availability(start_time: datetime, duration: timedelta) -> str:
+        print("\033[1;34;40mCalling CalendarAPI check_available\033[0m")
         result = calendar_api.check_available(start_time=start_time, duration=duration)
         return result
 
@@ -210,38 +223,47 @@ async def main() -> None:
     )
 
     async def expedia_search_flights(from_location: str, to_location: str, departure_date: datetime, return_date: datetime = None, airline: str = None, round_trip: bool = True) -> str:
+        print("\033[1;34;40mCalling expedia_search_flights\033[0m")
         result = expedia_api.search_flights(from_location=from_location, to_location=to_location, departure_date=departure_date, return_date=return_date, airline=airline, round_trip=round_trip)
         return result
 
     async def expedia_book_hotel(hotel_name: str, location: str, check_in_date: datetime, check_out_date: datetime, room_type: str = None) -> str:
+        print("\033[1;34;40mCalling expedia_book_hotel\033[0m")
         result = expedia_api.book_hotel(hotel_name=hotel_name, location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
         return result
 
     async def expedia_rent_car(car_type: str, pickup_location: str, pickup_date: datetime, return_date: datetime, rental_company: str = None) -> str:
+        print("\033[1;34;40mCalling expedia_rent_car\033[0m")
         result = expedia_api.rent_car(car_type=car_type, pickup_location=pickup_location, pickup_date=pickup_date, return_date=return_date, rental_company=rental_company)
         return result
 
     async def expedia_book_experience(experience_name: str, location: str, date: datetime, participants: int = 1) -> str:
+        print("\033[1;34;40mCalling expedia_book_experience\033[0m")
         result = expedia_api.book_experience(experience_name=experience_name, location=location, date=date, participants=participants)
         return result
 
     async def expedia_book_cruise(cruise_name: str, departure_port: str, departure_date: datetime, return_date: datetime, cabin_type: str = None) -> str:
+        print("\033[1;34;40mCalling expedia_book_cruise\033[0m")
         result = expedia_api.book_cruise(cruise_name=cruise_name, departure_port=departure_port, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
         return result
 
     async def expedia_search_hotels(location: str, check_in_date: datetime, check_out_date: datetime, room_type: str = None) -> str:
+        print("\033[1;34;40mCalling expedia_search_hotels\033[0m")
         result = expedia_api.search_hotels(location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
         return result
 
     async def expedia_search_rental_cars(pickup_location: str, pickup_date: datetime, return_date: datetime, car_type: str = None, rental_company: str = None) -> str:
+        print("\033[1;34;40mCalling expedia_search_rental_cars\033[0m")
         result = expedia_api.search_rental_cars(pickup_location=pickup_location, pickup_date=pickup_date, return_date=return_date, car_type=car_type, rental_company=rental_company)
         return result
 
     async def expedia_search_experience(experience_name: str, location: str, date: datetime, participants: int = 1) -> str:
+        print("\033[1;34;40mCalling expedia_search_experience\033[0m")
         result = expedia_api.search_experience(experience_name=experience_name, location=location, date=date, participants=participants)
         return result
 
     async def expedia_search_cruise(departure_port: str, departure_date: datetime, return_date: datetime, cabin_type: str = None) -> str:
+        print("\033[1;34;40mCalling expedia_search_cruise\033[0m")
         result = expedia_api.search_cruise(departure_port=departure_port, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
         return result
 

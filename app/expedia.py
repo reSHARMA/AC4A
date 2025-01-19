@@ -20,42 +20,57 @@ class ExpediaAPIAnnotation(APIAnnotationBase):
                 AttributeTree('Read'),
                 AttributeTree('Write')
             ],
-            'time': ['Past', 'Present', 'Future']
+            'position': [
+                AttributeTree('Previous'),
+                AttributeTree('Current'),
+                AttributeTree('Next')
+            ]
         })
 
-    def get_hierarchy(self, **kwargs):
-        if 'from_location' in kwargs and 'to_location' in kwargs:
-            return f'{self.namespace}:Flight'
-        elif 'hotel_name' in kwargs or 'location' in kwargs and 'check_in_date' in kwargs:
-            return f'{self.namespace}:Hotel'
-        elif 'pickup_location' in kwargs and 'pickup_date' in kwargs:
-            return f'{self.namespace}:CarRental'
-        elif 'experience_name' in kwargs and 'location' in kwargs:
-            return f'{self.namespace}:Experience'
-        elif 'cruise_name' in kwargs and 'departure_port' in kwargs:
-            return f'{self.namespace}:Cruise'
-        else:
-            return f'{self.namespace}:Destination'
+    def get_hierarchy(self, endpoint_name):
+        api_to_granular_data = {
+            'search_flights': 'Flight',
+            'book_flight': 'Flight',
+            'search_hotels': 'Hotel',
+            'book_hotel': 'Hotel',
+            'search_cars': 'CarRental',
+            'rent_car': 'CarRental',
+            'search_experiences': 'Experience',
+            'book_experience': 'Experience',
+            'search_cruise': 'Cruise',
+            'book_cruise': 'Cruise'
+        }
+        return f"{self.namespace}:{api_to_granular_data.get(endpoint_name, 'Destination')}"
 
     def get_access_level(self, endpoint_name):
-        return 'r' if 'read' in endpoint_name else 'w'
+        return 'Read' if 'search' in endpoint_name else 'Write'
 
     def get_time_period(self, start_time, end_time):
         current_time = datetime.now()
         if start_time < current_time < end_time:
-            return 'Present'
+            return 'Current'
         elif current_time < start_time:
-            return 'Future'
+            return 'Next'
         else:
-            return 'Past'
+            return 'Previous'
 
     def generate_attributes(self, kwargs, endpoint_name):
-        start_time = kwargs.get('start_time', datetime.now())
-        end_time = kwargs.get('end_time', datetime.now() + timedelta(days=1))
+        if 'search_flights' in endpoint_name or 'book_flight' in endpoint_name:
+            start_time = kwargs.get('departure_date', datetime.now())
+            end_time = kwargs.get('return_date', start_time + timedelta(days=1))
+        elif 'search_hotels' in endpoint_name or 'book_hotel' in endpoint_name:
+            start_time = kwargs.get('check_in_date', datetime.now())
+            end_time = kwargs.get('check_out_date', start_time + timedelta(days=1))
+        elif 'rent_car' in endpoint_name:
+            start_time = kwargs.get('pickup_date', datetime.now())
+            end_time = kwargs.get('return_date', start_time + timedelta(days=1))
+        else:
+            start_time = datetime.now()
+            end_time = start_time + timedelta(days=1)
         return {
-            'granular_data': {self.get_hierarchy(**kwargs): '*'},
+            'granular_data': {self.get_hierarchy(endpoint_name): '*'},
             'data_access': {self.get_access_level(endpoint_name): '*'},
-            'time': self.get_time_period(start_time, end_time),
+            'position': {self.get_time_period(start_time, end_time): '*'}
         }
 
 class ExpediaAPI:

@@ -11,8 +11,9 @@ class APIAnnotationBase:
 
     @staticmethod
     def annotate(endpoint_func):
+        wildcard = False
         def wrapper(self, *args, **kwargs):
-            attributes = self.annotation.generate_attributes(kwargs, wrapper.original_name)
+            attributes = self.annotation.generate_attributes(kwargs, wrapper.original_name, wildcard)
             intercepted_func = policy_interceptor(endpoint_func)
             return intercepted_func(self, attributes, *args, **kwargs)
 
@@ -25,7 +26,7 @@ class APIAnnotationBase:
             return endpoint_func(self, *args, **kwargs)
         return wrapper
 
-    def generate_attributes(self, kwargs, endpoint_name):
+    def generate_attributes(self, kwargs, endpoint_name, wildcard):
         raise NotImplementedError("Subclasses should implement this method.")
 
 def policy_interceptor(api_func):

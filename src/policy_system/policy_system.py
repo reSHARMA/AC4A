@@ -61,37 +61,41 @@ class PolicySystem:
                     return False
                 continue  
 
-            parsed_rule_value = []
             print(f"Parsing rule value: {rule_value}")
 
             if rule_value == '*':
                 continue
 
-            if "::" in rule_value:
-                parts = rule_value.split("::")
-                print(f"Split rule value into parts: {parts}")
-                for part in parts:
-                    if "(" in part and ")" in part:
-                        key, value = part.split("(")
-                        value = value.rstrip(")")
-                        parsed_rule_value.append({key: value})
-                        print(f"Parsed part with key-value: {key} - {value}")
-                    else:
-                        parsed_rule_value.append({part: '*'})
-                        print(f"Parsed part with wildcard: {part} - *")
-            else:
-                if "(" in rule_value and ")" in rule_value:
-                    key, value = rule_value.split("(")
-                    value = value.rstrip(")")
-                    parsed_rule_value.append({key: value})
-                    print(f"Parsed single rule with key-value: {key} - {value}")
+            def parse_rule_value(rule_value):
+                parsed_values = []
+                if "::" in rule_value:
+                    parts = rule_value.split("::")
+                    print(f"Split rule value into parts: {parts}")
+                    for part in parts:
+                        if "(" in part and ")" in part:
+                            key, value = part.split("(")
+                            value = value.rstrip(")")
+                            parsed_values.append({key: value})
+                            print(f"Parsed part with key-value: {key} - {value}")
+                        else:
+                            parsed_values.append({part: '*'})
+                            print(f"Parsed part with wildcard: {part} - *")
                 else:
-                    parsed_rule_value.append({rule_value: '*'})
-                    print(f"Parsed single rule with wildcard: {rule_value} - *")
-            
-            print(f"Parsed rule value: {parsed_rule_value}")
+                    if "(" in rule_value and ")" in rule_value:
+                        key, value = rule_value.split("(")
+                        value = value.rstrip(")")
+                        parsed_values.append({key: value})
+                        print(f"Parsed single rule with key-value: {key} - {value}")
+                    else:
+                        parsed_values.append({rule_value: '*'})
+                        print(f"Parsed single rule with wildcard: {rule_value} - *")
+                
+                print(f"Parsed rule value: {parsed_values}")
+                return parsed_values
 
-            attr_value = [attributes.get(attr)]
+            parsed_rule_value = parse_rule_value(rule_value)
+            attr_value = parse_rule_value(attributes.get(attr))
+
             print(f"Attribute value for {attr}: {attr_value}")
 
             if not self.validate_attribute(parsed_rule_value, attr_value, attr):

@@ -70,7 +70,9 @@ class CalendarAPIAnnotation(APIAnnotationBase):
         composite_data = None
         for days, label, value in time_hierarchy:
             if (end_time - start_time).days >= days:
-                if current_time < start_time:
+                if start_time < current_time and current_time < end_time:
+                    composite_data = "Current"
+                elif current_time < start_time:
                     if use_wildcard:
                         composite_data = f"Next(*)"
                     else:
@@ -80,10 +82,6 @@ class CalendarAPIAnnotation(APIAnnotationBase):
                         composite_data = f"Previous(*)"
                     else:
                         composite_data = f"Previous({value})"
-                
-                # Check if the value is 0 and adjust to "Current"
-                if value == 0:
-                    composite_data = "Current"
                 break
 
         result = composite_data if composite_data else "Current"

@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 import streamlit as st
 
 # Conditional import for Streamlit
-USE_STREAMLIT = False
+USE_STREAMLIT = True
 
 policy_system = PolicySystem()
 user_input = ""
@@ -44,6 +44,11 @@ async def main() -> None:
 
     def web_input_func(prompt: str) -> str:
         global user_input
+        user_input = prompt
+        return user_input
+
+    def web_input_func1(prompt: str) -> str:
+        global user_input
         temp = user_input
         user_input = ""
         return temp 
@@ -51,7 +56,7 @@ async def main() -> None:
     user = None
 
     if USE_STREAMLIT:
-        user = UserProxyAgent("User", input_func=web_input_func) 
+        user = UserProxyAgent("User", input_func=web_input_func1) 
     else:
         user = UserProxyAgent("User", input_func=input)
 
@@ -76,15 +81,32 @@ async def main() -> None:
     calendar_api = CalendarAPI(policy_system)
     expedia_api = ExpediaAPI(policy_system)
 
-    async def append_policy(code: str) -> str:
+    def append_policy(code: str) -> str:
+        print(code)
         import re
-        print(f"Policy: {code}")
-        try:
-            eval(code, {"policy_system": policy_system})
-        except Exception as e:
-            print(f"Error: {e}")
-            return "policy_err"
-        return "all good!"
+        def extract_code_blocks(code: str) -> list:
+            pattern = r"```python(.*?)```"
+            code_blocks = re.findall(pattern, code, re.DOTALL)
+            return [block.strip() for block in code_blocks]
+
+        if "```python" in code:
+            snippets = extract_code_blocks(code)
+        else:
+            snippets = [code]
+
+        num_policies = sum(1 for snp in snippets if "policy_system" in snp)
+        print("Number of policies: ", num_policies)
+        error = False
+        for snp in snippets:
+            print(f"Policy: {snp}")
+            if USE_STREAMLIT:
+                st.session_state["policies"].append(snp)
+            try:
+                eval(snp, {"policy_system": policy_system})
+            except Exception as e:
+                print(f"Error: {e}")
+                error = True
+        return "policy_err" if error else "policies deployed!"
             
     class PermissionAgent(AssistantAgent):
         def __init__(self, *args, **kwargs):
@@ -108,97 +130,80 @@ async def main() -> None:
             # Logic to send the message
             print(f"Sending message: {message}")
 
+    POLICY_GENERATOR_WILDCARD = """
+You are a data access policy generator agent. You are expected to generate policies in an embedded DSL in Python based on the data access allowed by the user request.
+
+Each policy is made up of three components: `granular_data`, `data_access`, and `position`.
+
+### Granular Data
+- **Identify the highest granularity of data** that is sufficient to complete the user request.
+  - Example: If the user requests calendar data covering more than 7 days, provide access to an entire month of data instead of a week or individual days.
+
+### Available Data Hierarchy:
+- **Calendar:Year**
+  - **Calendar:Month**
+    - **Calendar:Week**
+      - **Calendar:Day**
+        - **Calendar:Hour**
+
+- **Expedia:Destination**
+  - **Expedia:Flight**
+  - **Expedia:Hotel**
+  - **Expedia:CarRental**
+- **Expedia:Experience**
+  - **Expedia:Cruise**
+
+- **Contact:Name**
+  - **Contact:Email**
+  - **Contact:Phone**
+
+- **Wallet:CreditCard**
+  - **Wallet:CreditCardType**
+  - **Wallet:CreditCardNumber**
+  - **Wallet:CreditCardPin**
+
+- **User:Profile**
+  - **User:Name**
+  - **User:Address**
+  - **User:Phone**
+  - **User:SSN**
+
+### Data Access
+- The `data_access` component indicates if granular_data can be read or written (allowed values: `Read` / `Write`).
+  - Determine this by assessing whether the data should be accessed for reading existing information or writing new information.
+
+### Position
+- The `position` attribute represents the data's position within its sequence (allowed values: `Previous` / `Current` / `Next`) with respect to the temporal context.
+- **Determine the temporal context**: Start by establishing a temporal reference point, such as today's date or another specified date in the user request.
+- **Assess the position** by comparing the established temporal reference against the requested data:
+  - For calendar data: Determine if the data is in the `Current`, `Next`, or `Previous` temporal sequence unit (e.g., month, year) relative to the current reference.
+    - If today's date is January 2025 and the request is for Oct 2025, `Month` should be marked as `Next` while `Year` should be `Current`.
+  - For non-sequential data or when not applicable, mark the `position` field as `Current`.
+
+### Format of Policy
+Policies must be added to the policy_system using the `add_policy` method. This method accepts a dictionary input consisting of only three keys: `granular_data`, `data_access`, and `position`.
+
+Example Policy Format:
+```python
+policy_system.add_policy({
+    "granular_data": "Calendar:Month",
+    "data_access": "Read",
+    "position": "Next"
+})
+```
+
+### Additional Instructions
+- **Generate only permissive policies** for data whose access can be reasonably inferred from the request and is essential for completing the task.
+- **Minimize data exposure**: Provide access to the minimal required data.
+- **No assumptions about sensitive data**: Allow access if the user action implicitly necessitates it.
+- **First, output the reasoning for each policy, and then output the generated policy in individual code blocks.
+"""
+
     permission = PermissionAgent(
         name="Permission",
-        system_message="""You are a permission agent, your task is to understand the user request carefully and think about what are the data the user is implcitly giving permission to the system to access. Based on the data implicitly allowed by the user based on the request, you are requested to create policies which allows for the use of the data restricted by various attributes.
-
-        The policy is made of up three attributes, granular_data, data_access and position.
-        granular_data represents the data which is allowed to be used by the user request and is required in the policy.
-        data_access is used for restricting the read or write access to the granular_data
-        position is used to restrict the temporal aspect of the granular_data, like for calendar it represents the actual time.
-
-        Assume the current date is 15th Jan 2025, decide position based on this date when doing it for data related to time like calendar.
-
-        For the calendar application, the following are the available data and attributes
-        'granular_data': [AttributeTree(f'Calendar:Year', [
-            AttributeTree(f'Calendar:Month', [
-                AttributeTree(f'Calendar:Week', [
-                    AttributeTree(f'Calendar:Day', [
-                        AttributeTree(f'Calendar:Hour')
-                    ])
-                ])
-            ])
-        ])],
-        'data_access': [
-            AttributeTree('Read'),
-            AttributeTree('Write')
-        ],
-        'position': [
-            AttributeTree('Previous'),
-            AttributeTree('Current'),
-            AttributeTree('Next')
-        ] 
-
-        The data and the attributes can be a tree or a list or a list of tree nodes. 
-        '*' can be used to represent wildcard
-        data_access: '*' would imply any data access
-        Calendar:Month means Calendar:Month(*) would imply access to any month
-        Calendar:Month(Oct) would imply access to calendar month October
-
-        Since the data can sometimes be a tree, it is possible to represent access to calendar for 2026 Oct month by doing
-        Calendar:Year(2026)::Calendar:Month(Oct) where :: represents sub-data.
-
-        For the Expedia application, the following are the available data and attributes
-        'granular_data': 
-        [AttributeTree(f'Expedia:Destination', [
-            AttributeTree(f'Expedia:Flight'),
-            AttributeTree(f'Expedia:Hotel'),
-            AttributeTree(f'Expedia:CarRental')
-        ]),
-        AttributeTree(f'Expedia:Experience', [
-            AttributeTree(f'Expedia:Cruise')
-        ])
-        ],
-        'data_access': [
-            AttributeTree('Read'),
-            AttributeTree('Write')
-        ],
-        'position': [
-            AttributeTree('Previous'),
-            AttributeTree('Current'),
-            AttributeTree('Next')
-        ] 
-
-        The data and the attributes can be a tree or a list or a list of tree nodes. 
-        '*' can be used to represent wildcard
-        data_access: '*' would imply any data access
-        Expedia:Flight means Expedia:Flight(*) would imply access to any flight
-        Expedia:Hotel would imply access to any hotel
-
-        Since the data can sometimes be a tree, it is possible to represent access to a specific travel type by doing
-        Expedia:Destination::Expedia:Flight where :: represents sub-data.
-
-        Return a list of such policies as python code, for example:
-
-        # read only access to the calendar for Oct 2025 (note that position next is redundant here and is not needed)
-        policy_system.add_policy({
-            "granular_data": "Calendar:Year(2025)::Calendar:Month(Oct)",
-            "data_access": "Read",
-            "position": "Next"
-        })
-
-        # read only access to Expedia flights
-        policy_system.add_policy({
-            "granular_data": "Expedia:Destination::Expedia:Flight",
-            "data_access": "Read",
-            "position": "Next"
-        })
-
-        After creating the policies, call the tool function append_policy to register them with the policy engine.
-        Do not print anything.
-    """,
+        system_message=POLICY_GENERATOR_WILDCARD,
         model_client = model_client,
-        tools=[append_policy]
+        tools=[]
     )
 
     async def calendar_reserve(start_time: datetime, duration: timedelta, description: str) -> str:
@@ -285,6 +290,7 @@ async def main() -> None:
     termination = TextMentionTermination("terminate")
 
     def selector_func(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
+        print("+++++>", messages)
         if USE_STREAMLIT:
             if len(messages) == 0:
                 messages = st.session_state['messages'] 
@@ -317,6 +323,7 @@ async def main() -> None:
                 user_input = st.chat_input("Say something")
                 print(f"Debug: User input received: {user_input}")
                 web_input_func(user_input)
+                st.session_state["policies"] = []
 
             agent = "User"
         
@@ -332,11 +339,8 @@ async def main() -> None:
         
         if len(messages) > 0 and messages[-1].source == "Permission":
             print("Debug: Last message from 'Permission', filtering messages and returning 'Planner'.")
-            for message in messages:
-                if message.source == "Permission" and message.type == "ToolCallRequestEvent":
-                    for msg in message.content:
-                        if USE_STREAMLIT:
-                            st.session_state["policies"].append(json.loads(msg.arguments)['code'])
+
+            append_policy(messages[-1].content)
             
             if USE_STREAMLIT:
                 with st.sidebar:
@@ -345,6 +349,7 @@ async def main() -> None:
                         st.code(pprint.pformat(policy, width=40), language="python")
 
             messages = [message for message in messages if message.source != "Permission"]
+            print("=====>", messages)
             agent = "Planner"
         
         if len(messages) > 0 and messages[-1].source == "Planner":
@@ -359,6 +364,7 @@ async def main() -> None:
             print("Debug: Default case, returning 'Planner'.")
             agent = "Planner"
 
+        print(f"Debug: Returning agent: {agent}")
         return agent
 
     groupchat = SelectorGroupChat([user, permission, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_func)

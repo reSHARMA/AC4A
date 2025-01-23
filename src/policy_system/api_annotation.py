@@ -11,7 +11,7 @@ class APIAnnotationBase:
 
     @staticmethod
     def annotate(endpoint_func):
-        wildcard = False
+        wildcard = True
         def wrapper(self, *args, **kwargs):
             attributes = self.annotation.generate_attributes(kwargs, wrapper.original_name, wildcard)
             intercepted_func = policy_interceptor(endpoint_func)

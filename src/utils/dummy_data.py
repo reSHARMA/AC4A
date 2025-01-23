@@ -18,6 +18,7 @@ def generate_dummy_data(api_endpoint: str, **kwargs) -> dict:
     Only output the response and nothing else
     Do not enclose the data in code blocks
     Keep the response grounded in the parameters provided to you.
+    Try to generate affirmative data, example, if the data request is for checking availability, return data representing availability.
 """
 
     # Call the OpenAI API to generate the dummy data

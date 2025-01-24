@@ -8,6 +8,7 @@ from autogen_agentchat.messages import AgentEvent, ChatMessage
 from app.calendar import CalendarAPI
 from app.expedia import ExpediaAPI
 from src.policy_system.policy_system import PolicySystem
+from src.prompts import *
 
 import os, asyncio, json, re, pprint
 from typing import Sequence
@@ -31,6 +32,7 @@ if USE_STREAMLIT:
 async def main() -> None:
     # Register CalendarAPI with the policy system
     policy_system.register_api(CalendarAPI)
+    policy_system.register_api(ExpediaAPI)
 
     config = {
         "provider": "OpenAIChatCompletionClient",
@@ -129,75 +131,6 @@ async def main() -> None:
         def send_message(self, message):
             # Logic to send the message
             print(f"Sending message: {message}")
-
-    POLICY_GENERATOR_WILDCARD = """
-You are a data access policy generator agent. You are expected to generate policies in an embedded DSL in Python based on the data access allowed by the user request.
-
-Each policy is made up of three components: `granular_data`, `data_access`, and `position`.
-
-### Granular Data
-- **Identify the highest granularity of data** that is sufficient to complete the user request.
-  - Example: If the user requests calendar data covering more than 7 days, provide access to an entire month of data instead of a week or individual days.
-
-### Available Data Hierarchy:
-- **Calendar:Year**
-  - **Calendar:Month**
-    - **Calendar:Week**
-      - **Calendar:Day**
-        - **Calendar:Hour**
-
-- **Expedia:Destination**
-  - **Expedia:Flight**
-  - **Expedia:Hotel**
-  - **Expedia:CarRental**
-- **Expedia:Experience**
-  - **Expedia:Cruise**
-
-- **Contact:Name**
-  - **Contact:Email**
-  - **Contact:Phone**
-
-- **Wallet:CreditCard**
-  - **Wallet:CreditCardType**
-  - **Wallet:CreditCardNumber**
-  - **Wallet:CreditCardPin**
-
-- **User:Profile**
-  - **User:Name**
-  - **User:Address**
-  - **User:Phone**
-  - **User:SSN**
-
-### Data Access
-- The `data_access` component indicates if granular_data can be read or written (allowed values: `Read` / `Write`).
-  - Determine this by assessing whether the data should be accessed for reading existing information or writing new information.
-
-### Position
-- The `position` attribute represents the data's position within its sequence (allowed values: `Previous` / `Current` / `Next`) with respect to the temporal context.
-- **Determine the temporal context**: Start by establishing a temporal reference point, such as today's date or another specified date in the user request.
-- **Assess the position** by comparing the established temporal reference against the requested data:
-  - For calendar data: Determine if the data is in the `Current`, `Next`, or `Previous` temporal sequence unit (e.g., month, year) relative to the current reference.
-    - If today's date is January 2025 and the request is for Oct 2025, `Month` should be marked as `Next` while `Year` should be `Current`.
-  - For non-sequential data or when not applicable, mark the `position` field as `Current`.
-
-### Format of Policy
-Policies must be added to the policy_system using the `add_policy` method. This method accepts a dictionary input consisting of only three keys: `granular_data`, `data_access`, and `position`.
-
-Example Policy Format:
-```python
-policy_system.add_policy({
-    "granular_data": "Calendar:Month",
-    "data_access": "Read",
-    "position": "Next"
-})
-```
-
-### Additional Instructions
-- **Generate only permissive policies** for data whose access can be reasonably inferred from the request and is essential for completing the task.
-- **Minimize data exposure**: Provide access to the minimal required data.
-- **No assumptions about sensitive data**: Allow access if the user action implicitly necessitates it.
-- **First, output the reasoning for each policy, and then output the generated policy in individual code blocks.
-"""
 
     permission = PermissionAgent(
         name="Permission",

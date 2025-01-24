@@ -9,14 +9,18 @@ class PolicySystem:
     def register_api(self, api_class):
         # Pass the current instance of policy_system to the CalendarAPI constructor
         api_instance = api_class(self)
+        print(api_instance)
         # Define the list of allowed attributes
         allowed_attributes = ['granular_data', 'data_access', 'position']
 
         # Extract attribute definitions from the API instance
         if hasattr(api_instance, 'get_attributes'):
+            print("\033[1;34;40mExtracting attributes from API instance.\033[0m")
             attributes = api_instance.get_attributes()
             for attr_type, values in attributes.items():
+                print(f"\033[1;34;40mProcessing attribute type: {attr_type}\033[0m")
                 if attr_type in allowed_attributes:
+                    print(f"\033[1;32;40mAttribute '{attr_type}' is allowed.\033[0m")
                     if attr_type in self.attribute_definitions:
                         # Merge attributes without duplication
                         existing_values = self.attribute_definitions[attr_type]
@@ -24,13 +28,17 @@ class PolicySystem:
                             for value in values:
                                 if isinstance(value, AttributeTree):
                                     existing_values.append(value)
+                                    print(f"\033[1;32;40mAdded AttributeTree value to existing values.\033[0m")
                                 else:
                                     if value not in existing_values:
                                         existing_values.append(value)
+                                        print(f"\033[1;32;40mAdded value '{value}' to existing values.\033[0m")
+                        self.attribute_definitions[attr_type] = existing_values
                     else:
                         self.attribute_definitions[attr_type] = values
+                        print(f"\033[1;32;40mInitialized attribute definitions for '{attr_type}'.\033[0m")
                 else:
-                    print(f"Warning: Attribute '{attr_type}' is not allowed and will be ignored.")
+                    print(f"\033[1;31;40mWarning: Attribute '{attr_type}' is not allowed and will be ignored.\033[0m")
 
     def add_policy(self, policy_rule):
         # Calculate and store fixed times for symbolic expressions
@@ -114,6 +122,9 @@ class PolicySystem:
                     # Hierarchical structure, convert to flat list and check subsumption
                     print("\033[94mDebug: Processing root of hierarchy\033[0m")
                     values_list = root
+                    print("\033[1;34;40mprinting attribute definition\033[0m")
+                    root.print_tree()
+                    print("Rule value ", rule_value)
                     rule_tree = self.build_tree_from_values(root, rule_value)
 
                     if not rule_tree:

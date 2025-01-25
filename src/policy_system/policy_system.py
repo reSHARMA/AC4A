@@ -5,6 +5,13 @@ class PolicySystem:
     def __init__(self):
         self.policy_rules = []
         self.attribute_definitions = {}
+        self.status = True
+
+    def disable(self):
+        self.status = False
+
+    def enable(self):
+        self.status = True
 
     def register_api(self, api_class):
         # Pass the current instance of policy_system to the CalendarAPI constructor
@@ -48,6 +55,9 @@ class PolicySystem:
         self.policy_rules.append(policy_rule)
 
     def is_action_allowed(self, attributes):
+        if not self.status:
+            return True
+
         for rule in self.policy_rules:
             print("\033[1;34;40mChecking rule:\033[0m", rule)
             if self.check_subsumption(rule, attributes):

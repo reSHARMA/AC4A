@@ -1,6 +1,33 @@
 import os
 from openai import OpenAI
 
+def call_openai_api(system: str, prompt: str) -> str:
+    """
+    Calls the OpenAI API with the given prompt and returns the response.
+
+    Args:
+        prompt (str): The prompt to send to the OpenAI API.
+
+    Returns:
+        str: The response from the OpenAI API.
+    """
+    try:
+        openai_api_key = os.getenv('OPENAI_API_KEY')
+        client = OpenAI(api_key=openai_api_key)
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+        completion = client.chat.completions.create(
+            messages=messages,
+            model="gpt-4o",
+            temperature=1,
+        )
+        return completion.choices[0].message.content
+    except Exception as e:
+        print("An error occurred while calling the OpenAI API:", e)
+        return ""
+
 def generate_dummy_data(api_endpoint: str, **kwargs) -> dict:
     """
     Generates dummy data for a given API endpoint using OpenAI gpt-4-mini.
@@ -21,18 +48,8 @@ def generate_dummy_data(api_endpoint: str, **kwargs) -> dict:
     Try to generate affirmative data, example, if the data request is for checking availability, return data representing availability.
 """
 
-    # Call the OpenAI API to generate the dummy data
-    try:
-        openai_api_key = os.getenv('OPENAI_API_KEY')
-        client = OpenAI(api_key=openai_api_key)
-        completion = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            model="gpt-4o",
-            temperature=1,
-        )
-        dummy_data = completion.choices[0].message.content
-    except:
-        print("An error occurred while generating dummy data:", e)
-        
-        # Use json.loads to safely parse the JSON string
+    # Use the separate function to call the OpenAI API
+    dummy_data = call_openai_api("", prompt)
+    
+    # Use json.loads to safely parse the JSON string
     return dummy_data

@@ -4,10 +4,13 @@ from autogen_agentchat.teams import SelectorGroupChat
 from autogen_agentchat.ui import Console
 from autogen_agentchat.conditions import TextMentionTermination
 from autogen_agentchat.messages import AgentEvent, ChatMessage
+from autogen_core import CancellationToken
+
 
 from app.calendar import CalendarAPI
 from app.expedia import ExpediaAPI
 from src.policy_system.policy_system import PolicySystem
+from src.utils.dummy_data import call_openai_api
 from src.prompts import *
 
 import os, asyncio, json, re, pprint
@@ -18,6 +21,10 @@ import streamlit as st
 
 # Conditional import for Streamlit
 USE_STREAMLIT = True
+DEMO = False
+
+if not DEMO:
+    USE_STREAMLIT = False
 
 policy_system = PolicySystem()
 user_input = ""
@@ -73,8 +80,10 @@ async def main() -> None:
         
         First output the name of the application and then the description in the format, application: description.
 
-        If the task is completed or if you are not able to complete the task return terminate.
-        Always give reason for termination.
+        If the task is completed return terminate.
+        If there is a permission error return perm_err
+        for any other reason of failure return err
+        Always give reason for termination, perm_err or err.
         You work fully autonomously, take best decision without disturbing the user with confirmation or clarification. 
     """,
         model_client = model_client
@@ -220,9 +229,9 @@ async def main() -> None:
         model_client=model_client
     )
 
-    termination = TextMentionTermination("terminate")
+    termination = TextMentionTermination("terminate") or TextMentionTermination("perm_err") or TextMentionTermination("err")
 
-    def selector_func(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
+    def selector_demo(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
         print("+++++>", messages)
         if USE_STREAMLIT:
             if len(messages) == 0:
@@ -300,18 +309,95 @@ async def main() -> None:
         print(f"Debug: Returning agent: {agent}")
         return agent
 
-    groupchat = SelectorGroupChat([user, permission, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_func)
 
-    task = "Schedule a meeting for next Monday 8am with MSR folks. Today's date is 15th Jan 2025"
-    task = "Use Expedia to compare travel itineraries for a cruise to Alaska around mid-July, considering existing constraints on my calendar."
+    def selector_exp(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
+        print("+++++>", messages)
+        agent = ""
 
-    task += "Today's date is 15th Jan 2025"
+        if len(messages) == 0:
+            print("Debug: No messages, waiting for user input.")
+            agent = "User"
+        
+        if len(messages) == 1: 
+            print("Debug: Only one message, returning 'Planner'.")
+            agent = "Planner"
+        
+        if len(messages) > 0 and messages[-1].source == "Planner":
+            next_agent = messages[-1].content.split(":")[0]
+            print(f"Debug: Last message from 'Planner', next agent determined as: {next_agent}")
+            agent =  next_agent
 
-    stream = groupchat.run_stream()
-    if USE_STREAMLIT:
-        async for _ in stream:
-            pass
+            if agent == "terminate":
+                agent = "Planner"
+        
+        if agent == "":
+            print("Debug: Default case, returning 'Planner'.")
+            agent = "Planner"
+
+        print(f"Debug: Returning agent: {agent}")
+        return agent
+
+    async def experiment():
+        policy_system.disable()
+        task = "Search a cruise from Seattle for July 2026 and book the cheapest option for two people. Add it into my calendar."
+        # RQ1 how good are the auto generated policies 
+        # task completed / total task * 100 
+        def get_task(prompt : str) -> str:
+            return task + " Today's date is 25th Jan 2025 PST."
+
+        user = UserProxyAgent("User", input_func=get_task) 
+        run_task = SelectorGroupChat([user, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
+
+        stream_log = []
+        stream = run_task.run_stream()
+        async for log_entry in stream:
+            stream_log.append(log_entry)
+
+        await run_task.reset()
+
+        policy_system.enable()
+        policies = call_openai_api(POLICY_GENERATOR_WILDCARD, task)
+        status = append_policy(policies)
+
+        if "err" in status:
+            print("RQ1: Policy error") 
+            return 
+        
+        run_task = SelectorGroupChat([user, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
+        stream = run_task.run_stream()
+        async for log_entry in stream:
+            stream_log.append(log_entry)
+
+        await run_task.reset()
+
+        augment_task = call_openai_api("Given a input task, change the task to a task with similar complexity but make sure to add any new information which is required for this new task. Always change the data from the original task. Only output the changed task and nothing else.", task)
+        print(f"\033[94m{augment_task}\033[0m")  # Prints in blue color
+
+        def get_augmented_task(prompt: str) -> str:
+            return augment_task  + " Today's date is 25th Jan 2025 PST."
+
+        user = UserProxyAgent("User", input_func=get_augmented_task)
+
+        run_task = SelectorGroupChat([user, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
+        stream = run_task.run_stream()
+        async for log_entry in stream:
+            stream_log.append(log_entry)
+
+        print(stream_log)
+
+    async def demo():
+        groupchat = SelectorGroupChat([user, permission, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_demo)
+        stream = groupchat.run_stream()
+        if USE_STREAMLIT:
+            async for _ in stream:
+                pass
+        else:
+            await Console(stream)
+
+
+    if DEMO:
+        await demo()
     else:
-        await Console(stream)
+        await experiment()
 
 asyncio.run(main())

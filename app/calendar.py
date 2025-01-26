@@ -28,7 +28,6 @@ class CalendarAPIAnnotation(APIAnnotationBase):
 
     def get_hierarchy(self, start_time, duration, use_wildcard):
         end_time = start_time + duration
-        print("\033[1;36;40mDebug: Calculated end_time:\033[0m", end_time)
         
         time_hierarchy = [
             (365, 'Year', start_time.year),

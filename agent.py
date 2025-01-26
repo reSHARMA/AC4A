@@ -17,6 +17,7 @@ import os, asyncio, json, re, pprint
 from typing import Sequence
 from datetime import datetime, timedelta
 
+from config import debug_print
 import streamlit as st
 
 # Conditional import for Streamlit
@@ -80,10 +81,10 @@ async def main() -> None:
         
         First output the name of the application and then the description in the format, application: description.
 
-        If the task is completed return terminate.
-        If there is a permission error return perm_err
-        for any other reason of failure return err
-        Always give reason for termination, perm_err or err.
+        If the task is already completed return terminate.
+        If there is a permission error while doing the task return perm_err
+        for any other reason of failure return error
+        Always give reason for termination, perm_err or error.
         You work fully autonomously, take best decision without disturbing the user with confirmation or clarification. 
     """,
         model_client = model_client
@@ -93,7 +94,7 @@ async def main() -> None:
     expedia_api = ExpediaAPI(policy_system)
 
     def append_policy(code: str) -> str:
-        print(code)
+        debug_print(code)
         import re
         def extract_code_blocks(code: str) -> list:
             pattern = r"```python(.*?)```"
@@ -106,7 +107,7 @@ async def main() -> None:
             snippets = [code]
 
         num_policies = sum(1 for snp in snippets if "policy_system" in snp)
-        print("Number of policies: ", num_policies)
+        debug_print("Number of policies: ", num_policies)
         error = False
         for snp in snippets:
             print(f"Policy: {snp}")
@@ -115,7 +116,7 @@ async def main() -> None:
             try:
                 eval(snp, {"policy_system": policy_system})
             except Exception as e:
-                print(f"Error: {e}")
+                debug_print(f"Error: {e}")
                 error = True
         return "policy_err" if error else "policies deployed!"
             
@@ -131,7 +132,7 @@ async def main() -> None:
                 self.send_message(message)
                 self.message_sent = True
             else:
-                print("Debug: Message already sent, skipping.")
+                debug_print("Debug: Message already sent, skipping.")
 
         def create_policy_message(self, request):
             # Logic to create the policy message based on the request
@@ -139,7 +140,7 @@ async def main() -> None:
 
         def send_message(self, message):
             # Logic to send the message
-            print(f"Sending message: {message}")
+            debug_print(f"Sending message: {message}")
 
     permission = PermissionAgent(
         name="Permission",
@@ -149,17 +150,17 @@ async def main() -> None:
     )
 
     async def calendar_reserve(start_time: datetime, duration: timedelta, description: str) -> str:
-        print("\033[1;34;40mCalling CalendarAPI reserve\033[0m")
+        debug_print("\033[1;34;40mCalling CalendarAPI reserve\033[0m")
         result = calendar_api.reserve(start_time=start_time, duration=duration, description=description)
         return result
 
     async def calendar_read(start_time: datetime, duration: timedelta) -> str:
-        print("\033[1;34;40mCalling CalendarAPI read\033[0m")
+        debug_print("\033[1;34;40mCalling CalendarAPI read\033[0m")
         result = calendar_api.read(start_time=start_time, duration=duration)
         return result
 
     async def calendar_check_availability(start_time: datetime, duration: timedelta) -> str:
-        print("\033[1;34;40mCalling CalendarAPI check_available\033[0m")
+        debug_print("\033[1;34;40mCalling CalendarAPI check_available\033[0m")
         result = calendar_api.check_available(start_time=start_time, duration=duration)
         return result
 
@@ -174,47 +175,47 @@ async def main() -> None:
     )
 
     async def expedia_search_flights(from_location: str, to_location: str, departure_date: datetime, return_date: datetime = None, airline: str = None, round_trip: bool = True) -> str:
-        print("\033[1;34;40mCalling expedia_search_flights\033[0m")
+        debug_print("\033[1;34;40mCalling expedia_search_flights\033[0m")
         result = expedia_api.search_flights(from_location=from_location, to_location=to_location, departure_date=departure_date, return_date=return_date, airline=airline, round_trip=round_trip)
         return result
 
     async def expedia_book_hotel(hotel_name: str, location: str, check_in_date: datetime, check_out_date: datetime, room_type: str = None) -> str:
-        print("\033[1;34;40mCalling expedia_book_hotel\033[0m")
+        debug_print("\033[1;34;40mCalling expedia_book_hotel\033[0m")
         result = expedia_api.book_hotel(hotel_name=hotel_name, location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
         return result
 
     async def expedia_rent_car(car_type: str, pickup_location: str, pickup_date: datetime, return_date: datetime, rental_company: str = None) -> str:
-        print("\033[1;34;40mCalling expedia_rent_car\033[0m")
+        debug_print("\033[1;34;40mCalling expedia_rent_car\033[0m")
         result = expedia_api.rent_car(car_type=car_type, pickup_location=pickup_location, pickup_date=pickup_date, return_date=return_date, rental_company=rental_company)
         return result
 
     async def expedia_book_experience(experience_name: str, location: str, date: datetime, participants: int = 1) -> str:
-        print("\033[1;34;40mCalling expedia_book_experience\033[0m")
+        debug_print("\033[1;34;40mCalling expedia_book_experience\033[0m")
         result = expedia_api.book_experience(experience_name=experience_name, location=location, date=date, participants=participants)
         return result
 
     async def expedia_book_cruise(cruise_name: str, departure_port: str, departure_date: datetime, return_date: datetime, cabin_type: str = None) -> str:
-        print("\033[1;34;40mCalling expedia_book_cruise\033[0m")
+        debug_print("\033[1;34;40mCalling expedia_book_cruise\033[0m")
         result = expedia_api.book_cruise(cruise_name=cruise_name, departure_port=departure_port, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
         return result
 
     async def expedia_search_hotels(location: str, check_in_date: datetime, check_out_date: datetime, room_type: str = None) -> str:
-        print("\033[1;34;40mCalling expedia_search_hotels\033[0m")
+        debug_print("\033[1;34;40mCalling expedia_search_hotels\033[0m")
         result = expedia_api.search_hotels(location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
         return result
 
     async def expedia_search_rental_cars(pickup_location: str, pickup_date: datetime, return_date: datetime, car_type: str = None, rental_company: str = None) -> str:
-        print("\033[1;34;40mCalling expedia_search_rental_cars\033[0m")
+        debug_print("\033[1;34;40mCalling expedia_search_rental_cars\033[0m")
         result = expedia_api.search_rental_cars(pickup_location=pickup_location, pickup_date=pickup_date, return_date=return_date, car_type=car_type, rental_company=rental_company)
         return result
 
     async def expedia_search_experience(experience_name: str, location: str, date: datetime, participants: int = 1) -> str:
-        print("\033[1;34;40mCalling expedia_search_experience\033[0m")
+        debug_print("\033[1;34;40mCalling expedia_search_experience\033[0m")
         result = expedia_api.search_experience(experience_name=experience_name, location=location, date=date, participants=participants)
         return result
 
     async def expedia_search_cruise(departure_port: str, departure_date: datetime, return_date: datetime, cabin_type: str = None) -> str:
-        print("\033[1;34;40mCalling expedia_search_cruise\033[0m")
+        debug_print("\033[1;34;40mCalling expedia_search_cruise\033[0m")
         result = expedia_api.search_cruise(departure_port=departure_port, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
         return result
 
@@ -229,20 +230,20 @@ async def main() -> None:
         model_client=model_client
     )
 
-    termination = TextMentionTermination("terminate") or TextMentionTermination("perm_err") or TextMentionTermination("err")
+    termination = TextMentionTermination("terminate") | TextMentionTermination("perm_err") | TextMentionTermination("error")
 
     def selector_demo(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
-        print("+++++>", messages)
+        debug_print("+++++>", messages)
         if USE_STREAMLIT:
             if len(messages) == 0:
                 messages = st.session_state['messages'] 
 
-            print(f"Debug: Number of messages received: {len(messages)}")
-            print("****", messages)
+            debug_print(f"Debug: Number of messages received: {len(messages)}")
+            debug_print("****", messages)
 
             if len(messages) > 0:
                 name = messages[-1].source
-                print("*******", name)
+                debug_print("*******", name)
                 avatar = "🤖"
                 if name == "User":
                     avatar = "🧑‍💼"
@@ -259,28 +260,28 @@ async def main() -> None:
         agent = ""
 
         if len(messages) == 0:
-            print("Debug: No messages, waiting for user input.")
+            debug_print("Debug: No messages, waiting for user input.")
 
             if USE_STREAMLIT:
                 user_input = st.chat_input("Say something")
-                print(f"Debug: User input received: {user_input}")
+                debug_print(f"Debug: User input received: {user_input}")
                 web_input_func(user_input)
                 st.session_state["policies"] = []
 
             agent = "User"
         
         if len(messages) == 1: 
-            print("Debug: Only one message, returning 'Permission'.")
+            debug_print("Debug: Only one message, returning 'Permission'.")
             agent = "Permission"
         
         if len(messages) > 0 and "policy_err" in messages[-1].content:
-            print("Debug: 'policy_err' found in the last message, returning 'Permission'.")
+            debug_print("Debug: 'policy_err' found in the last message, returning 'Permission'.")
 
             messages = [message for message in messages if message.source != "Permission"]
             agent = "Permission"
         
         if len(messages) > 0 and messages[-1].source == "Permission":
-            print("Debug: Last message from 'Permission', filtering messages and returning 'Planner'.")
+            debug_print("Debug: Last message from 'Permission', filtering messages and returning 'Planner'.")
 
             append_policy(messages[-1].content)
             
@@ -291,54 +292,59 @@ async def main() -> None:
                         st.code(pprint.pformat(policy, width=40), language="python")
 
             messages = [message for message in messages if message.source != "Permission"]
-            print("=====>", messages)
+            debug_print("=====>", messages)
             agent = "Planner"
         
         if len(messages) > 0 and messages[-1].source == "Planner":
             next_agent = messages[-1].content.split(":")[0]
-            print(f"Debug: Last message from 'Planner', next agent determined as: {next_agent}")
+            debug_print(f"Debug: Last message from 'Planner', next agent determined as: {next_agent}")
             agent =  next_agent
 
             if agent == "terminate":
                 agent = "Planner"
         
         if agent == "":
-            print("Debug: Default case, returning 'Planner'.")
+            debug_print("Debug: Default case, returning 'Planner'.")
             agent = "Planner"
 
-        print(f"Debug: Returning agent: {agent}")
+        debug_print(f"Debug: Returning agent: {agent}")
         return agent
 
 
     def selector_exp(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
-        print("+++++>", messages)
+        debug_print("+++++>", messages)
         agent = ""
 
         if len(messages) == 0:
-            print("Debug: No messages, waiting for user input.")
+            debug_print("Debug: No messages, waiting for user input.")
             agent = "User"
         
         if len(messages) == 1: 
-            print("Debug: Only one message, returning 'Planner'.")
+            print(f"\033[92mUser: {messages[-1].content}\033[0m")
+            debug_print("Debug: Only one message, returning 'Planner'.")
             agent = "Planner"
         
         if len(messages) > 0 and messages[-1].source == "Planner":
+            print(f"\033[93mPlanner: {messages[-1].content}\033[0m")
             next_agent = messages[-1].content.split(":")[0]
-            print(f"Debug: Last message from 'Planner', next agent determined as: {next_agent}")
+            debug_print(f"Debug: Last message from 'Planner', next agent determined as: {next_agent}")
             agent =  next_agent
 
             if agent == "terminate":
                 agent = "Planner"
         
         if agent == "":
-            print("Debug: Default case, returning 'Planner'.")
+            debug_print("Debug: Default case, returning 'Planner'.")
             agent = "Planner"
 
-        print(f"Debug: Returning agent: {agent}")
+        debug_print(f"Debug: Returning agent: {agent}")
+
+
         return agent
 
     async def experiment():
         policy_system.disable()
+        print("Running task to check if it works natively")
         task = "Search a cruise from Seattle for July 2026 and book the cheapest option for two people. Add it into my calendar."
         # RQ1 how good are the auto generated policies 
         # task completed / total task * 100 
@@ -353,14 +359,17 @@ async def main() -> None:
         async for log_entry in stream:
             stream_log.append(log_entry)
 
+        print(stream_log[-1].stop_reason)
+
         await run_task.reset()
 
         policy_system.enable()
+        print("Policies deployed to check if the generated policies are good")
         policies = call_openai_api(POLICY_GENERATOR_WILDCARD, task)
         status = append_policy(policies)
 
         if "err" in status:
-            print("RQ1: Policy error") 
+            debug_print("RQ1: Policy error") 
             return 
         
         run_task = SelectorGroupChat([user, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
@@ -368,10 +377,13 @@ async def main() -> None:
         async for log_entry in stream:
             stream_log.append(log_entry)
 
+        print(stream_log[-1].stop_reason)
+
         await run_task.reset()
 
+        print("Augumenting tasks to check if the policies can catch the changes")
         augment_task = call_openai_api("Given a input task, change the task to a task with similar complexity but make sure to add any new information which is required for this new task. Always change the data from the original task. Only output the changed task and nothing else.", task)
-        print(f"\033[94m{augment_task}\033[0m")  # Prints in blue color
+        debug_print(f"\033[94m{augment_task}\033[0m")  # Prints in blue color
 
         def get_augmented_task(prompt: str) -> str:
             return augment_task  + " Today's date is 25th Jan 2025 PST."
@@ -383,7 +395,9 @@ async def main() -> None:
         async for log_entry in stream:
             stream_log.append(log_entry)
 
-        print(stream_log)
+        print(stream_log[-1].stop_reason)
+
+        debug_print(stream_log)
 
     async def demo():
         groupchat = SelectorGroupChat([user, permission, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_demo)

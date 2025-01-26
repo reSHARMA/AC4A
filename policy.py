@@ -3,6 +3,9 @@ from app.calendar import CalendarAPI
 from src.utils.time_utils import TimeUtils
 from src.policy_system.policy_system import PolicySystem
 import time
+from config import debug_print
+
+
 
 def RandomTest1():
     policy_system = PolicySystem()
@@ -25,21 +28,21 @@ def RandomTest1():
         start_time = datetime.now() + timedelta(minutes=3)  # Within the next 5 minutes
         duration = timedelta(minutes=1)
         calendar_api.read(start_time=start_time, duration=duration)
-        print("Read operation allowed.")
+        debug_print("Read operation allowed.")
     except PermissionError as e:
-        print(e)
+        debug_print(e)
 
     # Test an invalid read operation (should not be allowed if after 5 minutes)
     try:
         start_time = datetime.now() + timedelta(minutes=10)  # After the next 5 minutes
         duration = timedelta(minutes=1)
         calendar_api.read(start_time=start_time, duration=duration)
-        print("Read operation allowed.")
+        debug_print("Read operation allowed.")
     except PermissionError as e:
-        print(e)
+        debug_print(e)
 
     # Test case for policy expiry in 10 seconds
-    print("\nTesting policy expiry in 5 seconds:")
+    debug_print("\nTesting policy expiry in 5 seconds:")
     time.sleep(5)
 
     # Test a valid read operation (should be allowed immediately)
@@ -47,12 +50,12 @@ def RandomTest1():
         start_time = datetime.now() + timedelta(seconds=65)  # Within the next 10 seconds
         duration = timedelta(seconds=1)
         calendar_api.read(start_time=start_time, duration=duration)
-        print("Read operation allowed immediately.")
+        debug_print("Read operation allowed immediately.")
     except PermissionError as e:
-        print("Read operation not allowed immediately:", e)
+        debug_print("Read operation not allowed immediately:", e)
 
     # Wait for 10 seconds to let the policy expire
-    print("\nTesting policy expiry in 11 seconds:")
+    debug_print("\nTesting policy expiry in 11 seconds:")
     time.sleep(6)
 
     # Test an invalid read operation (should not be allowed after 10 seconds)
@@ -60,9 +63,9 @@ def RandomTest1():
         start_time = datetime.now() + timedelta(seconds=111)  # After the policy expiry
         duration = timedelta(seconds=1)
         calendar_api.read(start_time=start_time, duration=duration)
-        print("Read operation allowed after expiry.")
+        debug_print("Read operation allowed after expiry.")
     except PermissionError as e:
-        print("Read operation not allowed after expiry:", e)
+        debug_print("Read operation not allowed after expiry:", e)
 
 def SimplePolicyTest():
     policy_system = PolicySystem()
@@ -80,17 +83,17 @@ def SimplePolicyTest():
         start_time = datetime.now() + timedelta(minutes=15) # Within the next 5 minutes
         duration = timedelta(weeks=13)
         calendar_api.read(start_time=start_time, duration=duration)
-        print("\033[1;32;40mRead operation allowed.\033[0m")
+        debug_print("\033[1;32;40mRead operation allowed.\033[0m")
     except PermissionError as e:
-        print("\033[1;31;40m", e, "\033[0m")
+        debug_print("\033[1;31;40m", e, "\033[0m")
 
     try:
         start_time = datetime.now() + timedelta(minutes=15) # Within the next 5 minutes
         duration = timedelta(weeks=13)
         calendar_api.reserve(start_time=start_time, duration=duration)
-        print("\033[1;32;40mRead operation allowed.\033[0m")
+        debug_print("\033[1;32;40mRead operation allowed.\033[0m")
     except PermissionError as e:
-        print("\033[1;31;40m", e, "\033[0m")
+        debug_print("\033[1;31;40m", e, "\033[0m")
 
 def SimplePolicyStarTest():
     policy_system = PolicySystem()
@@ -108,17 +111,17 @@ def SimplePolicyStarTest():
         start_time = datetime.now() + timedelta(minutes=15) # Within the next 5 minutes
         duration = timedelta(weeks=13)
         calendar_api.read(start_time=start_time, duration=duration)
-        print("\033[1;32;40mRead operation allowed.\033[0m")
+        debug_print("\033[1;32;40mRead operation allowed.\033[0m")
     except PermissionError as e:
-        print("\033[1;31;40m", e, "\033[0m")
+        debug_print("\033[1;31;40m", e, "\033[0m")
 
     try:
         start_time = datetime.now() + timedelta(minutes=15) # Within the next 5 minutes
         duration = timedelta(weeks=13)
         calendar_api.reserve(start_time=start_time, duration=duration)
-        print("\033[1;32;40mRead operation allowed.\033[0m")
+        debug_print("\033[1;32;40mRead operation allowed.\033[0m")
     except PermissionError as e:
-        print("\033[1;31;40m", e, "\033[0m")
+        debug_print("\033[1;31;40m", e, "\033[0m")
 
 def PolicyValueTest1():
     policy_system = PolicySystem()
@@ -136,17 +139,17 @@ def PolicyValueTest1():
         start_time = datetime.now() + timedelta(minutes=15) # Within the next 5 minutes
         duration = timedelta(weeks=13)
         calendar_api.read(start_time=start_time, duration=duration)
-        print("\033[1;32;40mRead operation allowed.\033[0m")
+        debug_print("\033[1;32;40mRead operation allowed.\033[0m")
     except PermissionError as e:
-        print("\033[1;31;40m", e, "\033[0m")
+        debug_print("\033[1;31;40m", e, "\033[0m")
 
     try:
         start_time = datetime.now() + timedelta(minutes=15) # Within the next 5 minutes
         duration = timedelta(weeks=13)
         calendar_api.reserve(start_time=start_time, duration=duration)
-        print("\033[1;32;40mRead operation allowed.\033[0m")
+        debug_print("\033[1;32;40mRead operation allowed.\033[0m")
     except PermissionError as e:
-        print("\033[1;31;40m", e, "\033[0m")
+        debug_print("\033[1;31;40m", e, "\033[0m")
 
 def main():
     RandomTest1()

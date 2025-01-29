@@ -1,5 +1,6 @@
 from src.utils.time_utils import TimeUtils
 from src.policy_system.policy_system import PolicySystem
+from config import WILDCARD
 
 class APIAnnotationBase:
     def __init__(self, namespace, attributes):
@@ -11,7 +12,7 @@ class APIAnnotationBase:
 
     @staticmethod
     def annotate(endpoint_func):
-        wildcard = True
+        wildcard = WILDCARD
         def wrapper(self, *args, **kwargs):
             attributes = self.annotation.generate_attributes(kwargs, wrapper.original_name, wildcard)
             intercepted_func = policy_interceptor(endpoint_func)

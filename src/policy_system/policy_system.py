@@ -8,6 +8,9 @@ class PolicySystem:
         self.attribute_definitions = {}
         self.status = True
 
+    def reset(self):
+        self.policy_rules.clear()
+
     def disable(self):
         self.status = False
 

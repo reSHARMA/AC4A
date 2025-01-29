@@ -106,7 +106,8 @@ async def main() -> None:
         else:
             snippets = [code]
 
-        num_policies = sum(1 for snp in snippets if "policy_system" in snp)
+        num_policies = sum(snp.count("policy_system") for snp in snippets)
+
         debug_print("Number of policies: ", num_policies)
         error = False
         for snp in snippets:
@@ -114,7 +115,7 @@ async def main() -> None:
             if USE_STREAMLIT:
                 st.session_state["policies"].append(snp)
             try:
-                eval(snp, {"policy_system": policy_system})
+                exec(snp, {"policy_system": policy_system})
             except Exception as e:
                 debug_print(f"Error: {e}")
                 error = True
@@ -382,7 +383,7 @@ async def main() -> None:
         await run_task.reset()
 
         print("Augumenting tasks to check if the policies can catch the changes")
-        augment_task = call_openai_api("Given a input task, change the task to a task with similar complexity but make sure to add any new information which is required for this new task. Always change the data from the original task. Only output the changed task and nothing else.", task)
+        augment_task = call_openai_api("Given a input task, change it such that the task remains same but the data is changed. Only output the changed task and nothing else.", task)
         debug_print(f"\033[94m{augment_task}\033[0m")  # Prints in blue color
 
         def get_augmented_task(prompt: str) -> str:
@@ -397,7 +398,36 @@ async def main() -> None:
 
         print(stream_log[-1].stop_reason)
 
-        debug_print(stream_log)
+        await run_task.reset()
+
+        print("Generating policies with values")
+        policy_system.reset()
+        policies = call_openai_api(POLICY_GENERATOR_VALUE, task)
+        status = append_policy(policies)
+        
+        user = UserProxyAgent("User", input_func=get_task) 
+        
+        run_task = SelectorGroupChat([user, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
+        stream = run_task.run_stream()
+        async for log_entry in stream:
+            stream_log.append(log_entry)
+
+        print(stream_log[-1].stop_reason)
+
+        await run_task.reset()
+
+        print("Augumenting tasks to check if the policies can catch the changes")
+
+        user = UserProxyAgent("User", input_func=get_augmented_task)
+
+        run_task = SelectorGroupChat([user, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
+        stream = run_task.run_stream()
+        async for log_entry in stream:
+            stream_log.append(log_entry)
+
+        print(stream_log[-1].stop_reason)
+       
+        # debug_print(stream_log)
 
     async def demo():
         groupchat = SelectorGroupChat([user, permission, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_demo)

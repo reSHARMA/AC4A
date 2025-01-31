@@ -1,7 +1,7 @@
 import re
 
 DEBUG = False
-WILDCARD = False
+WILDCARD = True
 
 def debug_print(*args, **kwargs):
     if DEBUG:

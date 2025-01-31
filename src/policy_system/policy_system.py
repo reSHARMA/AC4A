@@ -1,12 +1,15 @@
 from datetime import datetime
 from src.utils.attribute_tree import AttributeTree
 from config import debug_print
+from src.utils.dummy_data import call_openai_api
+from src.prompts import POLICY_TEXT
 
 class PolicySystem:
     def __init__(self):
         self.policy_rules = []
         self.attribute_definitions = {}
         self.status = True
+        self.prompt = False
 
     def reset(self):
         self.policy_rules.clear()
@@ -16,6 +19,28 @@ class PolicySystem:
 
     def enable(self):
         self.status = True
+
+    def ask(self):
+        self.prompt = True
+
+    def quite(self):
+        self.prompt = False 
+
+    def text(self, policy=None, mode="decl"):
+        if policy is None:
+            policy_txt = ""
+            policy_text = mode + "\n"
+            for policy in self.policy_rules:
+                policy_text = policy_text + ', '.join(f"{key}: {value}" for key, value in policy.items()) + "\n"
+            response = call_openai_api(POLICY_TEXT, policy_text)
+            return response
+        else:
+            policy_text = f"""
+            {mode}
+            {', '.join(f"{key}: {value}" for key, value in policy.items())}
+            """
+            response = call_openai_api(POLICY_TEXT, policy_text)
+            return response
 
     def register_api(self, api_class):
         # Pass the current instance of policy_system to the CalendarAPI constructor
@@ -52,6 +77,11 @@ class PolicySystem:
                     debug_print(f"\033[1;31;40mWarning: Attribute '{attr_type}' is not allowed and will be ignored.\033[0m")
 
     def add_policy(self, policy_rule):
+        if self.prompt:
+            txt = self.text(policy=policy_rule, mode="prompt")
+            user_response = input(f"{txt} (yes/no): ").strip().lower()
+            if user_response != "yes":
+                return
         # Calculate and store fixed times for symbolic expressions
         for attr, value in policy_rule.items():
             if callable(value):

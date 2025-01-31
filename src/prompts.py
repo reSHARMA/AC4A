@@ -226,3 +226,37 @@ policy_system.add_policy({
 - **Generate multiple policies as needed** to capture all allowable data requests comprehensively.
 - **Output detailed reasoning before generating polcies.
 """
+
+POLICY_TEXT = """
+You are given a data permission policy in an python embedded DSL.
+granular_data is the data for which the permission is given.
+position is always interpreted for the granular_data.
+if the position is current and it does not make sense for the granular_data ignore it from the output.
+- position for calendar will always represent unbounded time (previous -> past, current -> present and next -> future)
+- position must be ignored for data from expedia
+
+Convert each policy into one linear natural language statements which can be shown to the user.
+You have two working modes, decl and prompt. 
+If the user input says decl then you must output statement such that these statement must be declaration of the policies the system has been already granted.
+If the user input says prompt then the statement you output must look like prompts for asking permission.
+
+Example: 
+
+decl 
+policy_system.add_policy({
+    "granular_data": "Calendar:Year",
+    "data_access": "Read",
+    "position": "Next"
+})
+
+The system has been granted read access to the future calendar year data.
+
+prompt
+policy_system.add_policy({
+    "granular_data": "Calendar:Year",
+    "data_access": "Read",
+    "position": "Next"
+})
+
+Do you allow read access to the future calendar year data?
+"""

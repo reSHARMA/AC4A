@@ -111,7 +111,7 @@ async def main() -> None:
         debug_print("Number of policies: ", num_policies)
         error = False
         for snp in snippets:
-            print(f"Policy: {snp}")
+            debug_print(f"Policy: {snp}")
             if USE_STREAMLIT:
                 st.session_state["policies"].append(snp)
             try:
@@ -328,6 +328,14 @@ async def main() -> None:
         if len(messages) > 0 and messages[-1].source == "Planner":
             print(f"\033[93mPlanner: {messages[-1].content}\033[0m")
             next_agent = messages[-1].content.split(":")[0]
+
+            granted = policy_system.text()
+            granted_txt = f"The system is already initialized with the following permissions:\n{granted}"
+            policies = call_openai_api(POLICY_GENERATOR_WILDCARD, messages[-1].content + "\n" + granted_txt)
+            status = append_policy(policies)
+            if "err" in status:
+                print("error in inferring data policies")
+
             debug_print(f"Debug: Last message from 'Planner', next agent determined as: {next_agent}")
             agent =  next_agent
 
@@ -343,6 +351,38 @@ async def main() -> None:
 
         return agent
 
+    async def msr():
+        task = "Search a cruise from Seattle for July 2026 and book the cheapest option for two people. Add it into my calendar."
+        print(f"\033[94mTask: {task}\033[0m")
+
+        def get_task(prompt : str) -> str:
+            return task + " Today's date is 25th Jan 2025 PST."
+
+        user = UserProxyAgent("User", input_func=get_task) 
+
+        policy_system.reset()
+        
+        policy_system.add_policy({
+            "granular_data": "Expedia:Destination",
+            "data_access": "Read",
+            "position": "Current"
+        })
+
+        granted = policy_system.text()
+        granted_txt = f"The system is already initialized with the following permissions:\n{granted}"
+        print(f"\033[95m{granted_txt}\033[0m")
+
+        policy_system.ask()
+
+        stream_log = []
+        run_task = SelectorGroupChat([user, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
+        stream = run_task.run_stream()
+        async for log_entry in stream:
+            stream_log.append(log_entry)
+
+        print(stream_log[-1].stop_reason)
+        
+        
     async def experiment():
         policy_system.disable()
         print("Running task to check if it works natively")
@@ -442,6 +482,8 @@ async def main() -> None:
     if DEMO:
         await demo()
     else:
-        await experiment()
+        # # paper eval
+        # await experiment()
+        await msr()
 
 asyncio.run(main())

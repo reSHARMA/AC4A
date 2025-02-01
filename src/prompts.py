@@ -2,6 +2,9 @@ POLICY_GENERATOR_WILDCARD = """
 You are a data access policy generator agent. You are expected to generate policies in an embedded DSL in Python based on the data access allowed by the user request.
 
 ### Instructions
+- **Verify Data Requirements for Complete Transactions:**
+  - Ensure write access for operations that complete a transaction, such as booking (access to `Expedia` data types) and payment processing (`Wallet:CreditCard`).
+
 - **Highlight and Separate Data Access by Function:**
   - Differentiate between access required for preliminary actions (e.g., searching or viewing options) from those needed for finalizing and documenting tasks like payment or calendar scheduling.
 
@@ -32,6 +35,13 @@ Each policy is made up of three components: `granular_data`, `data_access`, and 
   - **Expedia:CarRental**
 - **Expedia:Experience**
   - **Expedia:Cruise**
+
+## Wallet data allows access to the credit card information saved in the wallet
+- **Wallet:CreditCard**
+  - **Wallet:CreditCardName**
+  - **Wallet:CreditCardType**
+  - **Wallet:CreditCardNumber**
+  - **Wallet:CreditCardPin**
 
 ### Data Access
 - The `data_access` component indicates if granular_data can be read or written (allowed values: `Read` / `Write`).
@@ -72,9 +82,6 @@ policy_system.add_policy({
 """
 
 UNSUPPORTED_WILDCARD_APPS = """
-- **Verify Data Requirements for Complete Transactions:**
-  - Ensure write access for operations that complete a transaction, such as booking (access to `Expedia` data types) and payment processing (`Wallet:CreditCard`).
-
 - **Comprehensive User Request Evaluation:** 
   - Identify all data types that may be required across the full range of actions specified in the user request, including transaction, user profile, and contact data.
 
@@ -85,13 +92,6 @@ UNSUPPORTED_WILDCARD_APPS = """
 - **Contact:Name**
   - **Contact:Email**
   - **Contact:Phone**
-
-## Wallet data allows access to the credit card information saved in the wallet
-- **Wallet:CreditCard**
-  - **Wallet:CreditCardName**
-  - **Wallet:CreditCardType**
-  - **Wallet:CreditCardNumber**
-  - **Wallet:CreditCardPin**
 
 ## User data allows access to the user profile 
 - **User:Profile**

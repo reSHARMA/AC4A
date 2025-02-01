@@ -9,6 +9,8 @@ from autogen_core import CancellationToken
 
 from app.calendar import CalendarAPI
 from app.expedia import ExpediaAPI
+from app.wallet import WalletAPI
+
 from src.policy_system.policy_system import PolicySystem
 from src.utils.dummy_data import call_openai_api
 from src.prompts import *
@@ -41,6 +43,7 @@ async def main() -> None:
     # Register CalendarAPI with the policy system
     policy_system.register_api(CalendarAPI)
     policy_system.register_api(ExpediaAPI)
+    policy_system.register_api(WalletAPI)
 
     config = {
         "provider": "OpenAIChatCompletionClient",
@@ -81,9 +84,10 @@ async def main() -> None:
         system_message="""You have access to multiple different applications which you must invoke to complete the user reuqest. Output the name of the application from the application given to you which must be invoked next. You will see the history of applications invoked and their results. Along with the name of the application, send a description of the task that application needs to perform with all the necessary data you have without explicitly sending the exact user request. Only send the necessary information.
 
         List of the available application with description:
-        Calendar: A normal calendar app with API to reserve, check availability and read the calendar data.
-        Expedia: An application to search flights, book hotels, rent cars, and book experiences and cruises with a comprehensive travel API.
-        User: When you encounter a choice or need confirmation or clarification ask the user question.
+        Calendar: A calendar app with API to reserve, check availability and read the calendar data.
+        Expedia: A travel booking application with APIs for searching, booking and paying for flights, hotels, rental cars,  experiences like cruises.
+        Wallet: A wallet application with saved cards and with APIs for adding, removing, updating and getting credit card information for payment.
+        User: Admin or the user giving inputs. Must be used to resolve choices or get confirmation or clarification by asking the user question.
         
         First output the name of the application and then the description in the format, application: description.
 
@@ -98,6 +102,7 @@ async def main() -> None:
 
     calendar_api = CalendarAPI(policy_system)
     expedia_api = ExpediaAPI(policy_system)
+    wallet_api = WalletAPI(policy_system)
 
     def append_policy(code: str) -> str:
         debug_print(code)
@@ -181,6 +186,37 @@ async def main() -> None:
         model_client=model_client
     )
 
+    async def wallet_add_credit_card(card_name: str, card_type: str, card_number: str, card_pin: str) -> str:
+        print(f"\033[1;34;40mCalling WalletAPI add_credit_card with card_name={card_name}, card_type={card_type}, card_number={card_number}, card_pin={card_pin}\033[0m")
+        result = wallet_api.add_credit_card(card_name=card_name, card_type=card_type, card_number=card_number, card_pin=card_pin)
+        return result
+
+    async def wallet_remove_credit_card(card_name: str) -> str:
+        print(f"\033[1;34;40mCalling WalletAPI remove_credit_card with card_name={card_name}\033[0m")
+        result = wallet_api.remove_credit_card(card_name=card_name)
+        return result
+
+    async def wallet_update_credit_card(card_name: str, card_type: str = None, card_number: str = None, card_pin: str = None) -> str:
+        print(f"\033[1;34;40mCalling WalletAPI update_credit_card with card_name={card_name}, card_type={card_type}, card_number={card_number}, card_pin={card_pin}\033[0m")
+        result = wallet_api.update_credit_card(card_name=card_name, card_type=card_type, card_number=card_number, card_pin=card_pin)
+        return result
+
+    async def wallet_get_credit_card_info(card_name: str) -> str:
+        print(f"\033[1;34;40mCalling WalletAPI get_credit_card_info with card_name={card_name}\033[0m")
+        result = wallet_api.get_credit_card_info(card_name=card_name)
+        return result
+
+    wallet = AssistantAgent(
+        name="Wallet",
+        system_message="""
+        You are a wallet agent with access to wallet APIs as tools, you will be given a request to fulfill.
+        Call the tools available to you to fulfill the request. Assume offset-naive datetime for simplicity.
+        Do not assume API call arguments, if you do not have enough information, return a message asking for the required information like user: Please provide the card details.
+    """,
+        tools=[wallet_add_credit_card, wallet_remove_credit_card, wallet_update_credit_card, wallet_get_credit_card_info],
+        model_client=model_client
+    )
+
     async def expedia_search_flights(from_location: str, to_location: str, departure_date: datetime, return_date: datetime = None, airline: str = None, round_trip: bool = True) -> str:
         print(f"\033[1;34;40mCalling expedia_search_flights with from_location={from_location}, to_location={to_location}, departure_date={departure_date}, return_date={return_date}, airline={airline}, round_trip={round_trip}\033[0m")
         result = expedia_api.search_flights(from_location=from_location, to_location=to_location, departure_date=departure_date, return_date=return_date, airline=airline, round_trip=round_trip)
@@ -244,6 +280,7 @@ async def main() -> None:
     )
 
     termination = TextMentionTermination("terminate") | TextMentionTermination("perm_err") | TextMentionTermination("error")
+    agents = [user, planner, calendar, wallet, expedia]
 
     def selector_demo(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
         if (len(messages) > 0):
@@ -399,7 +436,7 @@ async def main() -> None:
         policy_system.ask()
 
         stream_log = []
-        run_task = SelectorGroupChat([user, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
+        run_task = SelectorGroupChat(agents, max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
         stream = run_task.run_stream()
         async for log_entry in stream:
             stream_log.append(log_entry)
@@ -417,7 +454,7 @@ async def main() -> None:
             return task + " Today's date is 25th Jan 2025 PST."
 
         user = UserProxyAgent("User", input_func=get_task) 
-        run_task = SelectorGroupChat([user, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
+        run_task = SelectorGroupChat(agents, max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
 
         stream_log = []
         stream = run_task.run_stream()
@@ -437,7 +474,7 @@ async def main() -> None:
             debug_print("RQ1: Policy error") 
             return 
         
-        run_task = SelectorGroupChat([user, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
+        run_task = SelectorGroupChat(agents, max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
         stream = run_task.run_stream()
         async for log_entry in stream:
             stream_log.append(log_entry)
@@ -455,7 +492,7 @@ async def main() -> None:
 
         user = UserProxyAgent("User", input_func=get_augmented_task)
 
-        run_task = SelectorGroupChat([user, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
+        run_task = SelectorGroupChat(agents, max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
         stream = run_task.run_stream()
         async for log_entry in stream:
             stream_log.append(log_entry)
@@ -471,7 +508,7 @@ async def main() -> None:
         
         user = UserProxyAgent("User", input_func=get_task) 
         
-        run_task = SelectorGroupChat([user, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
+        run_task = SelectorGroupChat(agents, max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
         stream = run_task.run_stream()
         async for log_entry in stream:
             stream_log.append(log_entry)
@@ -484,7 +521,7 @@ async def main() -> None:
 
         user = UserProxyAgent("User", input_func=get_augmented_task)
 
-        run_task = SelectorGroupChat([user, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
+        run_task = SelectorGroupChat(agents, max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
         stream = run_task.run_stream()
         async for log_entry in stream:
             stream_log.append(log_entry)
@@ -494,7 +531,7 @@ async def main() -> None:
         # debug_print(stream_log)
 
     async def demo():
-        groupchat = SelectorGroupChat([user, permission, planner, calendar, expedia], max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_demo)
+        groupchat = SelectorGroupChat(agents, max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_demo)
         stream = groupchat.run_stream()
         if USE_STREAMLIT:
             async for _ in stream:

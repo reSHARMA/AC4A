@@ -93,11 +93,11 @@ class PolicySystem:
             return True
 
         for rule in self.policy_rules:
-            debug_print("\033[1;34;40mChecking rule:\033[0m", rule)
+            print("\033[1;36;40mChecking policy:\033[0m", rule)  # Changed to cyan
             if self.check_subsumption(rule, attributes):
-                debug_print("\033[1;32;40mAction is allowed based on rule:\033[0m", rule)
+                print("\033[1;32;40mAction is allowed based on policy: \033[0m", rule)  # Kept as green
                 return True
-        debug_print("\033[1;31;40mAction is not allowed based on current rules.\033[0m")
+        print("\033[1;35;40mAction is not allowed based on current policies.\033[0m")  # Changed to magenta
         return False
 
     def check_subsumption(self, rule, attributes):

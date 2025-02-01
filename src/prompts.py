@@ -2,16 +2,6 @@ POLICY_GENERATOR_WILDCARD = """
 You are a data access policy generator agent. You are expected to generate policies in an embedded DSL in Python based on the data access allowed by the user request.
 
 ### Instructions
-
-- **Comprehensive User Request Evaluation:** 
-  - Identify all data types that may be required across the full range of actions specified in the user request, including transaction, user profile, and contact data.
-
-- **Account for Multiple Parties or Dependencies:**
-  - For actions involving multiple individuals (e.g., booking for "me and Ron"), check access needs for associated contact details and ensure corresponding policies for `Contact:Name` and related `User:Profile`.
-
-- **Verify Data Requirements for Complete Transactions:**
-  - Ensure write access for operations that complete a transaction, such as booking (access to `Expedia` data types) and payment processing (`Wallet:CreditCard`).
-
 - **Highlight and Separate Data Access by Function:**
   - Differentiate between access required for preliminary actions (e.g., searching or viewing options) from those needed for finalizing and documenting tasks like payment or calendar scheduling.
 
@@ -43,24 +33,6 @@ Each policy is made up of three components: `granular_data`, `data_access`, and 
 - **Expedia:Experience**
   - **Expedia:Cruise**
 
-## Contact data allows access to the contact information for a person in the contact list  
-- **Contact:Name**
-  - **Contact:Email**
-  - **Contact:Phone**
-
-## Wallet data allows access to the credit card information saved in the wallet
-- **Wallet:CreditCard**
-  - **Wallet:CreditCardType**
-  - **Wallet:CreditCardNumber**
-  - **Wallet:CreditCardPin**
-
-## User data allows access to the user profile 
-- **User:Profile**
-  - **User:Name**
-  - **User:Address**
-  - **User:Phone**
-  - **User:SSN**
-
 ### Data Access
 - The `data_access` component indicates if granular_data can be read or written (allowed values: `Read` / `Write`).
   - Determine this by assessing whether the data should be accessed for reading existing information or writing new information.
@@ -91,8 +63,40 @@ policy_system.add_policy({
 - **Generate only permissive policies** for data whose access can be reasonably inferred from the request.
 - **Minimize data exposure**: Provide access to the minimal required data for completing the task.
 - **No assumptions about sensitive data**: Allow access if the user action implicitly necessitates it.
+- **Sometimes you wil be given a description of permissions which are already granted, do not make polcies for them or for the granular_data which comes under them in the data hierarchy with same data_access and position. 
+  -- **Example: if the read permission exist for expedia experience data then do not create a policy for read access to expedia cruise data as cruise is the child of expedia experience.
+  -- **Example: if the read premission exist for calendar month data then do not create a policu for read access to calendar day data as day is dominated by month based on calendat hierarchy data.
 - **Feel free to generate multiple policies to accurately represent the data allowed by the user through the request.
 - **First, output the reasoning for each policy, and then output the generated policy in individual code blocks.
+"""
+
+UNSUPPORTED_WILDCARD_APPS = """
+- **Verify Data Requirements for Complete Transactions:**
+  - Ensure write access for operations that complete a transaction, such as booking (access to `Expedia` data types) and payment processing (`Wallet:CreditCard`).
+
+- **Comprehensive User Request Evaluation:** 
+  - Identify all data types that may be required across the full range of actions specified in the user request, including transaction, user profile, and contact data.
+
+- **Account for Multiple Parties or Dependencies:**
+  - For actions involving multiple individuals (e.g., booking for "me and Ron"), check access needs for associated contact details and ensure corresponding policies for `Contact:Name` and related `User:Profile`.
+
+## Contact data allows access to the contact information for a person in the contact list  
+- **Contact:Name**
+  - **Contact:Email**
+  - **Contact:Phone**
+
+## Wallet data allows access to the credit card information saved in the wallet
+- **Wallet:CreditCard**
+  - **Wallet:CreditCardType**
+  - **Wallet:CreditCardNumber**
+  - **Wallet:CreditCardPin**
+
+## User data allows access to the user profile 
+- **User:Profile**
+  - **User:Name**
+  - **User:Address**
+  - **User:Phone**
+  - **User:SSN**
 """
 
 POLICY_GENERATOR_VALUE = """
@@ -240,6 +244,7 @@ You have two working modes, decl and prompt.
 If the user input says decl then you must output statement such that these statement must be declaration of the policies the system has been already granted.
 If the user input says prompt then the statement you output must look like prompts for asking permission.
 
+If there are multiple policies, output each statement in a newline.
 Example: 
 
 decl 

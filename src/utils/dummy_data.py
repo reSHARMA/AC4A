@@ -51,5 +51,9 @@ def generate_dummy_data(api_endpoint: str, **kwargs) -> dict:
     # Use the separate function to call the OpenAI API
     dummy_data = call_openai_api("", prompt)
     
+    summary_prompt = f"""You will be given a json output from an API endpoint {api_endpoint}. Generate a summary of the data returned by the API endpoint '{api_endpoint}' such that it can be presented to the user. 
+Keep the summary concise and informative."""   
+    summary = call_openai_api(summary_prompt, dummy_data)
+    print(f"\033[1;35;40m{summary}\033[0m")
     # Use json.loads to safely parse the JSON string
     return dummy_data

@@ -208,3 +208,17 @@ class ExpediaAPI:
             return_date=return_date,
             cabin_type=cabin_type
         )
+
+    @ExpediaAPIAnnotation.annotate
+    def pay_for_itenary(self, booking_id, payment_method, amount, card_number, card_expiry, card_cvv, billing_address):
+        # Args: booking_id (str), payment_method (str), amount (float), card_number (str), card_expiry (str), card_cvv (str), billing_address (str)
+        return generate_dummy_data(
+            api_endpoint="pay_for_itenary",
+            booking_id=booking_id,
+            payment_method=payment_method,
+            amount=amount,
+            card_number=card_number,
+            card_expiry=card_expiry,
+            card_cvv=card_cvv,
+            billing_address=billing_address
+        )

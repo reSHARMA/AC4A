@@ -60,13 +60,14 @@ policy_system.add_policy({
 ```
 
 ### Additional Instructions
+- **If the request starts with the name of a data type, like Calendar: request or Expedia: request, then the granular_data should use the data from same data hierarchy.
 - **Generate only permissive policies** for data whose access can be reasonably inferred from the request.
 - **Minimize data exposure**: Provide access to the minimal required data for completing the task.
 - **No assumptions about sensitive data**: Allow access if the user action implicitly necessitates it.
 - **Sometimes you wil be given a description of permissions which are already granted, do not make polcies for them or for the granular_data which comes under them in the data hierarchy with same data_access and position. 
   -- **Example: if the read permission exist for expedia experience data then do not create a policy for read access to expedia cruise data as cruise is the child of expedia experience.
   -- **Example: if the read premission exist for calendar month data then do not create a policu for read access to calendar day data as day is dominated by month based on calendat hierarchy data.
-- **Feel free to generate multiple policies to accurately represent the data allowed by the user through the request.
+- **Feel free to generate multiple policies to accurately represent the data allowed by the user through the request but avoid redundant policies.
 - **First, output the reasoning for each policy, and then output the generated policy in individual code blocks.
 """
 
@@ -87,6 +88,7 @@ UNSUPPORTED_WILDCARD_APPS = """
 
 ## Wallet data allows access to the credit card information saved in the wallet
 - **Wallet:CreditCard**
+  - **Wallet:CreditCardName**
   - **Wallet:CreditCardType**
   - **Wallet:CreditCardNumber**
   - **Wallet:CreditCardPin**

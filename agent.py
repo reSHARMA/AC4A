@@ -63,12 +63,17 @@ async def main() -> None:
         user_input = ""
         return temp 
 
+    def get_task(prompt : str) -> str:
+            task = input("User: ")
+            return task
+            return task + " Today's date is 25th Jan 2025 PST."
+
     user = None
 
     if USE_STREAMLIT:
         user = UserProxyAgent("User", input_func=web_input_func1) 
     else:
-        user = UserProxyAgent("User", input_func=input)
+        user = UserProxyAgent("User", input_func=get_task)
 
     # User: The user who is interacting with you. Must be asked for confirmation for irreversible tasks or when there are options available.
     planner = AssistantAgent(
@@ -78,14 +83,15 @@ async def main() -> None:
         List of the available application with description:
         Calendar: A normal calendar app with API to reserve, check availability and read the calendar data.
         Expedia: An application to search flights, book hotels, rent cars, and book experiences and cruises with a comprehensive travel API.
+        User: When you encounter a choice or need confirmation or clarification ask the user question.
         
         First output the name of the application and then the description in the format, application: description.
 
-        If the task is already completed return terminate.
+        If all the tasks are completed return terminate.
         If there is a permission error while doing the task return perm_err
         for any other reason of failure return error
         Always give reason for termination, perm_err or error.
-        You work fully autonomously, take best decision without disturbing the user with confirmation or clarification. 
+
     """,
         model_client = model_client
     )
@@ -150,17 +156,17 @@ async def main() -> None:
     )
 
     async def calendar_reserve(start_time: datetime, duration: timedelta, description: str) -> str:
-        print("\033[1;34;40mCalling CalendarAPI reserve\033[0m")
+        print(f"\033[1;34;40mCalling CalendarAPI reserve with start_time={start_time}, duration={duration}, description={description}\033[0m")
         result = calendar_api.reserve(start_time=start_time, duration=duration, description=description)
         return result
 
     async def calendar_read(start_time: datetime, duration: timedelta) -> str:
-        print("\033[1;34;40mCalling CalendarAPI read\033[0m")
+        print(f"\033[1;34;40mCalling CalendarAPI read with start_time={start_time}, duration={duration}\033[0m")
         result = calendar_api.read(start_time=start_time, duration=duration)
         return result
 
     async def calendar_check_availability(start_time: datetime, duration: timedelta) -> str:
-        print("\033[1;34;40mCalling CalendarAPI check_available\033[0m")
+        print(f"\033[1;34;40mCalling CalendarAPI check_available with start_time={start_time}, duration={duration}\033[0m")
         result = calendar_api.check_available(start_time=start_time, duration=duration)
         return result
 
@@ -169,54 +175,60 @@ async def main() -> None:
         system_message="""
         You are a calendar agent with access to calendar APIs as tools, you will be given a request to fulfill.
         Call the tools available to you to fulfill the request. Asume offset-naive datetime for simplicity.
+        Do not assume API call arguments, if you do not have enough information, return a message asking for the required information like user: Please provide the location.
     """,
         tools=[calendar_reserve, calendar_read, calendar_check_availability],
         model_client=model_client
     )
 
     async def expedia_search_flights(from_location: str, to_location: str, departure_date: datetime, return_date: datetime = None, airline: str = None, round_trip: bool = True) -> str:
-        print("\033[1;34;40mCalling expedia_search_flights\033[0m")
+        print(f"\033[1;34;40mCalling expedia_search_flights with from_location={from_location}, to_location={to_location}, departure_date={departure_date}, return_date={return_date}, airline={airline}, round_trip={round_trip}\033[0m")
         result = expedia_api.search_flights(from_location=from_location, to_location=to_location, departure_date=departure_date, return_date=return_date, airline=airline, round_trip=round_trip)
         return result
 
     async def expedia_book_hotel(hotel_name: str, location: str, check_in_date: datetime, check_out_date: datetime, room_type: str = None) -> str:
-        print("\033[1;34;40mCalling expedia_book_hotel\033[0m")
+        print(f"\033[1;34;40mCalling expedia_book_hotel with hotel_name={hotel_name}, location={location}, check_in_date={check_in_date}, check_out_date={check_out_date}, room_type={room_type}\033[0m")
         result = expedia_api.book_hotel(hotel_name=hotel_name, location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
         return result
 
     async def expedia_rent_car(car_type: str, pickup_location: str, pickup_date: datetime, return_date: datetime, rental_company: str = None) -> str:
-        print("\033[1;34;40mCalling expedia_rent_car\033[0m")
+        print(f"\033[1;34;40mCalling expedia_rent_car with car_type={car_type}, pickup_location={pickup_location}, pickup_date={pickup_date}, return_date={return_date}, rental_company={rental_company}\033[0m")
         result = expedia_api.rent_car(car_type=car_type, pickup_location=pickup_location, pickup_date=pickup_date, return_date=return_date, rental_company=rental_company)
         return result
 
     async def expedia_book_experience(experience_name: str, location: str, date: datetime, participants: int = 1) -> str:
-        print("\033[1;34;40mCalling expedia_book_experience\033[0m")
+        print(f"\033[1;34;40mCalling expedia_book_experience with experience_name={experience_name}, location={location}, date={date}, participants={participants}\033[0m")
         result = expedia_api.book_experience(experience_name=experience_name, location=location, date=date, participants=participants)
         return result
 
     async def expedia_book_cruise(cruise_name: str, departure_port: str, departure_date: datetime, return_date: datetime, cabin_type: str = None) -> str:
-        print("\033[1;34;40mCalling expedia_book_cruise\033[0m")
+        print(f"\033[1;34;40mCalling expedia_book_cruise with cruise_name={cruise_name}, departure_port={departure_port}, departure_date={departure_date}, return_date={return_date}, cabin_type={cabin_type}\033[0m")
         result = expedia_api.book_cruise(cruise_name=cruise_name, departure_port=departure_port, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
         return result
 
     async def expedia_search_hotels(location: str, check_in_date: datetime, check_out_date: datetime, room_type: str = None) -> str:
-        print("\033[1;34;40mCalling expedia_search_hotels\033[0m")
+        print(f"\033[1;34;40mCalling expedia_search_hotels with location={location}, check_in_date={check_in_date}, check_out_date={check_out_date}, room_type={room_type}\033[0m")
         result = expedia_api.search_hotels(location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
         return result
 
     async def expedia_search_rental_cars(pickup_location: str, pickup_date: datetime, return_date: datetime, car_type: str = None, rental_company: str = None) -> str:
-        print("\033[1;34;40mCalling expedia_search_rental_cars\033[0m")
+        print(f"\033[1;34;40mCalling expedia_search_rental_cars with pickup_location={pickup_location}, pickup_date={pickup_date}, return_date={return_date}, car_type={car_type}, rental_company={rental_company}\033[0m")
         result = expedia_api.search_rental_cars(pickup_location=pickup_location, pickup_date=pickup_date, return_date=return_date, car_type=car_type, rental_company=rental_company)
         return result
 
     async def expedia_search_experience(experience_name: str, location: str, date: datetime, participants: int = 1) -> str:
-        print("\033[1;34;40mCalling expedia_search_experience\033[0m")
+        print(f"\033[1;34;40mCalling expedia_search_experience with experience_name={experience_name}, location={location}, date={date}, participants={participants}\033[0m")
         result = expedia_api.search_experience(experience_name=experience_name, location=location, date=date, participants=participants)
         return result
 
     async def expedia_search_cruise(departure_port: str, departure_date: datetime, return_date: datetime, cabin_type: str = None) -> str:
-        print("\033[1;34;40mCalling expedia_search_cruise\033[0m")
+        print(f"\033[1;34;40mCalling expedia_search_cruise with departure_port={departure_port}, departure_date={departure_date}, return_date={return_date}, cabin_type={cabin_type}\033[0m")
         result = expedia_api.search_cruise(departure_port=departure_port, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
+        return result
+
+    async def expedia_pay_for_itenary(booking_id: str, payment_method: str, amount: float, card_number: str, card_expiry: str, card_cvv: str, billing_address: str) -> str:
+        print(f"\033[1;34;40mCalling expedia_pay_for_itenary with booking_id={booking_id}, payment_method={payment_method}, amount={amount}, card_number={card_number}, card_expiry={card_expiry}, card_cvv={card_cvv}, billing_address={billing_address}\033[0m")
+        result = expedia_api.pay_for_itenary(booking_id=booking_id, payment_method=payment_method, amount=amount, card_number=card_number, card_expiry=card_expiry, card_cvv=card_cvv, billing_address=billing_address)
         return result
 
     expedia = AssistantAgent(
@@ -225,15 +237,17 @@ async def main() -> None:
         You are an Expedia app (a travel and experience booking app) with access to Expedia APIs as tools, you will be given a request to fulfill.
         Call the tools available to you to fulfill the request.
         Asume offset-naive datetime for simplicity.
+        Do not assume API call arguments, if you do not have enough information, return a message asking for the required information like user: Please provide the location.
     """,
-        tools=[expedia_search_flights, expedia_book_hotel, expedia_rent_car, expedia_book_experience, expedia_book_cruise, expedia_search_hotels, expedia_search_rental_cars, expedia_search_experience, expedia_search_cruise],
+        tools=[expedia_search_flights, expedia_book_hotel, expedia_rent_car, expedia_book_experience, expedia_book_cruise, expedia_search_hotels, expedia_search_rental_cars, expedia_search_experience, expedia_search_cruise, expedia_pay_for_itenary],
         model_client=model_client
     )
 
     termination = TextMentionTermination("terminate") | TextMentionTermination("perm_err") | TextMentionTermination("error")
 
     def selector_demo(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
-        debug_print("+++++>", messages)
+        if (len(messages) > 0):
+            debug_print("==>", messages[-1].content)
         if USE_STREAMLIT:
             if len(messages) == 0:
                 messages = st.session_state['messages'] 
@@ -319,12 +333,12 @@ async def main() -> None:
             debug_print("Debug: No messages, waiting for user input.")
             agent = "User"
         
-        if len(messages) == 1: 
-            print(f"\033[92mUser: {messages[-1].content}\033[0m")
-            debug_print("Debug: Only one message, returning 'Planner'.")
+        elif messages[-1].source == "User": 
+            # print(f"\033[92mUser: {messages[-1].content}\033[0m")
+            debug_print("Debug: Last message from User, returning 'Planner'.")
             agent = "Planner"
         
-        if len(messages) > 0 and messages[-1].source == "Planner":
+        elif len(messages) > 0 and messages[-1].source == "Planner":
             print(f"\033[93mPlanner: {messages[-1].content}\033[0m")
             next_agent = messages[-1].content.split(":")[0]
 
@@ -341,9 +355,15 @@ async def main() -> None:
             if agent == "terminate":
                 agent = "Planner"
         
-        if agent == "":
-            debug_print("Debug: Default case, returning 'Planner'.")
-            agent = "Planner"
+        else:
+            next_agent = messages[-1].content.split(":")[0]
+
+            if next_agent == "user":
+                print(f"\033[93m{messages[-1].source}: {messages[-1].content}\033[0m")
+                agent = "User"
+            else:
+                debug_print("Debug: Default case, returning 'Planner'.")
+                agent = "Planner"
 
         debug_print(f"Debug: Returning agent: {agent}")
 
@@ -351,13 +371,12 @@ async def main() -> None:
         return agent
 
     async def msr():
-        task = "Search a cruise from Seattle for July 2026 and book the cheapest option for two people. Add it into my calendar."
-        print(f"\033[94mTask: {task}\033[0m")
+        task = ("Use Expedia to compare travel itineraries for a cruise to Alaska around mid-July, considering existing constraints on my calendar."
+                "Use my Alaska Airlines credit card to book option 2 for 2 adults."
+                "Send the confirmation to my spouse, and put the trip on my calendar.")
 
-        def get_task(prompt : str) -> str:
-            return task + " Today's date is 25th Jan 2025 PST."
+        # print(f"\033[94mTask: {task}\033[0m")
 
-        user = UserProxyAgent("User", input_func=get_task) 
 
         policy_system.reset()
         
@@ -374,7 +393,7 @@ async def main() -> None:
         })
 
         granted = policy_system.text()
-        granted_txt = f"The system is already initialized with the following permissions:\n{granted}"
+        granted_txt = f"The system is initialized with the following permissions:\n{granted}"
         print(f"\033[95m{granted_txt}\033[0m")
 
         policy_system.ask()

@@ -381,7 +381,7 @@ async def main() -> None:
 
             granted = policy_system.text()
             granted_txt = f"The system is already initialized with the following permissions: {granted}"
-            policies = call_openai_api(POLICY_GENERATOR_WILDCARD, messages[-1].content + "\n" + granted_txt)
+            policies = call_openai_api(POLICY_GENERATOR_WILDCARD_V2, messages[-1].content + "\n" + granted_txt)
             status = append_policy(policies)
             if "err" in status:
                 print("error in inferring data policies")

@@ -42,13 +42,7 @@ class WalletAPIAnnotation(APIAnnotationBase):
         return 'Write' if 'add' in endpoint_name or 'remove' in endpoint_name or 'update' in endpoint_name else 'Read'
 
     def get_time_period(self, start_time, end_time, use_wildcard):
-        current_time = datetime.now()
-        if start_time < current_time < end_time:
-            return 'Current'
-        elif current_time < start_time:
-            return 'Next'
-        else:
-            return 'Previous'
+        return "Current"
 
     def generate_attributes(self, kwargs, endpoint_name, use_wildcard):
         start_time = datetime.now()

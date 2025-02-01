@@ -1,5 +1,6 @@
 import os
 from openai import OpenAI
+from config import debug_print
 
 def call_openai_api(system: str, prompt: str) -> str:
     """
@@ -45,9 +46,11 @@ def generate_dummy_data(api_endpoint: str, **kwargs) -> dict:
     Only output the response and nothing else
     Do not enclose the data in code blocks
     Keep the response grounded in the parameters provided to you.
+    If you are requested sensitive data, example, passwords, credit card numbers, etc.,generate diverse data that is not real, like sometimes amex card, sometimes visa card, etc.
     Try to generate affirmative data, example, if the data request is for checking availability, return data representing availability.
 """
 
+    debug_print("Dummy data for API endpoint:", api_endpoint)
     # Use the separate function to call the OpenAI API
     dummy_data = call_openai_api("", prompt)
     

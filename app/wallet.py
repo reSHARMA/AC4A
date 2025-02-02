@@ -70,7 +70,7 @@ class WalletAPI:
     def add_credit_card(self, card_name, card_type, card_number, card_pin):
         # Args: card_name (str), card_type (str), card_number (str), card_pin (str)
         return generate_dummy_data(
-            api_endpoint="add_credit_card",
+            api_endpoint="add_credit_card: add a new credit card with the given card name, card type, card number, and card pin",
             card_name=card_name,
             card_type=card_type,
             card_number=card_number,
@@ -81,7 +81,7 @@ class WalletAPI:
     def remove_credit_card(self, card_name):
         # Args: card_name (str)
         return generate_dummy_data(
-            api_endpoint="remove_credit_card",
+            api_endpoint="remove_credit_card: remove the credit card with the given card name",
             card_name=card_name
         )
 
@@ -89,7 +89,7 @@ class WalletAPI:
     def update_credit_card(self, card_name, card_type=None, card_number=None, card_pin=None):
         # Args: card_name (str), card_type (str, optional), card_number (str, optional), card_pin (str, optional)
         return generate_dummy_data(
-            api_endpoint="update_credit_card",
+            api_endpoint="update_credit_card: update the credit card information, including the card type, card number, and card pin",
             card_name=card_name,
             card_type=card_type,
             card_number=card_number,
@@ -100,6 +100,6 @@ class WalletAPI:
     def get_credit_card_info(self, card_name):
         # Args: card_name (str)
         return generate_dummy_data(
-            api_endpoint="get_credit_card_info",
+            api_endpoint="get_credit_card_info: get all the credit card information, including the card type, card number, and card pin",
             card_name=card_name
         )

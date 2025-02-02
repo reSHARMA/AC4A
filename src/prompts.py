@@ -15,7 +15,7 @@ Today's date is 2025-1-25 PST.
 
 ### Example of reasoning about the request:
 Request => Calendar: Check availability in mid-July on the calendar to identify available dates for the cruise to Alaska.
-Since the request is clearly coming from the Calendar API, the data required is related to the calendar and in this case since the data does not go beyond the month level, the data required is calendar month data.
+Since the request is clearly coming from the Calendar API, the data required is related to the calendar and in this case since the data range does not go beyond the month level, the data required is calendar month data.
 The access level required is Read as it is only checking availability.
 The position is Next as the request is for mid-July which is in the future relative to today's date.
 The correct data policy for this request must allow reading the calendar month data for the future months. 
@@ -29,6 +29,11 @@ Request => Expedia: Proceed to book the Northern Marvels cruise departing from S
 Since the request is related to the Expedia API, the data required is access to Expedia cruise data.
 The access level required is Write as the request is to book a cruise.
 The position is Current as the Cruise data does not have a range.
+
+Request => Calendar: Add the "Glacier Explorer" cruise trip to the calendar from July 10 to July 20, 2025, as a confirmed booking.
+Since the request is coming from the Calendar API, the data required is related to the calendar, specifically the calendar week data because the requested data range is greater than a day but less than a month.
+The access level required is Write as the request is to add a confirmed booking and will require write access to the calendar data.
+The position will be Next as given today's date, the request wants access to the future weeks calendar data.
 
 ### Format of Policy
 Policies must be added to the policy_system using the `add_policy` method. This method accepts a dictionary input consisting of only three keys: `granular_data`, `data_access`, and `position`.
@@ -67,6 +72,16 @@ policy_system.add_policy({
 })
 ```
 
+Request => Calendar: Add the "Glacier Explorer" cruise trip to the calendar from July 10 to July 20, 2025, as a confirmed booking.
+Example Policy Format:
+```python
+policy_system.add_policy({
+    "granular_data": "Calendar:Week",
+    "data_access": "Write",
+    "position": "Next"
+})
+```
+
 Always respect the data hierarchy and never generate redundant policies.
 - If a policy exist for read access for future calendar month then do not generate a policy for read access to future calendar day or week as day or week is subsumed by month based on calendar hierarchy data.
 - Sometimes you will be given a description of policies which are already granted as permissions, do not make policies for them for the policies subsumed by them in the data hierarchy with the same data_access and position.
@@ -87,6 +102,7 @@ Always respect the data hierarchy and never generate redundant policies.
   - **Expedia:CarRental**
 - **Expedia:Experience**
   - **Expedia:Cruise**
+- **Expedia:Payment**
 
 ## Wallet data allows access to the credit card information saved in the wallet
 - **Wallet:CreditCard**
@@ -96,9 +112,8 @@ Always respect the data hierarchy and never generate redundant policies.
   - **Wallet:CreditCardPin**
 
 ### Output generation instructions
-- **If the request starts with the name of a data type, like Calendar: request or Expedia: request, then the granular_data should use the data from the same data hierarchy without any exceptions.
+- **If the request starts with the name of the app, like Calendar: request or Expedia: request, then the granular_data must also start with the same app name and use the data from the same data hierarchy without any exceptions.
 - **Generate only permissive policies** for data whose access can be reasonably inferred from the request.
-- **Minimize data exposure**: Provide access to the minimal required data for completing the task.
 - **No assumptions about sensitive data**: Allow access if the user action implicitly necessitates it.
 - **Feel free to generate multiple policies to accurately represent the data allowed by the user through the request but avoid redundant policies.
 - **First, output the reasoning for each policy, and then output the generated policy in individual code blocks.
@@ -176,7 +191,7 @@ policy_system.add_policy({
 ```
 
 ### Additional Instructions
-- **If the request starts with the name of a data type, like Calendar: request or Expedia: request, then the granular_data should use the data from same data hierarchy.
+- **If the request starts with the name of the app, like Calendar: request or Expedia: request, then the granular_data must also start with the same app name and use the data from the same data hierarchy without any exceptions.
 - **Generate only permissive policies** for data whose access can be reasonably inferred from the request.
 - **Minimize data exposure**: Provide access to the minimal required data for completing the task.
 - **No assumptions about sensitive data**: Allow access if the user action implicitly necessitates it.

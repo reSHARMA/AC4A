@@ -106,13 +106,13 @@ class CalendarAPI:
 
     @CalendarAPIAnnotation.annotate
     def reserve(self, *args, **kwargs):
-        return generate_dummy_data("This method reserves a time slot in the calendar.", **kwargs)
+        return generate_dummy_data("reserve: This method reserves a time slot in the calendar.", **kwargs)
 
     @CalendarAPIAnnotation.annotate
     def read(self, *args, **kwargs):
-        return generate_dummy_data("This method reads calendar events within a specified time range.", **kwargs)
+        return generate_dummy_data("read: This method reads calendar events within a specified time range.", **kwargs)
 
     @CalendarAPIAnnotation.annotate
     # start_time, duration
     def check_available(self, *args, **kwargs):
-        return generate_dummy_data("This method checks the availability of a time slot in the calendar.", **kwargs)
+        return generate_dummy_data("check_availability: This method checks the availability of a time slot in the calendar.", **kwargs)

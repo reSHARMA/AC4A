@@ -10,6 +10,7 @@ from autogen_core import CancellationToken
 from app.calendar import CalendarAPI
 from app.expedia import ExpediaAPI
 from app.wallet import WalletAPI
+from app.contact_manager import ContactManagerAPI
 
 from src.policy_system.policy_system import PolicySystem
 from src.utils.dummy_data import call_openai_api
@@ -44,6 +45,7 @@ async def main() -> None:
     policy_system.register_api(CalendarAPI)
     policy_system.register_api(ExpediaAPI)
     policy_system.register_api(WalletAPI)
+    policy_system.register_api(ContactManagerAPI)
 
     config = {
         "provider": "OpenAIChatCompletionClient",
@@ -85,10 +87,21 @@ async def main() -> None:
 
         List of the available application with description:
         Calendar: A calendar app with API to reserve, check availability and read the calendar data.
-        Expedia: A travel booking application with APIs for searching, booking and paying for flights, hotels, rental cars,  experiences like cruises.
+        Expedia: A travel booking application with APIs for searching, booking and paying for flights, hotels, rental cars, experiences like cruises.
+        - for cruise booking follow the following steps:
+            1. ask the user to select a cruise
+            2. use expedia to show more details about the selected cruise
+            3. cross-check with the user and ask for how many guests the cruise needs to be booked
+            4. use expedia to give user options to add multiple different addons like insurance, excursions, etc.
+            5. use expedia to get the refund policy, cancellation policy, and other pilicies and ask the user for confirmation
+            6. book the cruise
+            7. use expedia to add guests to the booking and use ContactManager to get information about the guests
+            8. use expedia to get the total amount to be paid (including all the optionals) and give options to the user about the payment plans, like full payment, partial payment, etc. and ask the user for confirmation
+            9. use expedia to make payment for the booking and use Wallet to get the credit card information for payment
         Wallet: A wallet application with saved cards and with APIs for adding, removing, updating and getting credit card information for payment.
         User: Admin or the user giving inputs. Must be used to resolve choices or get confirmation or clarification by asking the user question.
-        
+        ContactManager: A contact manager application with APIs to add, remove, update and get contact information.
+
         First output the name of the application and then the description in the format, application: description.
 
         If all the tasks are completed return terminate.
@@ -103,6 +116,7 @@ async def main() -> None:
     calendar_api = CalendarAPI(policy_system)
     expedia_api = ExpediaAPI(policy_system)
     wallet_api = WalletAPI(policy_system)
+    contact_manager_api = ContactManagerAPI(policy_system)
 
     def append_policy(code: str) -> str:
         debug_print(code)
@@ -210,10 +224,43 @@ async def main() -> None:
         name="Wallet",
         system_message="""
         You are a wallet agent with access to wallet APIs as tools, you will be given a request to fulfill.
+        wallet_get_credit_card_info takes card_name as input and returns all the credit card information, including the card type, card number, and card pin for the given card name.
         Call the tools available to you to fulfill the request. Assume offset-naive datetime for simplicity.
         Do not assume API call arguments, if you do not have enough information, return a message asking for the required information like user: Please provide the card details.
     """,
         tools=[wallet_add_credit_card, wallet_remove_credit_card, wallet_update_credit_card, wallet_get_credit_card_info],
+        model_client=model_client
+    )
+
+    async def contact_add_contact(name: str, phone: str, address: str, email: str, relation: str, birthday: str = None, notes: str = None) -> str:
+        print(f"\033[1;34;40mCalling ContactManagerAPI add_contact with name={name}, phone={phone}, address={address}, email={email}, relation={relation}, birthday={birthday}, notes={notes}\033[0m")
+        result = contact_manager_api.add_contact(name=name, phone=phone, address=address, email=email, relation=relation, birthday=birthday, notes=notes)
+        return result
+
+    async def contact_remove_contact(name: str) -> str:
+        print(f"\033[1;34;40mCalling ContactManagerAPI remove_contact with name={name}\033[0m")
+        result = contact_manager_api.remove_contact(name=name)
+        return result
+
+    async def contact_update_contact(name: str, phone: str = None, address: str = None, email: str = None, relation: str = None, birthday: str = None, notes: str = None) -> str:
+        print(f"\033[1;34;40mCalling ContactManagerAPI update_contact with name={name}, phone={phone}, address={address}, email={email}, relation={relation}, birthday={birthday}, notes={notes}\033[0m")
+        result = contact_manager_api.update_contact(name=name, phone=phone, address=address, email=email, relation=relation, birthday=birthday, notes=notes)
+        return result
+
+    async def contact_get_contact_info(name: str) -> str:
+        print(f"\033[1;34;40mCalling ContactManagerAPI get_contact_info with name={name}\033[0m")
+        result = contact_manager_api.get_contact_info(name=name)
+        return result
+
+    contact_manager = AssistantAgent(
+        name="ContactManager",
+        system_message="""
+        You are a contact manager agent with access to contact manager APIs as tools, you will be given a request to fulfill.
+        contact_get_contact_info takes name as input and returns all the contact information, including phone, address, email, relation, birthday, and notes for the given name.
+        Call the tools available to you to fulfill the request. Assume offset-naive datetime for simplicity.
+        Do not assume API call arguments, if you do not have enough information, return a message asking for the required information like user: Please provide the contact details.
+    """,
+        tools=[contact_add_contact, contact_remove_contact, contact_update_contact, contact_get_contact_info],
         model_client=model_client
     )
 
@@ -262,25 +309,51 @@ async def main() -> None:
         result = expedia_api.search_cruise(departure_port=departure_port, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
         return result
 
+    async def expedia_get_cruise_info(cruise_id: str) -> str:
+        print(f"\033[1;34;40mCalling expedia_get_cruise_info with cruise_id={cruise_id}\033[0m")
+        result = expedia_api.get_cruise_info(cruise_id=cruise_id)
+        return result
+
+    async def expedia_get_cruise_addons(cruise_id: str) -> str:
+        print(f"\033[1;34;40mCalling expedia_get_cruise_addons with cruise_id={cruise_id}\033[0m")
+        result = expedia_api.get_cruise_addons(cruise_id=cruise_id)
+        return result
+
+    async def expedia_get_cruise_policies(cruise_id: str) -> str:
+        print(f"\033[1;34;40mCalling expedia_get_cruise_policies with cruise_id={cruise_id}\033[0m")
+        result = expedia_api.get_cruise_policies(cruise_id=cruise_id)
+        return result
+
+    async def expedia_get_cruise_payment_options(cruise_id: str) -> str:
+        print(f"\033[1;34;40mCalling expedia_get_cruise_payment_options with cruise_id={cruise_id}\033[0m")
+        result = expedia_api.get_cruise_payment_options(cruise_id=cruise_id)
+        return result
+    
     async def expedia_pay_for_itenary(booking_id: str, payment_method: str, amount: float, card_number: str, card_expiry: str, card_cvv: str, billing_address: str) -> str:
         print(f"\033[1;34;40mCalling expedia_pay_for_itenary with booking_id={booking_id}, payment_method={payment_method}, amount={amount}, card_number={card_number}, card_expiry={card_expiry}, card_cvv={card_cvv}, billing_address={billing_address}\033[0m")
         result = expedia_api.pay_for_itenary(booking_id=booking_id, payment_method=payment_method, amount=amount, card_number=card_number, card_expiry=card_expiry, card_cvv=card_cvv, billing_address=billing_address)
+        return result
+
+    async def expedia_add_guest_info(booking_id: str, guest_name: str, guest_email: str, guest_phone: str, guest_address: str = None) -> str:
+        print(f"\033[1;34;40mCalling expedia_add_guest_info with booking_id={booking_id}, guest_name={guest_name}, guest_email={guest_email}, guest_phone={guest_phone}, guest_address={guest_address}\033[0m")
+        result = expedia_api.add_guest_info(booking_id=booking_id, guest_name=guest_name, guest_email=guest_email, guest_phone=guest_phone, guest_address=guest_address)
         return result
 
     expedia = AssistantAgent(
         name="Expedia",
         system_message="""
         You are an Expedia app (a travel and experience booking app) with access to Expedia APIs as tools, you will be given a request to fulfill.
+   
         Call the tools available to you to fulfill the request.
         Asume offset-naive datetime for simplicity.
-        Do not assume API call arguments, if you do not have enough information, return a message asking for the required information like user: Please provide the location.
+        Do not assume API call arguments, if you do not have enough information do not call a tool instead return a message in format "user: messsage"
     """,
-        tools=[expedia_search_flights, expedia_book_hotel, expedia_rent_car, expedia_book_experience, expedia_book_cruise, expedia_search_hotels, expedia_search_rental_cars, expedia_search_experience, expedia_search_cruise, expedia_pay_for_itenary],
+        tools=[expedia_search_flights, expedia_book_hotel, expedia_rent_car, expedia_book_experience, expedia_book_cruise, expedia_search_hotels, expedia_search_rental_cars, expedia_search_experience, expedia_search_cruise, expedia_get_cruise_info, expedia_pay_for_itenary, expedia_add_guest_info, expedia_get_cruise_addons, expedia_get_cruise_policies, expedia_get_cruise_payment_options],
         model_client=model_client
     )
 
     termination = TextMentionTermination("terminate") | TextMentionTermination("perm_err") | TextMentionTermination("error")
-    agents = [user, planner, calendar, wallet, expedia]
+    agents = [user, planner, calendar, wallet, expedia, contact_manager]
 
     def selector_demo(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
         if (len(messages) > 0):
@@ -363,7 +436,9 @@ async def main() -> None:
 
 
     def selector_exp(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
-        debug_print("+++++>", messages)
+        if (len(messages) > 0):
+            debug_print("==>", messages[-1].content)
+
         agent = ""
 
         if len(messages) == 0:
@@ -417,6 +492,7 @@ async def main() -> None:
 
         policy_system.reset()
         
+        policy_system.disable()
         policy_system.add_policy({
             "granular_data": "Expedia:Destination",
             "data_access": "Read",
@@ -436,7 +512,7 @@ async def main() -> None:
         policy_system.ask()
 
         stream_log = []
-        run_task = SelectorGroupChat(agents, max_turns=25, termination_condition=termination, model_client=model_client, selector_func=selector_exp)
+        run_task = SelectorGroupChat(agents, max_turns=50, termination_condition=termination, model_client=model_client, selector_func=selector_exp, allow_repeated_speaker=True)
         stream = run_task.run_stream()
         async for log_entry in stream:
             stream_log.append(log_entry)

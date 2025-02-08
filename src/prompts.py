@@ -111,6 +111,16 @@ Always respect the data hierarchy and never generate redundant policies.
   - **Wallet:CreditCardNumber**
   - **Wallet:CreditCardPin**
 
+## ContactManager data allows access to the contact information managed by the contact manager
+- **ContactManager:Contact**
+  - **ContactManager:ContactName**
+  - **ContactManager:ContactPhone**
+  - **ContactManager:ContactAddress**
+  - **ContactManager:ContactEmail**
+  - **ContactManager:ContactRelation**
+  - **ContactManager:ContactBirthday**
+  - **ContactManager:ContactNotes**
+
 ### Output generation instructions
 - **If the request starts with the name of the app, like Calendar: request or Expedia: request, then the granular_data must also start with the same app name and use the data from the same data hierarchy without any exceptions.
 - **Generate only permissive policies** for data whose access can be reasonably inferred from the request.

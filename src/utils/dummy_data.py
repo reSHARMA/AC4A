@@ -51,7 +51,6 @@ def generate_dummy_data(api_endpoint: str, **kwargs) -> dict:
     Do not enclose the data in code blocks
     Keep the response grounded in the parameters provided to you.
     If you are requested sensitive data, example, passwords, credit card numbers, etc.,generate diverse data that is not real, like sometimes amex card, sometimes visa card, etc.
-    If a booking is coming from expedia book_something, mark the payment as pending and if it is coming from expedia pay_for_itenary then mark the payment as completed.
     Try to generate affirmative data, example, if the data request is for checking availability, return data representing availability.
 
     The following is the summary of the data you have generated in the previous steps, be consistent with the data you have generated:

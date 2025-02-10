@@ -30,6 +30,8 @@ DEMO = False
 if not DEMO:
     USE_STREAMLIT = False
 
+default_agent = ["Planner"]
+
 policy_system = PolicySystem()
 user_input = ""
 
@@ -88,21 +90,13 @@ async def main() -> None:
         List of the available application with description:
         Calendar: A calendar app with API to reserve, check availability and read the calendar data.
         Expedia: A travel booking application with APIs for searching, booking and paying for flights, hotels, rental cars, experiences like cruises.
-        - for cruise booking follow the following steps:
-            1. ask the user to select a cruise
-            2. use expedia to show more details about the selected cruise
-            3. cross-check with the user and ask for how many guests the cruise needs to be booked
-            4. use expedia to give user options to add multiple different addons like insurance, excursions, etc.
-            5. use expedia to get the refund policy, cancellation policy, and other pilicies and ask the user for confirmation
-            6. book the cruise
-            7. use expedia to add guests to the booking and use ContactManager to get information about the guests
-            8. use expedia to get the total amount to be paid (including all the optionals) and give options to the user about the payment plans, like full payment, partial payment, etc. and ask the user for confirmation
-            9. use expedia to make payment for the booking and use Wallet to get the credit card information for payment
         Wallet: A wallet application with saved cards and with APIs for adding, removing, updating and getting credit card information for payment.
         User: Admin or the user giving inputs. Must be used to resolve choices or get confirmation or clarification by asking the user question.
         ContactManager: A contact manager application with APIs to add, remove, update and get contact information.
 
         First output the name of the application and then the description in the format, application: description.
+
+        if you are requested some data by an application, after getting the required data pass the control back to the application by outputting the application name with the data in the format, application: data.
 
         If all the tasks are completed return terminate.
         If there is a permission error while doing the task return perm_err
@@ -194,6 +188,7 @@ async def main() -> None:
         system_message="""
         You are a calendar agent with access to calendar APIs as tools, you will be given a request to fulfill.
         Call the tools available to you to fulfill the request. Asume offset-naive datetime for simplicity.
+        Return "done" when the task is completed.
         Do not assume API call arguments, if you do not have enough information, return a message asking for the required information like user: Please provide the location.
     """,
         tools=[calendar_reserve, calendar_read, calendar_check_availability],
@@ -225,6 +220,9 @@ async def main() -> None:
         system_message="""
         You are a wallet agent with access to wallet APIs as tools, you will be given a request to fulfill.
         wallet_get_credit_card_info takes card_name as input and returns all the credit card information, including the card type, card number, and card pin for the given card name.
+
+        **Return "done" when the task of wallet is completed for now.**
+        
         Call the tools available to you to fulfill the request. Assume offset-naive datetime for simplicity.
         Do not assume API call arguments, if you do not have enough information, return a message asking for the required information like user: Please provide the card details.
     """,
@@ -257,6 +255,7 @@ async def main() -> None:
         system_message="""
         You are a contact manager agent with access to contact manager APIs as tools, you will be given a request to fulfill.
         contact_get_contact_info takes name as input and returns all the contact information, including phone, address, email, relation, birthday, and notes for the given name.
+        Return "done" when the task is completed.
         Call the tools available to you to fulfill the request. Assume offset-naive datetime for simplicity.
         Do not assume API call arguments, if you do not have enough information, return a message asking for the required information like user: Please provide the contact details.
     """,
@@ -342,11 +341,18 @@ async def main() -> None:
     expedia = AssistantAgent(
         name="Expedia",
         system_message="""
-        You are an Expedia app (a travel and experience booking app) with access to Expedia APIs as tools, you will be given a request to fulfill.
-   
-        Call the tools available to you to fulfill the request.
-        Asume offset-naive datetime for simplicity.
-        Do not assume API call arguments, if you do not have enough information do not call a tool instead return a message in format "user: messsage"
+        You are a travel and experience booking agent interacting with a user.
+        You can see the user request and your last action if any. 
+ 
+        IMPORTANT: If the last response is generated by expedia APIs or is a question then you MUST ask for user confirmation before proceeding in the following format: "user: question for the user"
+
+        Similarly, if you need more information from the user, ask for it in the following format: "data: question for the user", example: "data: Please provide the guest information, name, phone number, email etc".
+
+        Return "done" when the task is completed.
+
+        **For searching and booking cruise follow these steps very carefully:**
+            expedia_search_cruise -> ask user to select a cruise and cabin type -> expedia_get_cruise_info -> ask user for confirmation and the number of guests -> expedia_get_cruise_addons -> ask user to select addons -> expedia_get_cruise_policies -> ask user for confirmation -> expedia_get_cruise_payment_options -> ask user for payment method -> expedia_pay_for_itenary -> fetch guest information data -> expedia_add_guest_info -> ask user for confirmation -> done
+
     """,
         tools=[expedia_search_flights, expedia_book_hotel, expedia_rent_car, expedia_book_experience, expedia_book_cruise, expedia_search_hotels, expedia_search_rental_cars, expedia_search_experience, expedia_search_cruise, expedia_get_cruise_info, expedia_pay_for_itenary, expedia_add_guest_info, expedia_get_cruise_addons, expedia_get_cruise_policies, expedia_get_cruise_payment_options],
         model_client=model_client
@@ -435,10 +441,12 @@ async def main() -> None:
         return agent
 
 
+    
     def selector_exp(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
         if (len(messages) > 0):
             debug_print("==>", messages[-1].content)
-
+        
+        global default_agent
         agent = ""
 
         if len(messages) == 0:
@@ -447,8 +455,8 @@ async def main() -> None:
         
         elif messages[-1].source == "User": 
             # print(f"\033[92mUser: {messages[-1].content}\033[0m")
-            debug_print("Debug: Last message from User, returning 'Planner'.")
-            agent = "Planner"
+            debug_print(f"Debug: Last message from User, returning {default_agent}.")
+            agent = default_agent[-1]
         
         elif len(messages) > 0 and messages[-1].source == "Planner":
             print(f"\033[93mPlanner: {messages[-1].content}\033[0m")
@@ -463,22 +471,28 @@ async def main() -> None:
 
             debug_print(f"Debug: Last message from 'Planner', next agent determined as: {next_agent}")
             agent =  next_agent
-
+            
             if agent == "terminate":
                 agent = "Planner"
-        
-        else:
-            next_agent = messages[-1].content.split(":")[0]
 
-            if next_agent == "user":
-                print(f"\033[93m{messages[-1].source}: {messages[-1].content}\033[0m")
-                agent = "User"
-            else:
-                debug_print("Debug: Default case, returning 'Planner'.")
+        else:
+            if messages[-1].content.lower() == "done":
                 agent = "Planner"
+            elif messages[-1].content.lower().startswith("user"):
+                print(f"\033[92mUser: {messages[-1].content}\033[0m")
+                agent = "User"
+            elif messages[-1].content.lower().startswith("data"):
+                print(f"\033[92mNeed data: {messages[-1].content}\033[0m")
+                agent = "Planner"
+            elif messages[-1].content.lower().startswith("done"):
+                agent = "Planner"
+            else:
+                agent = messages[-1].source
 
         debug_print(f"Debug: Returning agent: {agent}")
-
+        
+        if agent != "User":
+            default_agent.append(agent)
 
         return agent
 
@@ -509,10 +523,10 @@ async def main() -> None:
         granted_txt = f"The system is initialized with the following permissions:\n{granted}"
         print(f"\033[95m{granted_txt}\033[0m")
 
-        policy_system.ask()
+        # policy_system.ask()
 
         stream_log = []
-        run_task = SelectorGroupChat(agents, max_turns=50, termination_condition=termination, model_client=model_client, selector_func=selector_exp, allow_repeated_speaker=True)
+        run_task = SelectorGroupChat(agents, max_turns=50, termination_condition=termination, model_client=model_client, selector_func=selector_exp, allow_repeated_speaker=False)
         stream = run_task.run_stream()
         async for log_entry in stream:
             stream_log.append(log_entry)

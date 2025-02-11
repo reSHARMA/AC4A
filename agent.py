@@ -221,6 +221,10 @@ async def main() -> None:
         You are a wallet agent with access to wallet APIs as tools, you will be given a request to fulfill.
         wallet_get_credit_card_info takes card_name as input and returns all the credit card information, including the card type, card number, and card pin for the given card name.
 
+        **Forbidden Actions**:
+        ❌ card_name="default" 
+        ❌ Assume card name without user confirmation
+
         **Return "done" when the task of wallet is completed for now.**
         
         Call the tools available to you to fulfill the request. Assume offset-naive datetime for simplicity.
@@ -360,8 +364,8 @@ async def main() -> None:
         - NEVER combine with other text/actions 
 
         2. **Mandatory Data Requirements** - ALWAYS ask "data: [request]" before:
-        - expedia_add_guest_info
-        - expedia_pay_for_itenary
+        - expedia_add_guest_info **NEVER** call without asking for data
+        - expedia_pay_for_itenary **NEVER** call without asking for data
 
         3. **Execution Flow** - Cruise booking MUST follow this exact sequence with confirmations:
         a. expedia_search_cruise → user: "Choose cruise an room option from these search results?"
@@ -369,8 +373,8 @@ async def main() -> None:
         c. ONLY if confirmed → expedia_get_cruise_addons → user: "Confirm add-ons?"
         d. ONLY if confirmed → expedia_get_cruise_policies → user: "Accept policies?"
         e. ONLY if confirmed → expedia_get_cruise_payment_options → user: "Confirm payment method?"
-        f. data: "Please provide payment details" → expedia_pay_for_itenary
-        g. data: "Please provide guest information" → expedia_add_guest_info
+        f. ONLY if confirmed → data: "Please provide payment details" → ONLY if data provided → expedia_pay_for_itenary
+        g. data: "Please provide guest information" → ONLY if data provided → expedia_add_guest_info
         h. done
 
         4. **Interaction Rules**:

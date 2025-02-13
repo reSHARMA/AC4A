@@ -91,14 +91,13 @@ async def main() -> None:
         Calendar: A calendar app with API to reserve, check availability and read the calendar data.
         Expedia: A travel booking application with APIs for searching, booking and paying for flights, hotels, rental cars, experiences like cruises.
         Wallet: A wallet application with saved cards and with APIs for adding, removing, updating and getting credit card information for payment.
-        User: Admin or the user giving inputs. Must be used to resolve choices or get confirmation or clarification by asking the user question.
         ContactManager: A contact manager application with APIs to add, remove, update and get contact information.
 
         First output the name of the application and then the description in the format, application: description. The description must contains all the required information for the application, do not make up data, if you need data invoke the User application to get the required data first before calling the application.
 
         if you are requested some data by an application, after getting the required data pass the control back to the application by outputting the application name with the data in the format, application: data.
 
-        If all the tasks are completed return terminate.
+        When all the tasks are completed return terminate.
         If there is a permission error while doing the task return perm_err
         for any other reason of failure return error
         Always give reason for termination, perm_err or error.
@@ -168,6 +167,12 @@ async def main() -> None:
         tools=[]
     )
 
+    async def get_user_input(question: str) -> str:
+        return f"user: {question}"
+
+    async def get_user_data(request: str) -> str:
+        return f"data: {request}"
+
     async def calendar_reserve(start_time: datetime, duration: timedelta, description: str) -> str:
         print(f"\033[1;34;40mCalling CalendarAPI reserve with start_time={start_time}, duration={duration}, description={description}\033[0m")
         result = calendar_api.reserve(start_time=start_time, duration=duration, description=description)
@@ -186,10 +191,10 @@ async def main() -> None:
     calendar = AssistantAgent(
         name="Calendar",
         system_message="""
-        You are a calendar agent with access to calendar APIs as tools, you will be given a request to fulfill.
-        Call the tools available to you to fulfill the request. Asume offset-naive datetime for simplicity.
-        Return "done" when the task is completed.
-        Do not assume API call arguments, if you do not have enough information, return a message asking for the required information like user: Please provide the location.
+        You are a calendar agent.
+        Asume offset-naive datetime for simplicity.
+        Use the tools available to you to fulfill the request.
+        Return "done" when the task given to you is completed.
     """,
         tools=[calendar_reserve, calendar_read, calendar_check_availability],
         model_client=model_client
@@ -218,19 +223,16 @@ async def main() -> None:
     wallet = AssistantAgent(
         name="Wallet",
         system_message="""
-        You are a wallet agent with access to wallet APIs as tools, you will be given a request to fulfill.
-        wallet_get_credit_card_info takes card_name as input and returns all the credit card information, including the card type, card number, and card pin for the given card name.
+        You are a wallet agent.
 
-        **Forbidden Actions**:
-        ❌ card_name="default" 
-        ❌ Assume card name without user confirmation
+        wallet_get_credit_card_info tool takes card_name as input and returns all the credit card information, always including the card type, card number, and card pin or CVV and the billing and anything else necessary for making a payment for the given card name.
 
-        **Return "done" when the task of wallet is completed for now.**
-        
-        Call the tools available to you to fulfill the request. Assume offset-naive datetime for simplicity.
-        Do not assume API call arguments, if you do not have enough information, return a message asking for the required information like user: Please provide the card details.
+        If the card information is requested but card name is not provided, ask the user for the card name using get_user_input tool.
+
+        Feel free to call the tool again to get any missing information.
+        Call the tools available to you to fulfill the request.
     """,
-        tools=[wallet_add_credit_card, wallet_remove_credit_card, wallet_update_credit_card, wallet_get_credit_card_info],
+        tools=[wallet_add_credit_card, wallet_remove_credit_card, wallet_update_credit_card, wallet_get_credit_card_info, get_user_input],
         model_client=model_client
     )
 
@@ -254,19 +256,25 @@ async def main() -> None:
         result = contact_manager_api.get_contact_info(name=name)
         return result
 
+    async def contact_get_names_by_relation(relation: str) -> str:
+        print(f"\033[1;34;40mCalling ContactManagerAPI get_names_by_relation with relation={relation}\033[0m")
+        result = contact_manager_api.get_names_by_relation(relation=relation)
+        return result
+
     contact_manager = AssistantAgent(
         name="ContactManager",
         system_message="""
-        You are a contact manager agent with access to contact manager APIs as tools, you will be given a request to fulfill.
+        You are a contact manager agent.
 
-        contact_get_contact_info takes name as input and returns all the contact information, including phone, address, email, relation, birthday, and notes for the given name.
+        contact_get_contact_info tool takes name as input and returns all the contact information, including phone, address, email, relation, birthday, and notes for the given name.
 
-        Return "done" when the task is completed.
+        The name of the user is Ron Swanson whose information is already stored in the contact manager.
+        Use the tool contact_get_names_by_relation to get the names of all the contacts with the given relation and you may later use the contact_get_contact_info tool to get the information for the contact.
 
         Call the tools available to you to fulfill the request. Assume offset-naive datetime for simplicity.
         Do not assume API call arguments, if you do not have enough information, return a message asking for the required information like user: Please provide the contact details.
     """,
-        tools=[contact_add_contact, contact_remove_contact, contact_update_contact, contact_get_contact_info],
+        tools=[contact_add_contact, contact_remove_contact, contact_update_contact, contact_get_contact_info, contact_get_names_by_relation],
         model_client=model_client
     )
 
@@ -310,9 +318,9 @@ async def main() -> None:
         result = expedia_api.search_experience(experience_name=experience_name, location=location, date=date, participants=participants)
         return result
 
-    async def expedia_search_cruise(departure_port: str, departure_date: datetime, return_date: datetime, cabin_type: str = None) -> str:
-        print(f"\033[1;34;40mCalling expedia_search_cruise with departure_port={departure_port}, departure_date={departure_date}, return_date={return_date}, cabin_type={cabin_type}\033[0m")
-        result = expedia_api.search_cruise(departure_port=departure_port, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
+    async def expedia_search_cruise(departure_port: str, destination: str, departure_date: datetime, return_date: datetime, cabin_type: str = None) -> str:
+        print(f"\033[1;34;40mCalling expedia_search_cruise with departure_port={departure_port}, destination={destination}, departure_date={departure_date}, return_date={return_date}, cabin_type={cabin_type}\033[0m")
+        result = expedia_api.search_cruise(departure_port=departure_port, destination=destination, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
         return result
 
     async def expedia_get_cruise_info(cruise_id: str) -> str:
@@ -350,42 +358,35 @@ async def main() -> None:
         system_message="""
         You are a travel booking agent with strict confirmation requirements. Follow these rules:
 
-        1. **Mandatory Confirmations** - ALWAYS ask "user: [question]" before calling:
+        1. **Mandatory Confirmations** - after calling the following tools, ALWAYS ask the user for input using get_user_input:
         - expedia_search_cruise
         - expedia_get_cruise_info 
         - expedia_get_cruise_addons
         - expedia_get_cruise_policies
         - expedia_get_cruise_payment_options
 
-        **Mandatory Confirmation Syntax**:
-        - ALWAYS use exact format: "user: [Your confirmation question]"
-        - Example: "user: Confirm cruise details?" 
-        - NEVER omit the "user:" prefix
-        - NEVER combine with other text/actions 
-
-        2. **Mandatory Data Requirements** - ALWAYS ask "data: [request]" before:
-        - expedia_add_guest_info **NEVER** call without asking for data
-        - expedia_pay_for_itenary **NEVER** call without asking for data
+        2. **Mandatory Data Requirements** - before calling the following tools, ALWAYS request data by calling using get_user_data:
+        - expedia_add_guest_info 
+        - expedia_pay_for_itenary 
 
         3. **Execution Flow** - Cruise booking MUST follow this exact sequence with confirmations:
-        a. expedia_search_cruise → user: "Choose cruise an room option from these search results?"
-        b. ONLY if confirmed → expedia_get_cruise_info → user: "Confirm cruise details?"
-        c. ONLY if confirmed → expedia_get_cruise_addons → user: "Confirm add-ons?"
-        d. ONLY if confirmed → expedia_get_cruise_policies → user: "Accept policies?"
-        e. ONLY if confirmed → expedia_get_cruise_payment_options → user: "Confirm payment method?"
-        f. ONLY if confirmed → data: "Please provide payment details" → ONLY if data provided → expedia_pay_for_itenary
-        g. data: "Please provide guest information" → ONLY if data provided → expedia_add_guest_info
+        a. expedia_search_cruise → get_user_data: "Choose cruise an room option from these search results?"
+        b. ONLY if confirmed → expedia_get_cruise_info → get_user_input: "Confirm cruise details and number of guests?"
+        c. ONLY if confirmed → expedia_get_cruise_addons → get_user_input: "Confirm add-ons?"
+        d. ONLY if confirmed → expedia_get_cruise_policies → get_user_input: "Accept policies?"
+        e. ONLY if confirmed → expedia_get_cruise_payment_options → get_user_input: "Confirm payment method?"
+        f. ONLY if confirmed → get_user_data: "Please provide payment details" → ONLY if data provided → expedia_pay_for_itenary
+        g. get_user_data: "Please provide guest information" → ONLY if data provided → expedia_add_guest_info
         h. done
 
         4. **Interaction Rules**:
-        - NEVER call two tools without user confirmation/data request between them
         - If user rejects any step, return to previous stage
-        - Always wait for explicit user confirmation before proceeding
         - Repeat incomplete data requests until fulfilled
         - NEVER proceed with partial/invalid/dummy data, always ask for real data
+        - get_user_input and get_user_data are mandatory before certain tools and should not be skipped or combined or used for any other purpose
         - Always only return "done" when the entire task is completed
         """,
-        tools=[expedia_search_flights, expedia_book_hotel, expedia_rent_car, expedia_book_experience, expedia_book_cruise, expedia_search_hotels, expedia_search_rental_cars, expedia_search_experience, expedia_search_cruise, expedia_get_cruise_info, expedia_pay_for_itenary, expedia_add_guest_info, expedia_get_cruise_addons, expedia_get_cruise_policies, expedia_get_cruise_payment_options],
+        tools=[expedia_search_flights, expedia_book_hotel, expedia_rent_car, expedia_book_experience, expedia_book_cruise, expedia_search_hotels, expedia_search_rental_cars, expedia_search_experience, expedia_search_cruise, expedia_get_cruise_info, expedia_pay_for_itenary, expedia_add_guest_info, expedia_get_cruise_addons, expedia_get_cruise_policies, expedia_get_cruise_payment_options, get_user_data, get_user_input],
         model_client=model_client
     )
 

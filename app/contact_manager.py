@@ -33,7 +33,8 @@ class ContactManagerAPIAnnotation(APIAnnotationBase):
             'add_contact': ('Contact', kwargs.get('name', '*')),
             'remove_contact': ('Contact', kwargs.get('name', '*')),
             'update_contact': ('Contact', kwargs.get('name', '*')),
-            'get_contact_info': ('Contact', kwargs.get('name', '*'))
+            'get_contact_info': ('Contact', kwargs.get('name', '*')),
+            'get_names_by_relation': ('Contact', '*')
         }
         label, detail = api_to_granular_data.get(endpoint_name, ('Contact', '*'))
         if use_wildcard:
@@ -111,4 +112,12 @@ class ContactManagerAPI:
         return generate_dummy_data(
             api_endpoint="get_contact_info: get all the contact information for the given name like phone, address, email, relation, birthday, and notes",
             name=name
+        )
+
+    @ContactManagerAPIAnnotation.annotate
+    def get_names_by_relation(self, relation):
+        # Args: relation (str)
+        return generate_dummy_data(
+            api_endpoint="get_names_by_relation: get names of  persons with the given relation, for example, 'spouse', 'child', 'parent', etc.",
+            relation=relation
         )

@@ -206,11 +206,12 @@ class ExpediaAPI:
         )
 
     @ExpediaAPIAnnotation.annotate
-    def search_cruise(self, departure_port, departure_date, return_date, cabin_type=None):
-        # Args: departure_port (str), departure_date (datetime), return_date (datetime), cabin_type (str, optional)
+    def search_cruise(self, departure_port, destination, departure_date, return_date, cabin_type=None):
+        # Args: departure_port (str), destination (str), departure_date (datetime), return_date (datetime), cabin_type (str, optional)
         return generate_dummy_data(
             api_endpoint="search_cruise, expedia search cruise returns cruise id of the cruises with price, destination, depature port and room options",
             departure_port=departure_port,
+            destination=destination,
             departure_date=departure_date,
             return_date=return_date,
             cabin_type=cabin_type

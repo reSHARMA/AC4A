@@ -54,6 +54,8 @@ class ExpediaAPIAnnotation(APIAnnotationBase):
             return f"{self.namespace}:{label}({detail})"
 
     def get_access_level(self, endpoint_name):
+        if endpoint_name == 'pay_for_itenary':
+            return 'Write'
         return 'Read' if 'search' or 'get' in endpoint_name else 'Write'
 
     def get_time_period(self, start_time, end_time, use_wildcard):

@@ -532,16 +532,8 @@ async def main() -> None:
         return agent
 
     async def msr():
-        task = ("Use Expedia to compare travel itineraries for a cruise to Alaska around mid-July, considering existing constraints on my calendar."
-                "Use my Alaska Airlines credit card to book option 2 for 2 adults."
-                "Send the confirmation to my spouse, and put the trip on my calendar.")
-
-        # print(f"\033[94mTask: {task}\033[0m")
-
-
         policy_system.reset()
         
-        policy_system.disable()
         policy_system.add_policy({
             "granular_data": "Expedia:Destination",
             "data_access": "Read",
@@ -558,7 +550,7 @@ async def main() -> None:
         granted_txt = f"The system is initialized with the following permissions:\n{granted}"
         print(f"\033[95m{granted_txt}\033[0m")
 
-        # policy_system.ask()
+        policy_system.ask()
 
         stream_log = []
         run_task = SelectorGroupChat(agents, max_turns=70, termination_condition=termination, model_client=model_client, selector_func=selector_exp, allow_repeated_speaker=False)

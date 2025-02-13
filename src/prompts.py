@@ -125,6 +125,7 @@ Always respect the data hierarchy and never generate redundant policies.
 - **If the request starts with the name of the app, like Calendar: request or Expedia: request, then the granular_data must also start with the same app name and use the data from the same data hierarchy without any exceptions.
 - **Generate only permissive policies** for data whose access can be reasonably inferred from the request.
 - **No assumptions about sensitive data**: Allow access if the user action implicitly necessitates it.
+- **If two sub data are needed, create a policy with the parent data, example if both Wallet:CreditCardNumber and Wallet:CreditCardPin are needed, grant access to Wallet:CreditCard instead. Similarly, if ContactManager:ContactName and ContactManager:ContactPhone are needed, grant access to ContactManager:Contact instead.
 - **Feel free to generate multiple policies to accurately represent the data allowed by the user through the request but avoid redundant policies.
 - **First, output the reasoning for each policy, and then output the generated policy in individual code blocks.
 """

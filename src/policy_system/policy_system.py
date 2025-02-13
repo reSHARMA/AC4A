@@ -78,6 +78,9 @@ class PolicySystem:
 
     def add_policy(self, policy_rule):
         if self.prompt:
+            if self.is_action_allowed(policy_rule, False):
+                debug_print("\033[1;33;40mPolicy rule already subsumed by existing policies. Skipping addition.\033[0m")
+                return
             txt = self.text(policy=policy_rule, mode="prompt")
             user_response = input(f"{txt} (yes/no): ").strip().lower()
             if user_response != "yes":
@@ -88,16 +91,19 @@ class PolicySystem:
                 policy_rule[attr] = value()
         self.policy_rules.append(policy_rule)
 
-    def is_action_allowed(self, attributes):
+    def is_action_allowed(self, attributes, print_policy=True):
         if not self.status:
             return True
 
         for rule in self.policy_rules:
-            print("\033[1;36;40mChecking policy:\033[0m", rule)  # Changed to cyan
+            if print_policy:
+                print("\033[1;36;40mChecking policy:\033[0m", rule)  # Changed to cyan
             if self.check_subsumption(rule, attributes):
-                print("\033[1;32;40mAction is allowed based on policy: \033[0m", rule)  # Kept as green
+                if print_policy:
+                    print("\033[1;32;40mAction is allowed based on policy: \033[0m", rule)  # Kept as green
                 return True
-        print("\033[1;35;40mAction is not allowed based on current policies.\033[0m")  # Changed to magenta
+        if print_policy:
+            print("\033[1;35;40mAction is not allowed based on current policies.\033[0m")  # Changed to magenta
         return False
 
     def check_subsumption(self, rule, attributes):

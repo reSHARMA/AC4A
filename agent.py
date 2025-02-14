@@ -226,11 +226,9 @@ async def main() -> None:
 
         wallet_get_credit_card_info tool takes card_name as input and returns all the credit card information, always including the card type, card number, and card pin or CVV and the billing and anything else necessary for making a payment for the given card name.
 
-        If the card information is requested but card name is not provided, ask the user for the card name using get_user_input tool.
+        If the card information is requested but card name is not provided, ask the user for the card name using `get_user_input` tool.
 
-        Return "done" when the task given to you is completed.
-
-        Call the tools available to you to fulfill the request.
+        Return "done" when you have completed your work.
     """,
         tools=[wallet_get_credit_card_info, wallet_add_credit_card, wallet_remove_credit_card, wallet_update_credit_card, get_user_input],
         model_client=model_client
@@ -268,13 +266,13 @@ async def main() -> None:
 
         The name of the user is Ron Swanson whose information is already stored in the contact manager.
 
-        Use the tool contact_get_names_by_relation to get the names of all the contacts with the given relation and you may later use the contact_get_contact_info tool to get the information for the contact.
+        Use the tool `contact_get_names_by_relation` to get the names of all the contacts with the given relation and you may later use the `contact_get_contact_info` tool to get the information for the contact.
 
         `contact_get_contact_info` tool takes name as input and returns all the contact information, including phone, address, email, relation, birthday, and notes for the given name.
 
-        use `get_user_input` tool to ask the user for the name of the contact if the name is not provided.
+        use `get_user_input` tool to ask the user for user input.
 
-        Return "done" when the task given to you is completed.
+        Return "done" when your work is completed.
     """,
         tools=[contact_add_contact, contact_remove_contact, contact_update_contact, contact_get_contact_info, contact_get_names_by_relation, get_user_input],
         model_client=model_client

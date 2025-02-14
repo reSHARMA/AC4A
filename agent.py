@@ -92,10 +92,9 @@ async def main() -> None:
         Expedia: A travel booking application with APIs for searching, booking and paying for flights, hotels, rental cars, experiences like cruises.
         Wallet: A wallet application with saved cards and with APIs for adding, removing, updating and getting credit card information for payment.
         ContactManager: A contact manager application with APIs to add, remove, update and get contact information.
+        User: The user application only for asking the user for input and data.
 
         First output the name of the application and then the description in the format, application: description. The description must contains all the required information for the application, do not make up data, if you need data invoke the User application to get the required data first before calling the application.
-
-        if you are requested some data by an application, after getting the required data pass the control back to the application by outputting the application name with the data in the format, application: data.
 
         When all the tasks are completed return terminate.
         If there is a permission error while doing the task return perm_err
@@ -229,10 +228,11 @@ async def main() -> None:
 
         If the card information is requested but card name is not provided, ask the user for the card name using get_user_input tool.
 
-        Feel free to call the tool again to get any missing information.
+        Return "done" when the task given to you is completed.
+
         Call the tools available to you to fulfill the request.
     """,
-        tools=[wallet_add_credit_card, wallet_remove_credit_card, wallet_update_credit_card, wallet_get_credit_card_info, get_user_input],
+        tools=[wallet_get_credit_card_info, wallet_add_credit_card, wallet_remove_credit_card, wallet_update_credit_card, get_user_input],
         model_client=model_client
     )
 
@@ -266,15 +266,17 @@ async def main() -> None:
         system_message="""
         You are a contact manager agent.
 
-        contact_get_contact_info tool takes name as input and returns all the contact information, including phone, address, email, relation, birthday, and notes for the given name.
-
         The name of the user is Ron Swanson whose information is already stored in the contact manager.
+
         Use the tool contact_get_names_by_relation to get the names of all the contacts with the given relation and you may later use the contact_get_contact_info tool to get the information for the contact.
 
-        Call the tools available to you to fulfill the request. Assume offset-naive datetime for simplicity.
-        Do not assume API call arguments, if you do not have enough information, return a message asking for the required information like user: Please provide the contact details.
+        `contact_get_contact_info` tool takes name as input and returns all the contact information, including phone, address, email, relation, birthday, and notes for the given name.
+
+        use `get_user_input` tool to ask the user for the name of the contact if the name is not provided.
+
+        Return "done" when the task given to you is completed.
     """,
-        tools=[contact_add_contact, contact_remove_contact, contact_update_contact, contact_get_contact_info, contact_get_names_by_relation],
+        tools=[contact_add_contact, contact_remove_contact, contact_update_contact, contact_get_contact_info, contact_get_names_by_relation, get_user_input],
         model_client=model_client
     )
 
@@ -370,7 +372,7 @@ async def main() -> None:
         - expedia_pay_for_itenary 
 
         3. **Execution Flow** - Cruise booking MUST follow this exact sequence with confirmations:
-        a. expedia_search_cruise → get_user_data: "Choose cruise an room option from these search results?"
+        a. expedia_search_cruise → get_user_input: "Choose cruise an room option from these search results?"
         b. ONLY if confirmed → expedia_get_cruise_info → get_user_input: "Confirm cruise details and number of guests?"
         c. ONLY if confirmed → expedia_get_cruise_addons → get_user_input: "Confirm add-ons?"
         d. ONLY if confirmed → expedia_get_cruise_policies → get_user_input: "Accept policies?"
@@ -507,10 +509,7 @@ async def main() -> None:
             if agent == "terminate":
                 agent = "Planner"
 
-        elif len(messages) > 0 and messages[-1].source != "Expedia":
-            agent = "Planner"
-
-        else:    
+        elif len(messages) > 0:    
             if messages[-1].content.lower() == "done":
                 agent = "Planner"
             elif messages[-1].content.lower().startswith("user"):

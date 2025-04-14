@@ -1,12 +1,19 @@
 import os
-from openai import OpenAI
+from openai import OpenAI, AzureOpenAI
+from azure.identity import AzureCliCredential, DefaultAzureCredential, get_bearer_token_provider, ChainedTokenCredential
+from dotenv import load_dotenv
 from config import debug_print
+import re
+
+# Load environment variables from .env file
+load_dotenv()
 
 history = ""
 
 def call_openai_api(system: str, prompt: str) -> str:
     """
     Calls the OpenAI API with the given prompt and returns the response.
+    If OpenAI API key is unavailable, falls back to Azure OpenAI client.
 
     Args:
         prompt (str): The prompt to send to the OpenAI API.
@@ -15,20 +22,58 @@ def call_openai_api(system: str, prompt: str) -> str:
         str: The response from the OpenAI API.
     """
     try:
+        # Try OpenAI client first
         openai_api_key = os.getenv('OPENAI_API_KEY')
-        client = OpenAI(api_key=openai_api_key)
-        messages = []
-        if system:
-            messages.append({"role": "system", "content": system})
-        messages.append({"role": "user", "content": prompt})
-        completion = client.chat.completions.create(
-            messages=messages,
-            model="gpt-4o",
-            temperature=1,
-        )
-        return completion.choices[0].message.content
+        if openai_api_key:
+            client = OpenAI(api_key=openai_api_key)
+            messages = []
+            if system:
+                messages.append({"role": "system", "content": system})
+            messages.append({"role": "user", "content": prompt})
+            completion = client.chat.completions.create(
+                messages=messages,
+                model="gpt-4o",
+                temperature=1,
+            )
+            return completion.choices[0].message.content
+        else:
+            # Fallback to Azure OpenAI client
+            debug_print("OpenAI API key not found, using Azure OpenAI client")
+            
+            # Get the scope from the environment variable
+            scope = os.getenv('AZURE_OPENAI_TOKEN_SCOPES')
+            
+            # Create the credential chain
+            credential = get_bearer_token_provider(ChainedTokenCredential(
+                AzureCliCredential(),
+                DefaultAzureCredential(
+                    managed_identity_client_id=os.environ.get("DEFAULT_IDENTITY_CLIENT_ID"),
+                )
+            ), scope)
+
+            api_version = os.getenv('AZURE_OPENAI_API_VERSION')
+            model_name = os.getenv('AZURE_OPENAI_DEPLOYMENT')
+            endpoint = os.getenv('AZURE_OPENAI_ENDPOINT')
+
+            client = AzureOpenAI(
+                azure_endpoint=endpoint,
+                azure_ad_token_provider=credential,
+                api_version=api_version,
+            )
+            
+            messages = []
+            if system:
+                messages.append({"role": "system", "content": system})
+            messages.append({"role": "user", "content": prompt})
+            
+            completion = client.chat.completions.create(
+                model=model_name,
+                messages=messages,
+                temperature=1,
+            )
+            return completion.choices[0].message.content
     except Exception as e:
-        print("An error occurred while calling the OpenAI API:", e)
+        debug_print(f"An error occurred while calling the API: {e}")
         return ""
 
 def generate_dummy_data(api_endpoint: str, **kwargs) -> dict:

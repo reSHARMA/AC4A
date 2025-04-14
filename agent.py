@@ -5,6 +5,9 @@ from autogen_agentchat.ui import Console
 from autogen_agentchat.conditions import TextMentionTermination
 from autogen_agentchat.messages import AgentEvent, ChatMessage
 from autogen_core import CancellationToken
+from autogen_ext.auth.azure import AzureTokenProvider
+from autogen_ext.models.openai import AzureOpenAIChatCompletionClient
+from azure.identity import DefaultAzureCredential
 
 
 from app.calendar import CalendarAPI
@@ -19,9 +22,13 @@ from src.prompts import *
 import os, asyncio, json, re, pprint
 from typing import Sequence
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 
 from config import debug_print
 import streamlit as st
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Conditional import for Streamlit
 USE_STREAMLIT = True
@@ -49,15 +56,52 @@ async def main() -> None:
     policy_system.register_api(WalletAPI)
     policy_system.register_api(ContactManagerAPI)
 
-    config = {
-        "provider": "OpenAIChatCompletionClient",
-        "config": {
-            "model": "gpt-4o",
-            "api_key": os.environ["OPENAI_API_KEY"]
+    # Try OpenAI configuration first
+    openai_api_key = os.getenv('OPENAI_API_KEY')
+    if openai_api_key:
+        config = {
+            "provider": "OpenAIChatCompletionClient",
+            "config": {
+                "model": "gpt-4o",
+                "api_key": openai_api_key
+            }
         }
-    }
-
-    model_client = ChatCompletionClient.load_component(config)
+        model_client = ChatCompletionClient.load_component(config)
+    else:
+        # Fallback to Azure OpenAI
+        debug_print("OpenAI API key not found, using Azure OpenAI client")
+        endpoint = os.getenv('AZURE_OPENAI_ENDPOINT')
+        if not endpoint:
+            raise ValueError("Azure OpenAI endpoint not found in environment variables")
+        
+        # Extract API version from endpoint URL if not provided
+        api_version = os.getenv('AZURE_OPENAI_API_VERSION')
+        if not api_version:
+            raise ValueError("Azure OpenAI API version not found in environment variables")
+        
+        scope = os.getenv('AZURE_OPENAI_TOKEN_SCOPES')
+        if not scope:
+            raise ValueError("Azure OpenAI token scope not found in environment variables")
+        
+        # Get deployment from environment variable
+        deployment = os.getenv('AZURE_OPENAI_DEPLOYMENT')
+        if not deployment:
+            raise ValueError("Azure OpenAI deployment not found in environment variables")
+        
+        # Create the Azure token provider
+        token_provider = AzureTokenProvider(
+            DefaultAzureCredential(),
+            scope,
+        )
+        
+        # Create the Azure OpenAI client
+        model_client = AzureOpenAIChatCompletionClient(
+            azure_deployment=deployment,
+            model="gpt-4o",
+            api_version=api_version,
+            azure_endpoint=endpoint,
+            azure_ad_token_provider=token_provider,
+        )
 
     def web_input_func(prompt: str) -> str:
         global user_input

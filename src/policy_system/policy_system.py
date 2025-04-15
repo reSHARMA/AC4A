@@ -163,10 +163,18 @@ class PolicySystem:
         return True
 
     def validate_attribute(self, rule_value, attribute_value, attribute_type):
+        debug_print(f"\033[94mDebug: Validating attribute {attribute_type}\033[0m")
+        debug_print(f"\033[94mDebug: Rule value: {rule_value}\033[0m")
+        debug_print(f"\033[94mDebug: Attribute value: {attribute_value}\033[0m")
+        
+        valid = False  # Initialize valid at the start
+        
+        if not rule_value:
+            debug_print(f"\033[94mDebug: No rule value provided\033[0m")
+            return True
+
         if attribute_type in self.attribute_definitions:
             hierarchy = self.attribute_definitions[attribute_type]
-            valid = False
-
             for root in hierarchy:
                 if isinstance(root, AttributeTree):
                     # Hierarchical structure, convert to flat list and check subsumption

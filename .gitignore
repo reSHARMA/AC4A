@@ -136,3 +136,8 @@ dmypy.json
 cython_debug/
 
 debug.log
+log
+*log 
+web/log
+
+.gitignore

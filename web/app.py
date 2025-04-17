@@ -6,6 +6,7 @@ import threading
 import queue
 import logging
 from datetime import datetime, timedelta
+import time
 
 # Import the agent_wrapper module
 from agent_wrapper import run_agent_sync, get_next_input_request, submit_user_input, get_next_agent_message
@@ -72,6 +73,26 @@ def handle_message(data):
                 # The messages have already been sent by the check_for_input_requests function
                 # No need to send them again
                 logger.info("Agent run completed")
+                
+                # Get the termination reason from the logs
+                termination_reason = "Conversation completed"
+                
+                # Extract the termination reason from the agent response
+                if "Termination reason:" in agent_response:
+                    termination_reason = agent_response.split("Termination reason:")[1].strip()
+                elif "Maximum number of turns" in str(agent_response):
+                    termination_reason = "Maximum number of turns reached"
+                elif "terminate" in str(agent_response):
+                    termination_reason = "Agent requested termination"
+                elif "error" in str(agent_response):
+                    termination_reason = "An error occurred"
+                
+                # Add a delay to ensure all agent messages are processed before emitting the completion event
+                time.sleep(1)
+                
+                # Emit a completion message to update the UI
+                socketio.emit('agent_completed', {"message": f"Agent has completed the conversation. Reason: {termination_reason}"})
+                
             except Exception as e:
                 logger.error(f"Error in agent thread: {str(e)}", exc_info=True)
                 error_message = f"An error occurred: {str(e)}"

@@ -241,6 +241,37 @@
             sendButton.disabled = false;
             messageInput.disabled = false;
         });
+        
+        // Handle agent completion
+        socket.on('agent_completed', (data) => {
+            console.log('Agent completed:', data);
+            
+            // Hide typing indicator
+            isAgentThinking = false;
+            typingIndicator.style.display = 'none';
+            
+            // Enable input and button
+            sendButton.disabled = false;
+            messageInput.disabled = false;
+            
+            // Add a completion message to the chat
+            const completionDiv = document.createElement('div');
+            completionDiv.className = 'message assistant-message';
+            
+            const sourceDiv = document.createElement('div');
+            sourceDiv.className = 'message-source';
+            sourceDiv.textContent = 'System';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = data.message || 'The conversation has ended. You can start a new conversation by sending a message.';
+            
+            completionDiv.appendChild(sourceDiv);
+            completionDiv.appendChild(contentDiv);
+            
+            chatMessages.appendChild(completionDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
 
         // Send message function
         function sendMessage() {

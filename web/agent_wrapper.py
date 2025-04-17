@@ -347,6 +347,8 @@ async def run_agent_with_input(user_input: str) -> str:
         # Run the chat
         logger.info("Running chat")
         responses = []
+        termination_reason = "Conversation completed"
+        
         async for message in group_chat.run_stream():
             try:
                 # Handle different message types
@@ -362,6 +364,16 @@ async def run_agent_with_input(user_input: str) -> str:
                     content = getattr(message, 'content', str(message))
                 
                 logger.info(f"Received message: {source}: {content}")
+                
+                # Check for termination reason
+                if source == "Group chat manager" and "Maximum number of turns" in content:
+                    termination_reason = "Maximum number of turns reached"
+                elif "Maximum number of turns" in content:
+                    termination_reason = "Maximum number of turns reached"
+                elif "terminate" in content.lower():
+                    termination_reason = "Agent requested termination"
+                elif "error" in content.lower():
+                    termination_reason = "An error occurred"
                 
                 # Skip TaskResult messages that contain all previous messages
                 if source == "Unknown" and "TaskResult" in str(message) and "messages=" in str(message):
@@ -437,9 +449,8 @@ async def run_agent_with_input(user_input: str) -> str:
         
         logger.info(f"Chat completed with {len(responses)} responses")
         
-        # Return an empty string instead of joining all responses
-        # This prevents the concatenated message from being sent to the chat UI
-        return ""
+        # Return the termination reason
+        return f"Termination reason: {termination_reason}"
     except Exception as e:
         logger.error(f"Error in run_agent_with_input: {str(e)}", exc_info=True)
         # Return a fallback response

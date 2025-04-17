@@ -55,11 +55,9 @@ def handle_message(data):
         agent_waiting_for_input = False
         return
     
-    # Add user message to conversation history
+    # Add user message to conversation history but don't emit it
+    # The frontend already displays user messages on the right side
     conversation_history.append({"role": "user", "content": user_message})
-    
-    # Emit the user message to all clients
-    socketio.emit('message', {"role": "user", "content": user_message})
     
     try:
         # Run the agent in a separate thread
@@ -120,6 +118,11 @@ def check_for_input_requests():
                 agent_name = parts[0]
                 content = parts[1]
             
+            # Skip user messages to prevent duplication
+            if agent_name == "User":
+                logger.info("Skipping user message to prevent duplication")
+                continue
+                
             # Add message to conversation history
             conversation_history.append({"role": agent_name, "content": content})
             

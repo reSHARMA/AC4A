@@ -166,6 +166,12 @@
 
         // Handle incoming messages
         socket.on('message', (data) => {
+            // Skip displaying user messages from the server
+            // They are already displayed on the right side when the user sends them
+            if (data.role === 'user') {
+                return;
+            }
+            
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${data.role}-message`;
             
@@ -242,6 +248,25 @@
             if (message) {
                 console.log('Sending message:', message);
                 socket.emit('send_message', { message });
+                
+                // Display the user message on the right side
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message user-message';
+                
+                const sourceDiv = document.createElement('div');
+                sourceDiv.className = 'message-source';
+                sourceDiv.textContent = 'You';
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                contentDiv.textContent = message;
+                
+                messageDiv.appendChild(sourceDiv);
+                messageDiv.appendChild(contentDiv);
+                
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
                 messageInput.value = '';
                 
                 if (isWaitingForInput) {

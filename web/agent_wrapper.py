@@ -368,6 +368,11 @@ async def run_agent_with_input(user_input: str) -> str:
                     logger.info("Skipping concatenated TaskResult message")
                     continue
                 
+                # Skip user messages to prevent duplication
+                if source == "User":
+                    logger.info("Skipping user message to prevent duplication")
+                    continue
+                
                 # Format the message for display
                 formatted_message = ""
                 
@@ -389,7 +394,8 @@ async def run_agent_with_input(user_input: str) -> str:
                         else:
                             formatted_message = f"{source}: {content}"
                 elif source == "User":
-                    formatted_message = f"{source}: {content}"
+                    # Skip user messages to prevent duplication
+                    continue
                 elif source == "Agent":
                     # Handle messages from the Agent source
                     # Clean up markdown formatting

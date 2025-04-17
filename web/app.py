@@ -109,11 +109,22 @@ def check_for_input_requests():
         agent_message = get_next_agent_message()
         if agent_message:
             logger.info(f"Received agent message: {agent_message}")
+            
+            # Extract the agent name and content from the message
+            agent_name = "Assistant"  # Default role
+            content = agent_message
+            
+            # Check if the message starts with an agent name followed by a colon
+            if ": " in agent_message:
+                parts = agent_message.split(": ", 1)
+                agent_name = parts[0]
+                content = parts[1]
+            
             # Add message to conversation history
-            conversation_history.append({"role": "assistant", "content": agent_message})
+            conversation_history.append({"role": agent_name, "content": content})
             
             # Emit the message to all clients
-            socketio.emit('message', {"role": "assistant", "content": agent_message})
+            socketio.emit('message', {"role": agent_name, "content": content})
             logger.info(f"Emitted agent message: {agent_message}")
         
         socketio.sleep(0.5)  # Sleep to prevent CPU hogging

@@ -379,13 +379,13 @@ async def run_agent_with_input(user_input: str) -> str:
                     task_match = re.search(r'Task:\s*([^\n]+)', content)
                     if task_match:
                         task = task_match.group(1).strip()
-                        formatted_message = f"{source}\nTask: {task}"
+                        formatted_message = f"{source}: {task}"
                     else:
                         # Look for Description: pattern
                         desc_match = re.search(r'Description:\s*([^\n]+)', content)
                         if desc_match:
                             desc = desc_match.group(1).strip()
-                            formatted_message = f"{source}\nTask: {desc}"
+                            formatted_message = f"{source}: {desc}"
                         else:
                             formatted_message = f"{source}: {content}"
                 elif source == "User":
@@ -399,13 +399,13 @@ async def run_agent_with_input(user_input: str) -> str:
                     task_match = re.search(r'Task:\s*([^\n]+)', content)
                     if task_match:
                         task = task_match.group(1).strip()
-                        formatted_message = f"Agent\nTask: {task}"
+                        formatted_message = f"Agent: {task}"
                     else:
                         # Look for Description: pattern
                         desc_match = re.search(r'Description:\s*([^\n]+)', content)
                         if desc_match:
                             desc = desc_match.group(1).strip()
-                            formatted_message = f"Agent\nTask: {desc}"
+                            formatted_message = f"Agent: {desc}"
                         else:
                             formatted_message = f"Agent: {content}"
                 elif source == "Expedia" or source == "Calendar" or source == "Wallet" or source == "ContactManager":

@@ -693,11 +693,6 @@ async def run_agent() -> str:
                             formatted_message = f"Agent: {desc}"
                         else:
                             formatted_message = f"Agent: {content}"
-                elif source == "Expedia" or source == "Calendar" or source == "Wallet" or source == "ContactManager":
-                    # Handle messages from specialized agents
-                    # Clean up markdown formatting
-                    content = re.sub(r'\*\*|\*|__|\[|\]|\(|\)|`|#', '', content)
-                    formatted_message = f"{source}: {content}"
                 else:
                     # Handle messages from other sources
                     # Clean up markdown formatting

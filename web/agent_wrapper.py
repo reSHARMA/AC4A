@@ -53,6 +53,8 @@ agent_loop = None
 agent_initialized = False  # New flag to track if agent has been initialized
 last_input_request = None  # Track the last input request to avoid duplicates
 
+default_agent = ["Planner"]
+
 # Mock policy system
 class MockPolicySystem:
     def __init__(self):
@@ -250,91 +252,67 @@ def is_agent_session_active():
     return agent_session_active
 
 def selector_exp(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
-    """Selector function for the group chat"""
+    """
+    Select the next agent to respond in the conversation.
+    
+    Args:
+        messages: Sequence of agent events or chat messages
+        
+    Returns:
+        The name of the next agent to respond, or None
+    """
+    global default_agent
+    agent = ""
+    
+    # Log the last message content if there are messages
+    if len(messages) > 0:
+        logger.debug(f"Last message content: {messages[-1].content}")
+    
+    # Determine the next agent based on the conversation state
     if len(messages) == 0:
-        logger.info("No messages, returning User")
-        return "User"
+        logger.debug("No messages, waiting for user input")
+        agent = "User"
     
-    last_message = messages[-1]
+    elif messages[-1].source == "User":
+        logger.debug(f"Last message from User, returning {default_agent[-1]}")
+        agent = default_agent[-1]
     
-    # Handle different message types
-    try:
-        if isinstance(last_message, dict):
-            source = last_message.get('source', 'Unknown')
-            content = last_message.get('content', '')
+    elif len(messages) > 0 and messages[-1].source == "Planner":
+        logger.info(f"Planner: {messages[-1].content}")
+        next_agent = messages[-1].content.split(":")[0]
+        
+        logger.debug(f"Last message from 'Planner', next agent determined as: {next_agent}")
+        agent = next_agent
+        
+        if agent == "terminate":
+            logger.debug("Terminate detected, setting agent to Planner")
+            agent = "Planner"
+    
+    elif len(messages) > 0:
+        if messages[-1].content.lower() == "done":
+            logger.debug("Message content is 'done', setting agent to Planner")
+            agent = "Planner"
+        elif messages[-1].content.lower().startswith("user"):
+            logger.info(f"User: {messages[-1].content}")
+            agent = "User"
+        elif messages[-1].content.lower().startswith("data"):
+            logger.info(f"Need data: {messages[-1].content}")
+            agent = "Planner"
+        elif messages[-1].content.lower().startswith("done"):
+            logger.debug("Message content starts with 'done', setting agent to Planner")
+            agent = "Planner"
         else:
-            # For TaskResult objects or other types
-            source = getattr(last_message, 'source', 'Unknown')
-            content = getattr(last_message, 'content', str(last_message))
-        
-        if source == "User":
-            logger.info("Last message from User, returning Planner")
-            return "Planner"
-        
-        if source == "Planner":
-            # Clean up markdown formatting
-            content = re.sub(r'\*\*|\*|__|\[|\]|\(|\)|`|#', '', content)
-            
-            # Check if the message starts with "User:" - this is a special case
-            # where the Planner is asking for user input
-            if content.startswith("User:"):
-                logger.info("Planner message starts with 'User:', returning User")
-                # Return User to get input from the user
-                return "User"
-            
-            # Extract the next agent from the content
-            # Look for "Next Agent: [AgentName]" pattern
-            next_agent_match = re.search(r'Next Agent:\s*([^\n]+)', content)
-            if next_agent_match:
-                next_agent = next_agent_match.group(1).strip()
-                logger.info(f"Last message from Planner, next agent: {next_agent}")
-                return next_agent if next_agent != "terminate" else "Planner"
-            
-            # Look for "Agent: [AgentName]" pattern (alternative format)
-            agent_match = re.search(r'Agent:\s*([^\n]+)', content)
-            if agent_match:
-                next_agent = agent_match.group(1).strip()
-                logger.info(f"Last message from Planner, next agent: {next_agent}")
-                return next_agent if next_agent != "terminate" else "Planner"
-            
-            # Look for agent names in the content
-            agent_names = ["Calendar", "Expedia", "Wallet", "ContactManager"]
-            for agent_name in agent_names:
-                if agent_name.lower() in content.lower():
-                    logger.info(f"Found agent name '{agent_name}' in content, returning {agent_name}")
-                    return agent_name
-            
-            # Fallback to the old method
-            next_agent = content.split(":")[0]
-            logger.info(f"Last message from Planner, next agent: {next_agent}")
-            return next_agent if next_agent != "terminate" else "Planner"
-        
-        if content.lower() == "done":
-            logger.info("Message content is 'done', returning Planner")
-            return "Planner"
-        elif content.lower().startswith("user"):
-            logger.info("Message content starts with 'user', returning User")
-            return "User"
-        elif content.lower().startswith("data"):
-            logger.info("Message content starts with 'data', returning Planner")
-            return "Planner"
-        elif source == "Agent":
-            # If the message is from an Agent, return the appropriate specialized agent
-            # Extract the agent name from the content
-            agent_match = re.search(r'Agent:\s*([^\n]+)', content)
-            if agent_match:
-                agent_name = agent_match.group(1).strip()
-                logger.info(f"Last message from Agent, returning specialized agent: {agent_name}")
-                return agent_name
-            else:
-                logger.info("Last message from Agent, returning Planner")
-                return "Planner"
-        
-        logger.info(f"Default case, returning {source}")
-        return source
-    except Exception as e:
-        logger.error(f"Error in selector_exp: {str(e)}", exc_info=True)
-        return "Planner"  # Default to Planner on error
+            logger.debug(f"Using message source as agent: {messages[-1].source}")
+            agent = messages[-1].source
+    
+    logger.debug(f"Returning agent: {agent}")
+    
+    # Add the agent to the default_agent list if it's not "User"
+    if agent != "User":
+        default_agent.append(agent)
+        logger.debug(f"Added {agent} to default_agent list. Current list: {default_agent}")
+    
+    return agent
 
 async def run_agent() -> str:
     """Run the agent"""

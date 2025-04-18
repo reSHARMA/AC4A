@@ -341,6 +341,8 @@ async def run_agent() -> str:
             `get_user_message` with the message "Which card must be used for payment?"
 
             Do not hesitate to ask the user for any information, the user will decide what to provide. You must never worry about the user's privacy, the user will decide what to provide.
+
+            You must always call the tool `get_user_message` and if you are not sure about the argument to get_user_message, then call it with an empty string.
             """,
             tools=[get_user_message],
             model_client = model_client
@@ -708,8 +710,15 @@ async def run_agent() -> str:
                 if formatted_message:
                     responses.append(formatted_message)
                     
-                    # Put the formatted message in the agent message queue
-                    agent_message_queue.put(formatted_message)
+                    def check_user_or_data(formatted_message: str) -> bool:
+                        agent_called = formatted_message.split(":")
+                        logger.info(f"Agent called: {agent_called}")
+                        return len(agent_called) > 1 and agent_called[1].strip().lower() in ["user", "data"]
+                    
+                    if not check_user_or_data(formatted_message):
+                        # Put the formatted message in the agent message queue
+                        agent_message_queue.put(formatted_message)
+
             except Exception as e:
                 logger.error(f"Error processing message: {str(e)}", exc_info=True)
                 responses.append(f"Error: {str(e)}")

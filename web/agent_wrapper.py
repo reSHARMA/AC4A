@@ -173,6 +173,8 @@ def web_input_func(prompt: str) -> str:
     """Function to handle web input"""
     global agent_waiting_for_input_flag, last_input_request
     
+    if prompt == "":
+        prompt = "Hi, how can I help you today?"
     # If this is the same prompt as the last one, don't ask again
     if prompt == last_input_request:
         logger.info(f"Duplicate input request detected: {prompt}")
@@ -621,7 +623,7 @@ async def run_agent() -> str:
         # Run the chat
         logger.info("Running chat")
         responses = []
-        termination_reason = "Conversation completed"
+        termination_reason = None
         
         async for message in group_chat.run_stream():
             try:
@@ -639,22 +641,25 @@ async def run_agent() -> str:
                 
                 logger.info(f"Received message: {source}: {content}")
                 
-                # Check for termination reason
-                if source == "Group chat manager" and "Maximum number of turns" in content:
-                    termination_reason = "Maximum number of turns reached"
-                elif "Maximum number of turns" in content:
-                    termination_reason = "Maximum number of turns reached"
-                elif type(content) == str and "terminate" in content.lower():
-                    termination_reason = "Agent requested termination"
-                elif type(content) == str and "error" in content.lower():
-                    termination_reason = "An error occurred"
-                
+             
                 # Skip TaskResult messages that contain all previous messages
                 if source == "Unknown" and "TaskResult" in str(message) and "messages=" in str(message):
                     logger.info("Skipping concatenated TaskResult message")
                     continue
-                
+                 # Check for termination reason
+                if source == "Group chat manager" and "Maximum number of turns" in content:
+                    termination_reason = "Maximum number of turns reached"
+                elif "Maximum number of turns" in content:
+                    termination_reason = "Maximum number of turns reached"
+                elif type(content) == str and ("terminate" in content.lower() or "perm_err" in content.lower() or "error" in content.lower()):
+                    termination_reason = content  
                 # Skip user messages to prevent duplication
+        
+                if termination_reason:
+                    logger.info(f"Putting termination reason: {termination_reason} in agent message queue")
+                    agent_message_queue.put(f"Termination reason: {termination_reason}")
+                    return f"Termination reason: {termination_reason}"
+
                 if source == "User":
                     logger.info("Skipping user message to prevent duplication")
                     continue
@@ -724,9 +729,8 @@ async def run_agent() -> str:
                 responses.append(f"Error: {str(e)}")
         
         logger.info(f"Chat completed with {len(responses)} responses")
-        
         # Return the termination reason
-        return f"Termination reason: {termination_reason}"
+        return f"Termination reason: Conversation completed"
     except Exception as e:
         logger.error(f"Error in run_agent_with_input: {str(e)}", exc_info=True)
         # Return a fallback response

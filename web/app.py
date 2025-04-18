@@ -123,7 +123,11 @@ def check_for_input_requests():
                 # Emit the message to all clients
                 socketio.emit('message', {"role": agent_name, "content": content})
                 logger.info(f"Emitted agent message: {agent_message}")
-        
+        else:
+            while x := get_next_agent_message():
+                logger.info(f"Remaining messages: {x}")
+                socketio.emit('message', {"role": "Assistant", "content": x})
+
         socketio.sleep(0.5)  # Sleep to prevent CPU hogging
 
 # Start the input request checker thread

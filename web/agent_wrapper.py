@@ -333,7 +333,18 @@ async def run_agent() -> str:
             # Use the web_input_func to get input
             return web_input_func(prompt)
             
-        user = UserProxyAgent("User", input_func=get_user_message)
+        user = AssistantAgent(
+            name="User",
+            system_message="""You are a user agent responsible for interfacing with the user.
+            You can send a message to the user using the `get_user_message` tool.
+            for example, to ask the user for which card must be used for payment, you can use the following message:
+            `get_user_message` with the message "Which card must be used for payment?"
+
+            Do not hesitate to ask the user for any information, the user will decide what to provide. You must never worry about the user's privacy, the user will decide what to provide.
+            """,
+            tools=[get_user_message],
+            model_client = model_client
+        )
 
         planner = AssistantAgent(
             name="Planner",
@@ -361,12 +372,6 @@ async def run_agent() -> str:
         logger.info("Creating specialized agents")
 
         async def get_user_input(question: str) -> str:
-            # For flight booking, we'll extract the information from the user's initial request
-            # This is a special case to avoid the loop of asking for input
-            if "flight" in question.lower() and "sea" in question.lower() and "slc" in question.lower():
-                # Extract information from the user's initial request
-                # For now, we'll use default values
-                return "I'd like to book a flight from Seattle (SEA) to Salt Lake City (SLC) for 2 passengers in economy class for next month."
             return f"user: {question}"
 
         async def get_user_data(request: str) -> str:

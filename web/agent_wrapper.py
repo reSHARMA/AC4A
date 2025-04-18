@@ -637,9 +637,9 @@ async def run_agent() -> str:
                     termination_reason = "Maximum number of turns reached"
                 elif "Maximum number of turns" in content:
                     termination_reason = "Maximum number of turns reached"
-                elif "terminate" in content.lower():
+                elif type(content) == str and "terminate" in content.lower():
                     termination_reason = "Agent requested termination"
-                elif "error" in content.lower():
+                elif type(content) == str and "error" in content.lower():
                     termination_reason = "An error occurred"
                 
                 # Skip TaskResult messages that contain all previous messages

@@ -326,6 +326,15 @@ async def run_agent() -> str:
     logger.info(f"Running agent with session ID: {session_id}")
     
     try:
+        # Check if there's a termination message in the queue
+        try:
+            termination_message = agent_message_queue.get_nowait()
+            if "Termination reason:" in termination_message:
+                logger.info(f"Termination message found in queue: {termination_message}")
+                return termination_message
+        except queue.Empty:
+            pass
+        
         # Set up model client
         logger.info("Setting up model client")
         model_client = setup_model_client()
@@ -646,25 +655,18 @@ async def run_agent() -> str:
                 
                 logger.info(f"Received message: {source}: {content}")
                 
-             
+                # Check for termination messages
+                if "Termination reason:" in content:
+                    termination_reason = content
+                    logger.info(f"Termination detected: {termination_reason}")
+                    break
+                
                 # Skip TaskResult messages that contain all previous messages
                 if source == "Unknown" and "TaskResult" in str(message) and "messages=" in str(message):
                     logger.info("Skipping concatenated TaskResult message")
                     continue
-                 # Check for termination reason
-                if source == "Group chat manager" and "Maximum number of turns" in content:
-                    termination_reason = "Maximum number of turns reached"
-                elif "Maximum number of turns" in content:
-                    termination_reason = "Maximum number of turns reached"
-                elif type(content) == str and ("terminate" in content.lower() or "perm_err" in content.lower() or "error" in content.lower()):
-                    termination_reason = content  
+                
                 # Skip user messages to prevent duplication
-        
-                if termination_reason:
-                    logger.info(f"Putting termination reason: {termination_reason} in agent message queue")
-                    agent_message_queue.put(f"Termination reason: {termination_reason}")
-                    return f"Termination reason: {termination_reason}"
-
                 if source == "User":
                     logger.info("Skipping user message to prevent duplication")
                     continue
@@ -734,10 +736,13 @@ async def run_agent() -> str:
                 responses.append(f"Error: {str(e)}")
         
         logger.info(f"Chat completed with {len(responses)} responses")
+        
         # Return the termination reason
+        if termination_reason:
+            return termination_reason
         return f"Termination reason: Conversation completed"
     except Exception as e:
-        logger.error(f"Error in run_agent_with_input: {str(e)}", exc_info=True)
+        logger.error(f"Error in run_agent: {str(e)}", exc_info=True)
         # Return a fallback response
         return f"Assistant: I apologize, but I encountered an error while processing your request: {str(e)}. This might be due to API connectivity issues. Please try again later or contact support if the problem persists."
 
@@ -746,6 +751,11 @@ def reset_agent_session():
     global agent_session_active, agent_thread, agent_loop, agent_initialized, agent_waiting_for_input_flag, agent_group_chat, current_user_input, last_input_request
     
     logger.info("Resetting agent session")
+    
+    # If the agent session is already inactive, do nothing
+    if not agent_session_active and not agent_initialized:
+        logger.info("Agent session already inactive, nothing to reset")
+        return
     
     # Set flags to indicate session is not active
     agent_session_active = False
@@ -770,6 +780,9 @@ def reset_agent_session():
     # Force garbage collection to clean up any lingering objects
     import gc
     gc.collect()
+    
+    # Add a termination message to the queue to signal the agent to stop
+    agent_message_queue.put("Termination reason: Session reset by user")
     
     logger.info("Agent session reset complete")
 
@@ -798,24 +811,66 @@ def initialize_agent_session():
     agent_thread.daemon = True
     agent_thread.start()
     
-    # Mark the agent as initialized
+    # Mark the agent as initialized and active
     agent_initialized = True
+    agent_session_active = True
     
     logger.info("Agent session initialized")
 
 def run_agent_thread():
     """Run the agent in a separate thread"""
-    global agent_loop, agent_session_active
+    global agent_loop, agent_session_active, agent_initialized
     
     try:
+        # Initialize the agent session if not already initialized
+        if not agent_initialized:
+            logger.info("Initializing new agent session")
+            initialize_agent_session()
+            agent_initialized = True
+        
+        # Check if there's a termination message in the queue
+        try:
+            termination_message = agent_message_queue.get_nowait()
+            if "Termination reason:" in termination_message:
+                logger.info(f"Termination message found in queue: {termination_message}")
+                agent_session_active = False
+                agent_initialized = False
+                return
+        except queue.Empty:
+            pass
+        
+        # Set the agent session as active before running
+        agent_session_active = True
+        logger.info("Starting agent session")
+        
         # Run the agent in the event loop
         agent_loop.run_until_complete(run_agent())
     except Exception as e:
         logger.error(f"Error in agent thread: {str(e)}", exc_info=True)
+        agent_session_active = False
+        agent_initialized = False
     finally:
         # Set the agent session as inactive
         agent_session_active = False
+        agent_initialized = False
         logger.info("Agent session ended")
+        
+        # Close the event loop to ensure clean shutdown
+        try:
+            agent_loop.close()
+        except Exception as e:
+            logger.error(f"Error closing event loop: {str(e)}", exc_info=True)
+        
+        # Clear any remaining messages in the queues
+        try:
+            while not agent_message_queue.empty():
+                agent_message_queue.get_nowait()
+            while not input_request_queue.empty():
+                input_request_queue.get_nowait()
+            while not input_response_queue.empty():
+                input_response_queue.get_nowait()
+        except Exception as e:
+            logger.error(f"Error clearing message queues: {str(e)}", exc_info=True)
 
 def run_agent_sync() -> str:
     """Synchronous wrapper for running the agent"""

@@ -337,14 +337,15 @@ async def run_agent() -> str:
             
         user = AssistantAgent(
             name="User",
-            system_message="""You are a user agent responsible for interfacing with the user.
+            system_message="""You are a user agent responsible for interfacing with the user on behalf of a AI assistant.
+
             You can send a message to the user using the `get_user_message` tool.
             for example, to ask the user for which card must be used for payment, you can use the following message:
             `get_user_message` with the message "Which card must be used for payment?"
 
             Do not hesitate to ask the user for any information, the user will decide what to provide. You must never worry about the user's privacy, the user will decide what to provide.
 
-            You must always call the tool `get_user_message` and if you are not sure about the argument to get_user_message, then call it with an empty string.
+            If there is nothing to ask or you are not sure, just say, "Hi! What can I do for you today?" using the `get_user_message` tool.
             """,
             tools=[get_user_message],
             model_client = model_client

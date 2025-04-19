@@ -42,6 +42,11 @@
             background-color: #f5f5f5;
             margin-right: 20%;
         }
+        .system-message {
+            background-color: #fff8e1;
+            margin-right: 20%;
+            border: 1px solid #ffd54f;
+        }
         .message-source {
             font-weight: bold;
             margin-bottom: 5px;
@@ -123,13 +128,34 @@
         .input-request-prompt {
             margin-bottom: 10px;
         }
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        #reset-button {
+            padding: 8px 16px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        #reset-button:hover {
+            background-color: #d32f2f;
+        }
     </style>
 </head>
 <body>
     <div class="connection-status disconnected" id="connection-status">Disconnected</div>
     
     <div class="chat-container">
-        <h1>Autogen Chat</h1>
+        <div class="header-container">
+            <h1>Autogen Chat</h1>
+            <button id="reset-button">Reset Session</button>
+        </div>
         <div class="chat-messages" id="chat-messages"></div>
         <div class="typing-indicator" id="typing-indicator">Agent is thinking...</div>
         <div class="input-container">
@@ -145,9 +171,11 @@
         const chatMessages = document.getElementById('chat-messages');
         const typingIndicator = document.getElementById('typing-indicator');
         const connectionStatus = document.getElementById('connection-status');
+        const resetButton = document.getElementById('reset-button');
         
         let isAgentThinking = false;
         let isWaitingForInput = false;
+        let isSessionTerminated = false;
 
         // Handle connection events
         socket.on('connect', () => {
@@ -155,6 +183,14 @@
             connectionStatus.textContent = 'Connected';
             connectionStatus.classList.remove('disconnected');
             connectionStatus.classList.add('connected');
+            
+            // If the session was terminated, we can start a new one
+            if (isSessionTerminated) {
+                isSessionTerminated = false;
+                messageInput.placeholder = 'Type your message...';
+                sendButton.disabled = false;
+                messageInput.disabled = false;
+            }
         });
 
         socket.on('disconnect', () => {
@@ -173,7 +209,31 @@
             }
             
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${data.role}-message`;
+            
+            // Check if this is a system message about termination
+            if (data.role === 'System' && data.content.includes('Termination reason:')) {
+                messageDiv.className = 'message system-message';
+                isSessionTerminated = true;
+                
+                // Add a "Start New Session" button
+                const startNewButton = document.createElement('button');
+                startNewButton.textContent = 'Start New Session';
+                startNewButton.style.marginTop = '10px';
+                startNewButton.style.padding = '5px 10px';
+                startNewButton.style.backgroundColor = '#4caf50';
+                startNewButton.style.color = 'white';
+                startNewButton.style.border = 'none';
+                startNewButton.style.borderRadius = '3px';
+                startNewButton.style.cursor = 'pointer';
+                
+                startNewButton.addEventListener('click', () => {
+                    resetSession();
+                });
+                
+                messageDiv.appendChild(startNewButton);
+            } else {
+                messageDiv.className = `message ${data.role}-message`;
+            }
             
             const sourceDiv = document.createElement('div');
             sourceDiv.className = 'message-source';
@@ -273,6 +333,63 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         });
 
+        // Reset session function
+        function resetSession() {
+            console.log('Resetting session');
+            
+            // Clear the chat messages
+            chatMessages.innerHTML = '';
+            
+            // Reset UI state
+            isAgentThinking = false;
+            isWaitingForInput = false;
+            isSessionTerminated = false;
+            typingIndicator.style.display = 'none';
+            sendButton.disabled = false;
+            messageInput.disabled = false;
+            messageInput.placeholder = 'Type your message...';
+            
+            // Send reset request to server
+            fetch('/reset_session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Session reset response:', data);
+                
+                // Add a system message about the reset
+                const resetDiv = document.createElement('div');
+                resetDiv.className = 'message system-message';
+                
+                const sourceDiv = document.createElement('div');
+                sourceDiv.className = 'message-source';
+                sourceDiv.textContent = 'System';
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                contentDiv.textContent = 'Session has been reset. You can start a new conversation.';
+                
+                resetDiv.appendChild(sourceDiv);
+                resetDiv.appendChild(contentDiv);
+                
+                chatMessages.appendChild(resetDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            })
+            .catch(error => {
+                console.error('Error resetting session:', error);
+                
+                // Add an error message
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.textContent = 'Failed to reset session. Please try again.';
+                chatMessages.appendChild(errorDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            });
+        }
+
         // Send message function
         function sendMessage() {
             const message = messageInput.value.trim();
@@ -320,6 +437,12 @@
             if (e.key === 'Enter') {
                 sendMessage();
             }
+        });
+        resetButton.addEventListener('click', resetSession);
+        
+        // Handle page reload
+        window.addEventListener('beforeunload', () => {
+            console.log('Page is about to be unloaded');
         });
     </script>
 </body>

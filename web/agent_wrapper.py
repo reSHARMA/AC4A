@@ -21,6 +21,7 @@ from autogen_ext.auth.azure import AzureTokenProvider
 from autogen_ext.models.openai import AzureOpenAIChatCompletionClient, OpenAIChatCompletionClient
 from azure.identity import DefaultAzureCredential, ChainedTokenCredential, AzureCliCredential, get_bearer_token_provider
 from dotenv import load_dotenv
+import uuid
 
 # Import mock APIs
 from mock_app import CalendarAPI, ExpediaAPI, WalletAPI, ContactManagerAPI
@@ -319,7 +320,10 @@ def selector_exp(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
 async def run_agent() -> str:
     """Run the agent"""
     global agent_session_active, agent_group_chat, agent_waiting_for_input_flag
-    logger.info(f"Running agent")
+    
+    # Generate a unique session ID to ensure no memory is shared between sessions
+    session_id = str(uuid.uuid4())
+    logger.info(f"Running agent with session ID: {session_id}")
     
     try:
         # Set up model client
@@ -737,6 +741,38 @@ async def run_agent() -> str:
         # Return a fallback response
         return f"Assistant: I apologize, but I encountered an error while processing your request: {str(e)}. This might be due to API connectivity issues. Please try again later or contact support if the problem persists."
 
+def reset_agent_session():
+    """Reset the agent session state"""
+    global agent_session_active, agent_thread, agent_loop, agent_initialized, agent_waiting_for_input_flag, agent_group_chat, current_user_input, last_input_request
+    
+    logger.info("Resetting agent session")
+    
+    # Set flags to indicate session is not active
+    agent_session_active = False
+    agent_waiting_for_input_flag = False
+    agent_initialized = False
+    
+    # Clear the agent group chat
+    agent_group_chat = None
+    
+    # Reset user input and last input request
+    current_user_input = ""
+    last_input_request = None
+    
+    # Clear the queues
+    while not input_request_queue.empty():
+        input_request_queue.get_nowait()
+    while not input_response_queue.empty():
+        input_response_queue.get_nowait()
+    while not agent_message_queue.empty():
+        agent_message_queue.get_nowait()
+    
+    # Force garbage collection to clean up any lingering objects
+    import gc
+    gc.collect()
+    
+    logger.info("Agent session reset complete")
+
 def initialize_agent_session():
     """Initialize the agent session"""
     global agent_session_active, agent_thread, agent_loop, agent_initialized
@@ -746,10 +782,10 @@ def initialize_agent_session():
         logger.info("Agent session already active")
         return
     
-    # If the agent has already been initialized, don't initialize again
+    # If the agent has already been initialized, reset it first
     if agent_initialized:
-        logger.info("Agent already initialized, not initializing again")
-        return
+        logger.info("Agent already initialized, resetting first")
+        reset_agent_session()
     
     logger.info("Initializing agent session")
     

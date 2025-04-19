@@ -22,6 +22,7 @@ from autogen_ext.models.openai import AzureOpenAIChatCompletionClient, OpenAICha
 from azure.identity import DefaultAzureCredential, ChainedTokenCredential, AzureCliCredential, get_bearer_token_provider
 from dotenv import load_dotenv
 import uuid
+import gc
 
 # Import mock APIs
 from mock_app import CalendarAPI, ExpediaAPI, WalletAPI, ContactManagerAPI
@@ -343,7 +344,7 @@ async def run_agent() -> str:
         logger.info("Creating agents")
         def get_user_message(prompt: str) -> str:
             # Put out a system message that we're waiting for input
-            agent_message_queue.put(f"System: Awaiting user input for: {prompt}")
+            # agent_message_queue.put(prompt)
             
             # Use the web_input_func to get input
             return web_input_func(prompt)
@@ -637,8 +638,7 @@ async def run_agent() -> str:
         # Run the chat
         logger.info("Running chat")
         responses = []
-        termination_reason = None
-        
+
         async for message in group_chat.run_stream():
             try:
                 # Handle different message types
@@ -655,16 +655,14 @@ async def run_agent() -> str:
                 
                 logger.info(f"Received message: {source}: {content}")
                 
-                # Check for termination messages
-                if "Termination reason:" in content:
-                    termination_reason = content
-                    logger.info(f"Termination detected: {termination_reason}")
-                    break
-                
                 # Skip TaskResult messages that contain all previous messages
                 if source == "Unknown" and "TaskResult" in str(message) and "messages=" in str(message):
                     logger.info("Skipping concatenated TaskResult message")
                     continue
+                
+                if type(content) == str and ("terminate" in content.lower() or "perm_err" in content.lower() or "error" in content.lower()):
+                    logger.info(f"Termination detected: {content}")
+                    return "TERMINATION: " + content
                 
                 # Skip user messages to prevent duplication
                 if source == "User":
@@ -737,52 +735,64 @@ async def run_agent() -> str:
         
         logger.info(f"Chat completed with {len(responses)} responses")
         
-        # Return the termination reason
-        if termination_reason:
-            return termination_reason
-        return f"Termination reason: Conversation completed"
+        return "Conversation completed"
+
     except Exception as e:
         logger.error(f"Error in run_agent: {str(e)}", exc_info=True)
         # Return a fallback response
-        return f"Assistant: I apologize, but I encountered an error while processing your request: {str(e)}. This might be due to API connectivity issues. Please try again later or contact support if the problem persists."
+        error_message = f"Assistant: I apologize, but I encountered an error while processing your request: {str(e)}. This might be due to API connectivity issues. Please try again later or contact support if the problem persists."
+        # Add the error message to the queue
+        agent_message_queue.put(error_message)
+        return error_message
 
-def reset_agent_session():
-    """Reset the agent session state"""
-    global agent_session_active, agent_thread, agent_loop, agent_initialized, agent_waiting_for_input_flag, agent_group_chat, current_user_input, last_input_request
-    
+def reset_agent_session(emit_termination: bool = True):
+    """Reset the agent session."""
     logger.info("Resetting agent session")
+    global agent_session_active, agent_group_chat, current_user_input, input_request_queue, input_response_queue, agent_message_queue, agent_waiting_for_input_flag, last_input_request
     
-    # If the agent session is already inactive, do nothing
-    if not agent_session_active and not agent_initialized:
-        logger.info("Agent session already inactive, nothing to reset")
+    # If the session is already inactive, nothing to do
+    if not agent_session_active:
+        logger.info("Agent session already inactive")
         return
     
-    # Set flags to indicate session is not active
+    # Set the session as not active
     agent_session_active = False
-    agent_waiting_for_input_flag = False
-    agent_initialized = False
     
     # Clear the agent group chat
     agent_group_chat = None
     
-    # Reset user input and last input request
-    current_user_input = ""
+    # Reset user input
+    current_user_input = None
+    
+    # Clear all queues
+    while not input_request_queue.empty():
+        try:
+            input_request_queue.get_nowait()
+        except queue.Empty:
+            break
+    
+    while not input_response_queue.empty():
+        try:
+            input_response_queue.get_nowait()
+        except queue.Empty:
+            break
+    
+    while not agent_message_queue.empty():
+        try:
+            agent_message_queue.get_nowait()
+        except queue.Empty:
+            break
+    
+    # Reset flags
+    agent_waiting_for_input_flag = False
     last_input_request = None
     
-    # Clear the queues
-    while not input_request_queue.empty():
-        input_request_queue.get_nowait()
-    while not input_response_queue.empty():
-        input_response_queue.get_nowait()
-    while not agent_message_queue.empty():
-        agent_message_queue.get_nowait()
-    
     # Force garbage collection to clean up any lingering objects
-    import gc
     gc.collect()
     
-    # Add a termination message to the queue to signal the agent to stop
-    agent_message_queue.put("Termination reason: Session reset by user")
+    # Add a termination message to the queue only if requested
+    if emit_termination:
+        agent_message_queue.put("TERMINATION: Session reset by user")
     
     logger.info("Agent session reset complete")
 
@@ -822,18 +832,12 @@ def run_agent_thread():
     global agent_loop, agent_session_active, agent_initialized
     
     try:
-        # Initialize the agent session if not already initialized
-        if not agent_initialized:
-            logger.info("Initializing new agent session")
-            initialize_agent_session()
-            agent_initialized = True
-        
         # Check if there's a termination message in the queue
         try:
             termination_message = agent_message_queue.get_nowait()
-            if "Termination reason:" in termination_message:
+            if "TERMINATION:" in termination_message:
                 logger.info(f"Termination message found in queue: {termination_message}")
-                agent_session_active = False
+                agent_message_queue.put(termination_message)
                 agent_initialized = False
                 return
         except queue.Empty:
@@ -844,9 +848,17 @@ def run_agent_thread():
         logger.info("Starting agent session")
         
         # Run the agent in the event loop
-        agent_loop.run_until_complete(run_agent())
+        result = agent_loop.run_until_complete(run_agent())
+        
+        # Check if the result is a termination message
+        if "TERMINATION:" in result:
+            logger.info(f"Agent returned termination message: {result}")
+            agent_message_queue.put(result)
     except Exception as e:
         logger.error(f"Error in agent thread: {str(e)}", exc_info=True)
+        error_message = f"TERMINATION: Error in agent thread: {str(e)}"
+        # Add the error message to the queue
+        agent_message_queue.put(error_message)
         agent_session_active = False
         agent_initialized = False
     finally:
@@ -863,8 +875,6 @@ def run_agent_thread():
         
         # Clear any remaining messages in the queues
         try:
-            while not agent_message_queue.empty():
-                agent_message_queue.get_nowait()
             while not input_request_queue.empty():
                 input_request_queue.get_nowait()
             while not input_response_queue.empty():

@@ -215,22 +215,8 @@
                 messageDiv.className = 'message system-message';
                 isSessionTerminated = true;
                 
-                // Add a "Start New Session" button
-                const startNewButton = document.createElement('button');
-                startNewButton.textContent = 'Start New Session';
-                startNewButton.style.marginTop = '10px';
-                startNewButton.style.padding = '5px 10px';
-                startNewButton.style.backgroundColor = '#4caf50';
-                startNewButton.style.color = 'white';
-                startNewButton.style.border = 'none';
-                startNewButton.style.borderRadius = '3px';
-                startNewButton.style.cursor = 'pointer';
-                
-                startNewButton.addEventListener('click', () => {
-                    resetSession();
-                });
-                
-                messageDiv.appendChild(startNewButton);
+                // No longer add a "Start New Session" button
+                // The session will automatically reset when the user sends a message
             } else {
                 messageDiv.className = `message ${data.role}-message`;
             }
@@ -360,23 +346,8 @@
             .then(data => {
                 console.log('Session reset response:', data);
                 
-                // Add a system message about the reset
-                const resetDiv = document.createElement('div');
-                resetDiv.className = 'message system-message';
-                
-                const sourceDiv = document.createElement('div');
-                sourceDiv.className = 'message-source';
-                sourceDiv.textContent = 'System';
-                
-                const contentDiv = document.createElement('div');
-                contentDiv.className = 'message-content';
-                contentDiv.textContent = 'Session has been reset. You can start a new conversation.';
-                
-                resetDiv.appendChild(sourceDiv);
-                resetDiv.appendChild(contentDiv);
-                
-                chatMessages.appendChild(resetDiv);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+                // No longer display a system message about the reset
+                // The session will be reset automatically when the user sends a message
             })
             .catch(error => {
                 console.error('Error resetting session:', error);
@@ -395,6 +366,14 @@
             const message = messageInput.value.trim();
             if (message) {
                 console.log('Sending message:', message);
+                
+                // If the session is terminated, reset it before sending the message
+                if (isSessionTerminated) {
+                    console.log('Session is terminated, resetting before sending message');
+                    resetSession();
+                    isSessionTerminated = false;
+                }
+                
                 socket.emit('send_message', { message });
                 
                 // Display the user message on the right side

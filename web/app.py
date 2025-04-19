@@ -109,7 +109,7 @@ def handle_message(data):
         # Make sure the agent session is fully reset before initializing a new one
         if is_agent_session_active():
             logger.info("Agent session still active, resetting first")
-            reset_agent_session()
+            reset_agent_session(emit_termination=False)  # Don't emit termination during normal reset
         initialize_agent_session()
         new_session_needed = False
         logger.info("Agent session initialized")
@@ -193,9 +193,14 @@ def check_for_input_requests():
                     
                     # Emit the message to the web UI
                     socketio.emit('message', {"role": agent_name, "content": content})
-            
+            else:
+                logger.info("Agent session not active, skipping check for input requests and flushing agent message queue")
+                while remaining_message := get_next_agent_message():
+                    logger.info(f"Flushing remaining message from agent message queue: {remaining_message}")
+                    socketio.emit('message', {"role": "System", "content": remaining_message})
+
             # Add a small delay to prevent CPU hogging
-            socketio.sleep(0.5)
+            socketio.sleep(1.0)
         except Exception as e:
             logger.error(f"Error in check_for_input_requests: {str(e)}", exc_info=True)
             # Add a small delay to prevent rapid cycling in case of errors

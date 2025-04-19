@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Split from 'react-split'
 import PermissionChat from './components/PermissionChat'
 import AutogenChat from './components/AutogenChat'
+import ChakraExample from './components/ChakraExample'
 import styles from './App.module.css'
 
 function App() {
@@ -35,6 +36,9 @@ function App() {
             <AutogenChat messages={messages} setMessages={setMessages} />
           </div>
         </Split>
+      </div>
+      <div style={{ margin: '20px', maxWidth: '600px' }}>
+        <ChakraExample />
       </div>
     </div>
   )

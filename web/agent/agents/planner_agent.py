@@ -1,0 +1,36 @@
+import logging
+from .base_agent import BaseAgent
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+class PlannerAgent(BaseAgent):
+    """Planner agent for coordinating other agents"""
+    
+    def __init__(self, model_client):
+        """
+        Initialize the planner agent
+        
+        Args:
+            model_client: The model client to use
+        """
+        system_message = """You have access to multiple different applications which you must invoke to complete the user reuqest. Output the name of the application from the application given to you which must be invoked next. You will see the history of applications invoked and their results. Along with the name of the application, send a description of the task that application needs to perform with all the necessary data you have without explicitly sending the exact user request. Only send the necessary information.
+
+        List of the available application with description:
+        Calendar: A calendar app with API to reserve, check availability and read the calendar data.
+        Expedia: A travel booking application with APIs for searching, booking and paying for flights, hotels, rental cars, experiences like cruises.
+        Wallet: A wallet application with saved cards and with APIs for adding, removing, updating and getting credit card information for payment.
+        ContactManager: A contact manager application with APIs to add, remove, update and get contact information.
+        User: The user application only for asking the user for input and data.
+
+        First output the name of the application and then the description in the format, application: description. The description must contains all the required information for the application, do not make up data, if you need data invoke the User application to get the required data first before calling the application.
+
+        When all the tasks are completed return terminate.
+        If there is a permission error while doing the task return perm_err
+        for any other reason of failure return error
+        Always give reason for termination, perm_err or error.
+        """
+        
+        tools = []
+        
+        super().__init__("Planner", system_message, tools, model_client) 

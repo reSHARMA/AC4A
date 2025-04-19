@@ -8,25 +8,32 @@ import logging
 from datetime import datetime, timedelta
 import time
 
-# Import the agent_wrapper module
-from agent_wrapper import (
-    initialize_agent_session, 
-    get_next_input_request, 
-    submit_user_input, 
+# Import from our new modular components
+from agent.session import initialize_agent_session, reset_agent_session
+from agent.queues import (
+    get_next_input_request,
+    submit_user_input,
     get_next_agent_message,
     is_agent_waiting_for_input,
+    set_agent_waiting_for_input,
     is_agent_session_active,
-    reset_agent_session
+    input_request_queue,
+    input_response_queue,
+    agent_message_queue
 )
 
 # Set up logging - change level to INFO to reduce logs
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Disable Flask-SocketIO debug logs
+# Disable Flask-SocketIO and autogen debug logs
 logging.getLogger('engineio').setLevel(logging.ERROR)
 logging.getLogger('socketio').setLevel(logging.ERROR)
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
+logging.getLogger('autogen').setLevel(logging.ERROR)
+logging.getLogger('autogen_core').setLevel(logging.ERROR)
+logging.getLogger('autogen_agentchat').setLevel(logging.ERROR)
+logging.getLogger('autogen_runtime').setLevel(logging.ERROR)
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Required for session management
@@ -34,9 +41,6 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # Store conversation history
 conversation_history = []
-
-# Flag to indicate if the agent is waiting for input
-agent_waiting_for_input = False
 
 # Flag to track if a new session is needed
 new_session_needed = False
@@ -48,7 +52,7 @@ def index():
 @app.route('/reset_session', methods=['POST'])
 def reset_session():
     """Reset the agent session and conversation history"""
-    global conversation_history, agent_waiting_for_input, new_session_needed
+    global conversation_history, new_session_needed
     
     logger.info("Resetting session")
     
@@ -59,7 +63,7 @@ def reset_session():
     conversation_history = []
     
     # Reset the waiting flag
-    agent_waiting_for_input = False
+    set_agent_waiting_for_input(False)
     
     # Set the new session flag
     new_session_needed = True
@@ -73,10 +77,10 @@ def reset_session():
 
 @socketio.on('connect')
 def handle_connect():
+    global new_session_needed
     logger.info('Client connected')
     
     # Check if we need to initialize a new session
-    global new_session_needed
     if new_session_needed or not is_agent_session_active():
         logger.info("Initializing new agent session")
         # Make sure the agent session is fully reset before initializing a new one
@@ -98,12 +102,12 @@ def handle_disconnect():
 
 @socketio.on('send_message')
 def handle_message(data):
+    global conversation_history, new_session_needed
     logger.info(f"Received message: {data}")
     user_message = data.get('message', '')
     logger.info(f"User message: {user_message}")
     
     # Check if we need to initialize a new session
-    global new_session_needed
     if new_session_needed or not is_agent_session_active():
         logger.info("Initializing new agent session")
         # Make sure the agent session is fully reset before initializing a new one
@@ -115,11 +119,10 @@ def handle_message(data):
         logger.info("Agent session initialized")
     
     # Check if the agent is waiting for input
-    global agent_waiting_for_input
-    if agent_waiting_for_input:
+    if is_agent_waiting_for_input():
         logger.info("Agent is waiting for input, submitting user message")
         submit_user_input(user_message)
-        agent_waiting_for_input = False
+        set_agent_waiting_for_input(False)
     
     # Add user message to conversation history but don't emit it
     # The frontend already displays user messages on the right side
@@ -127,7 +130,7 @@ def handle_message(data):
     
 # Function to check for input requests from the agent
 def check_for_input_requests():
-    global agent_waiting_for_input, new_session_needed
+    global new_session_needed
     while True:
         try:
             # Check if we need to initialize a new session
@@ -143,12 +146,13 @@ def check_for_input_requests():
             
             # Only check for input requests if the agent session is active
             if is_agent_session_active():
+                logger.info("Agent session is active, checking for input requests and messages")
                 # Check if agent is waiting for input
                 if is_agent_waiting_for_input():
                     input_request = get_next_input_request()
                     if input_request:
                         logger.info(f"Received input request from agent: {input_request}")
-                        agent_waiting_for_input = True
+                        set_agent_waiting_for_input(True)
                         # Emit the input request to the web UI
                         socketio.emit('input_request', {"prompt": input_request})
                 

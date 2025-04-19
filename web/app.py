@@ -77,24 +77,23 @@ def reset_session():
 
 @socketio.on('connect')
 def handle_connect():
-    global new_session_needed
+    global new_session_needed, conversation_history
     logger.info('Client connected')
     
-    # Check if we need to initialize a new session
-    if new_session_needed or not is_agent_session_active():
-        logger.info("Initializing new agent session")
-        # Make sure the agent session is fully reset before initializing a new one
-        if is_agent_session_active():
-            logger.info("Agent session still active, resetting first")
-            reset_agent_session()
-        initialize_agent_session()
-        new_session_needed = False
-        logger.info("Agent session initialized")
+    # Reset the conversation history and session on new connection
+    conversation_history = []
+    reset_agent_session()
     
-    # Send the current conversation history to the client
-    if conversation_history:
-        for message in conversation_history:
-            socketio.emit('message', message)
+    # Initialize a new session
+    logger.info("Initializing new agent session")
+    initialize_agent_session()
+    new_session_needed = False
+    logger.info("Agent session initialized")
+    
+    # Send a welcome message
+    welcome_message = {"role": "System", "content": "Welcome to the Autogen Chat! Type a message to start."}
+    socketio.emit('message', welcome_message)
+    conversation_history.append(welcome_message)
 
 @socketio.on('disconnect')
 def handle_disconnect():

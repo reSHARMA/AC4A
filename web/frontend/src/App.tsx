@@ -10,6 +10,11 @@ function App() {
   const [isConnected, setIsConnected] = useState(false)
   const toast = useToast()
 
+  // Reset messages when component mounts (page load/refresh)
+  useEffect(() => {
+    setMessages([])
+  }, [])
+
   useEffect(() => {
     console.log('WebSocket connection status:', isConnected ? 'Connected' : 'Disconnected')
     if (!isConnected) {

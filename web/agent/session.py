@@ -33,20 +33,23 @@ agent_thread = None
 agent_loop = None
 
 def reset_agent_session(emit_termination: bool = True):
-    """Reset the agent session."""
-    logger.info("Resetting agent session")
-    global agent_group_chat, current_user_input, input_request_queue, input_response_queue, agent_message_queue, last_input_request
+    """Reset the agent session"""
+    global agent_thread, agent_loop, agent_initialized, current_user_input
     
-    # If the session is already inactive, nothing to do
+    logger.info("Resetting agent session")
+    
+    # Only reset if the session is active
     if not is_agent_session_active():
-        logger.info("Agent session already inactive")
+        logger.info("Session already inactive, skipping reset")
         return
     
-    # Set the session as not active
+    # Set session as inactive first to prevent new messages
     set_agent_session_active(False)
     
-    # Clear the agent group chat
-    agent_group_chat = None
+    # Wait for agent thread to finish if it exists
+    if agent_thread and agent_thread.is_alive():
+        logger.info("Waiting for agent thread to finish")
+        agent_thread.join(timeout=5)  # Wait up to 5 seconds
     
     # Reset user input
     current_user_input = None
@@ -95,7 +98,7 @@ def initialize_agent_session():
     # If the agent has already been initialized, reset it first
     if agent_initialized:
         logger.info("Agent already initialized, resetting first")
-        reset_agent_session()
+        reset_agent_session(emit_termination=False)  # Don't emit termination message during initialization
     
     logger.info("Initializing agent session")
     

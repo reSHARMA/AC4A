@@ -158,8 +158,12 @@ async def run_agent() -> str:
                 else:
                     # Handle messages from other sources
                     # Clean up markdown formatting
-                    content = re.sub(r'\*\*|\*|__|\[|\]|\(|\)|`|#', '', content)
-                    formatted_message = f"{source}: {content}"
+                    if isinstance(content, str):
+                        content = re.sub(r'\*\*|\*|__|\[|\]|\(|\)|`|#', '', content)
+                        formatted_message = f"{source}: {content}"
+                    else:
+                        # If content is not a string, convert it to string representation
+                        formatted_message = f"{source}: {str(content)}"
                 
                 # Add the formatted message to the responses
                 if formatted_message:

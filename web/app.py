@@ -100,11 +100,11 @@ def handle_connect():
 def handle_disconnect():
     logger.info('Client disconnected')
 
-@socketio.on('send_message')
+@socketio.on('user_message')
 def handle_message(data):
     global conversation_history, new_session_needed
     logger.info(f"Received message: {data}")
-    user_message = data.get('message', '')
+    user_message = data.get('content', '')
     logger.info(f"User message: {user_message}")
     
     # Check if we need to initialize a new session

@@ -1,7 +1,12 @@
-from flask import Flask, render_template, request, jsonify, session
-from flask_socketio import SocketIO, emit
 import sys
 import os
+
+# Add the root directory to the Python path
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, root_dir)
+
+from flask import Flask, render_template, request, jsonify, session
+from flask_socketio import SocketIO, emit
 import threading
 import queue
 import logging
@@ -9,8 +14,8 @@ from datetime import datetime, timedelta
 import time
 
 # Import from our new modular components
-from agent.session import initialize_agent_session, reset_agent_session
-from agent.queues import (
+from web.agent.session import initialize_agent_session, reset_agent_session
+from web.agent.queues import (
     get_next_input_request,
     submit_user_input,
     get_next_agent_message,

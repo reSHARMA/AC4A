@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from .base_agent import BaseAgent
 from ..web_input import web_input_func
-from mock_app import ExpediaAPI
+from web.mock_app import ExpediaAPI
 
 # Set up logging
 logger = logging.getLogger(__name__)

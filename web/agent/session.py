@@ -22,11 +22,14 @@ from .agents.expedia_agent import ExpediaAgent
 from .agents.contact_manager_agent import ContactManagerAgent
 from autogen_agentchat.teams import SelectorGroupChat
 from autogen_agentchat.conditions import TextMentionTermination
-from .policy_system import policy_system
+from src.policy_system.policy_system import PolicySystem
 from .selector import selector_exp
 from .queues import set_agent_session_active, is_agent_session_active, set_agent_waiting_for_input
 # Set up logging
 logger = logging.getLogger(__name__)
+
+# Create an instance of the PolicySystem
+policy_system = PolicySystem()
 
 # Global variables for agent session management
 agent_thread = None

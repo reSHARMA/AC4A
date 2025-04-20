@@ -12,7 +12,7 @@ from .model_client import setup_model_client
 from .web_input import web_input_func
 from .selector import selector_exp
 from .queues import agent_message_queue, set_agent_session_active
-from .policy_system import policy_system
+from src.policy_system.policy_system import PolicySystem
 from .agents.calendar_agent import CalendarAgent
 from .agents.wallet_agent import WalletAgent
 from .agents.expedia_agent import ExpediaAgent
@@ -22,6 +22,9 @@ from .agents.user_agent import UserAgent
 
 # Set up logging
 logger = logging.getLogger(__name__)
+
+# Create an instance of the PolicySystem
+policy_system = PolicySystem()
 
 # Store the group chat instance
 agent_group_chat = None

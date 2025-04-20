@@ -1,7 +1,7 @@
 import logging
 from .base_agent import BaseAgent
 from ..web_input import web_input_func
-from mock_app import WalletAPI
+from web.mock_app import WalletAPI
 
 # Set up logging
 logger = logging.getLogger(__name__)

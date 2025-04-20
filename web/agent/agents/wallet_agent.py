@@ -122,6 +122,7 @@ class WalletAgent(BaseAgent):
         Return "done" when you have completed your work.
         """
         
+        policy_system.register_api(WalletAPI)
         self.wallet_api = WalletAPI(policy_system)
         
         tools = [

@@ -40,6 +40,18 @@ logging.getLogger('autogen_core').setLevel(logging.ERROR)
 logging.getLogger('autogen_agentchat').setLevel(logging.ERROR)
 logging.getLogger('autogen_runtime').setLevel(logging.ERROR)
 
+# Enable full debug for policy_system
+policy_logger = logging.getLogger('policy_system')
+policy_logger.setLevel(logging.DEBUG)
+
+# Make sure policy logger has handlers
+if not policy_logger.handlers:
+    # Create console handler with formatting
+    console = logging.StreamHandler()
+    console.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    policy_logger.addHandler(console)
+    policy_logger.propagate = False  # Avoid duplicate logs
+
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Required for session management
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')

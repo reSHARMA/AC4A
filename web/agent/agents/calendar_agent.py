@@ -142,7 +142,7 @@ class CalendarAgent(BaseAgent):
         Use the tools available to you to fulfill the request.
         Return "done" when the task given to you is completed.
         """
-        
+        policy_system.register_api(CalendarAPI)
         self.calendar_api = CalendarAPI(policy_system)
         
         tools = [

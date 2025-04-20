@@ -137,6 +137,7 @@ class ContactManagerAgent(BaseAgent):
         Return "done" when your work is completed.
         """
         
+        policy_system.register_api(ContactManagerAPI)
         self.contact_manager_api = ContactManagerAPI(policy_system)
         
         tools = [

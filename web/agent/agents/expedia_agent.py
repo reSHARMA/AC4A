@@ -333,6 +333,7 @@ class ExpediaAgent(BaseAgent):
         Return "done" when your work is completed.
         """
         
+        policy_system.register_api(ExpediaAPI)
         self.expedia_api = ExpediaAPI(policy_system)
         
         tools = [

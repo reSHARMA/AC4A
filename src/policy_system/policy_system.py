@@ -1,8 +1,11 @@
 from datetime import datetime
 from src.utils.attribute_tree import AttributeTree
-from config import debug_print
+from src.utils.logger import get_logger
 from src.utils.dummy_data import call_openai_api
 from src.prompts import POLICY_TEXT
+
+# Set up logger for policy system
+logger = get_logger('policy_system')
 
 class PolicySystem:
     def __init__(self):
@@ -10,15 +13,19 @@ class PolicySystem:
         self.attribute_definitions = {}
         self.status = True
         self.prompt = False
+        logger.debug("PolicySystem initialized")
+        logger.info("PolicySystem ready with status: enabled")
 
     def reset(self):
         self.policy_rules.clear()
 
     def disable(self):
         self.status = False
+        logger.info("PolicySystem disabled")
 
     def enable(self):
         self.status = True
+        logger.info("PolicySystem enabled")
 
     def ask(self):
         self.prompt = True
@@ -43,43 +50,63 @@ class PolicySystem:
             return response
 
     def register_api(self, api_class):
-        # Pass the current instance of policy_system to the CalendarAPI constructor
+        """
+        Register an API class with the policy system.
+        This extracts attribute definitions from the API class for policy enforcement.
+        """
+        # Log API registration at INFO level
+        logger.info(f"🔌 REGISTERING API: {api_class.__name__}")
+        
+        # Pass the current instance of policy_system to the API constructor
         api_instance = api_class(self)
-        debug_print(api_instance)
+        logger.info(f"📦 Created API instance: {api_instance}")
+        
         # Define the list of allowed attributes
         allowed_attributes = ['granular_data', 'data_access', 'position']
+        logger.info(f"📋 Allowed attributes: {allowed_attributes}")
 
         # Extract attribute definitions from the API instance
         if hasattr(api_instance, 'get_attributes'):
-            debug_print("\033[1;34;40mExtracting attributes from API instance.\033[0m")
+            logger.info("🔍 Extracting attributes from API instance")
             attributes = api_instance.get_attributes()
+            
+            logger.info(f"📊 Found {len(attributes)} attribute types: {list(attributes.keys())}")
+            
             for attr_type, values in attributes.items():
-                debug_print(f"\033[1;34;40mProcessing attribute type: {attr_type}\033[0m")
+                logger.info(f"⚙️ Processing attribute type: {attr_type}")
+                
                 if attr_type in allowed_attributes:
-                    debug_print(f"\033[1;32;40mAttribute '{attr_type}' is allowed.\033[0m")
+                    logger.info(f"✅ Attribute '{attr_type}' is allowed")
+                    
                     if attr_type in self.attribute_definitions:
                         # Merge attributes without duplication
                         existing_values = self.attribute_definitions[attr_type]
+                        logger.info(f"🔄 Merging with existing values for '{attr_type}'")
+                        
                         if isinstance(values, list):
                             for value in values:
                                 if isinstance(value, AttributeTree):
                                     existing_values.append(value)
-                                    debug_print(f"\033[1;32;40mAdded AttributeTree value to existing values.\033[0m")
+                                    logger.info(f"📈 Added AttributeTree to '{attr_type}'")
                                 else:
                                     if value not in existing_values:
                                         existing_values.append(value)
-                                        debug_print(f"\033[1;32;40mAdded value '{value}' to existing values.\033[0m")
+                                        logger.info(f"➕ Added value '{value}' to '{attr_type}'")
+                        
                         self.attribute_definitions[attr_type] = existing_values
                     else:
                         self.attribute_definitions[attr_type] = values
-                        debug_print(f"\033[1;32;40mInitialized attribute definitions for '{attr_type}'.\033[0m")
+                        logger.info(f"🆕 Created new attribute definition for '{attr_type}'")
                 else:
-                    debug_print(f"\033[1;31;40mWarning: Attribute '{attr_type}' is not allowed and will be ignored.\033[0m")
+                    logger.warning(f"⛔ Attribute '{attr_type}' is not allowed and will be ignored")
+        
+        logger.info(f"✅ API REGISTRATION COMPLETE: {api_class.__name__}")
+        return api_instance
 
     def add_policy(self, policy_rule):
         if self.prompt:
             if self.is_action_allowed(policy_rule, False):
-                debug_print("\033[1;33;40mPolicy rule already subsumed by existing policies. Skipping addition.\033[0m")
+                logger.info("Policy rule already subsumed by existing policies. Skipping addition.")
                 return
             txt = self.text(policy=policy_rule, mode="prompt")
             user_response = input(f"{txt} (yes/no): ").strip().lower()
@@ -93,22 +120,26 @@ class PolicySystem:
 
     def is_action_allowed(self, attributes, print_policy=True):
         if not self.status:
+            logger.warning("Policy system is DISABLED - allowing action by default")
             return True
 
+        # Force policy logs at the INFO level to make them more visible
+        logger.info(f"POLICY CHECK - Attributes: {attributes}")
+        
         for rule in self.policy_rules:
             if print_policy:
-                print("\033[1;36;40mChecking policy:\033[0m", rule)  # Changed to cyan
+                logger.info(f"POLICY RULE CHECK - Rule: {rule}")
             if self.check_subsumption(rule, attributes):
                 if print_policy:
-                    print("\033[1;32;40mAction is allowed based on policy: \033[0m", rule)  # Kept as green
+                    logger.info(f"✅ POLICY ALLOWED - Action is allowed by rule: {rule}")
                 return True
         if print_policy:
-            print("\033[1;35;40mAction is not allowed based on current policies.\033[0m")  # Changed to magenta
+            logger.warning(f"❌ POLICY DENIED - Action not allowed for attributes: {attributes}")
         return False
 
     def check_subsumption(self, rule, attributes):
-        debug_print("\033[1;34;40mChecking rule:\033[0m\n", rule)
-        debug_print("\033[1;34;40mFor attributes:\033[0m\n", attributes)
+        logger.debug(f"Checking rule: {rule}")
+        logger.debug(f"For attributes: {attributes}")
 
         for attr in rule:
             rule_value = rule[attr]
@@ -119,7 +150,7 @@ class PolicySystem:
                     return False
                 continue  
 
-            debug_print(f"Parsing rule value: {rule_value}")
+            logger.debug(f"Parsing rule value: {rule_value}")
 
             if rule_value == '*':
                 continue
@@ -128,49 +159,49 @@ class PolicySystem:
                 parsed_values = []
                 if "::" in rule_value:
                     parts = rule_value.split("::")
-                    debug_print(f"Split rule value into parts: {parts}")
+                    logger.debug(f"Split rule value into parts: {parts}")
                     for part in parts:
                         if "(" in part and ")" in part:
                             key, value = part.split("(")
                             value = value.rstrip(")")
                             parsed_values.append({key: value})
-                            debug_print(f"Parsed part with key-value: {key} - {value}")
+                            logger.debug(f"Parsed part with key-value: {key} - {value}")
                         else:
                             parsed_values.append({part: '*'})
-                            debug_print(f"Parsed part with wildcard: {part} - *")
+                            logger.debug(f"Parsed part with wildcard: {part} - *")
                 else:
                     if "(" in rule_value and ")" in rule_value:
                         key, value = rule_value.split("(")
                         value = value.rstrip(")")
                         parsed_values.append({key: value})
-                        debug_print(f"Parsed single rule with key-value: {key} - {value}")
+                        logger.debug(f"Parsed single rule with key-value: {key} - {value}")
                     else:
                         parsed_values.append({rule_value: '*'})
-                        debug_print(f"Parsed single rule with wildcard: {rule_value} - *")
+                        logger.debug(f"Parsed single rule with wildcard: {rule_value} - *")
                 
-                debug_print(f"Parsed rule value: {parsed_values}")
+                logger.debug(f"Parsed rule value: {parsed_values}")
                 return parsed_values
 
             parsed_rule_value = parse_rule_value(rule_value)
             attr_value = parse_rule_value(attributes.get(attr))
 
-            debug_print(f"Attribute value for {attr}: {attr_value}")
+            logger.debug(f"Attribute value for {attr}: {attr_value}")
 
             if not self.validate_attribute(parsed_rule_value, attr_value, attr):
-                debug_print(f"Validation failed for attribute: {attr}")
+                logger.debug(f"Validation failed for attribute: {attr}")
                 return False
-        debug_print("Returning True")
+        logger.debug("Validation successful, returning True")
         return True
 
     def validate_attribute(self, rule_value, attribute_value, attribute_type):
-        debug_print(f"\033[94mDebug: Validating attribute {attribute_type}\033[0m")
-        debug_print(f"\033[94mDebug: Rule value: {rule_value}\033[0m")
-        debug_print(f"\033[94mDebug: Attribute value: {attribute_value}\033[0m")
+        logger.debug(f"Validating attribute {attribute_type}")
+        logger.debug(f"Rule value: {rule_value}")
+        logger.debug(f"Attribute value: {attribute_value}")
         
         valid = False  # Initialize valid at the start
         
         if not rule_value:
-            debug_print(f"\033[94mDebug: No rule value provided\033[0m")
+            logger.debug("No rule value provided")
             return True
 
         if attribute_type in self.attribute_definitions:
@@ -178,17 +209,17 @@ class PolicySystem:
             for root in hierarchy:
                 if isinstance(root, AttributeTree):
                     # Hierarchical structure, convert to flat list and check subsumption
-                    debug_print("\033[94mDebug: Processing root of hierarchy\033[0m")
+                    logger.debug("Processing root of hierarchy")
                     values_list = root
-                    debug_print("\033[1;34;40mprinting attribute definition\033[0m")
+                    logger.debug("Printing attribute definition")
                     root.print_tree()
-                    debug_print("Rule value ", rule_value)
+                    logger.debug(f"Rule value: {rule_value}")
                     rule_tree = self.build_tree_from_values(root, rule_value)
 
                     if not rule_tree:
                         continue
 
-                    debug_print(f"\033[92mDebug: Built rule tree from values: {rule_value}\033[0m")
+                    logger.debug("Built rule tree from values")
                     rule_tree.print_tree()  # Print the rule tree
                     # Create an attribute tree from the rule_value
                     attribute_tree = self.build_tree_from_values(root, attribute_value)
@@ -196,16 +227,16 @@ class PolicySystem:
                     if not attribute_tree:
                         continue
 
-                    debug_print(f"\033[93mDebug: Built attribute tree from values: {attribute_value}\033[0m")
+                    logger.debug("Built attribute tree from values")
                     attribute_tree.print_tree()  # Print the attribute tree
 
                     valid = valid or rule_tree.check_subtree(attribute_tree)
-                    debug_print(f"\033[91mDebug: Validation result for current root: {valid}\033[0m")
+                    logger.debug(f"Validation result for current root: {valid}")
                     
                     if valid:
                         return valid
                 
-        debug_print(f"\033[95mDebug: Final validation result: {valid}\033[0m")
+        logger.debug(f"Final validation result: {valid}")
         return valid
 
     def build_tree_from_values(self, hierarchy_tree, values):

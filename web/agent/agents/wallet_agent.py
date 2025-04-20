@@ -1,10 +1,105 @@
 import logging
+import datetime
 from .base_agent import BaseAgent
 from ..web_input import web_input_func
-from web.mock_app import WalletAPI
+from src.policy_system.api_annotation import APIAnnotationBase
+from src.utils.attribute_tree import AttributeTree
+from src.utils.dummy_data import generate_dummy_data
+from config import WILDCARD
 
 # Set up logging
 logger = logging.getLogger(__name__)
+
+class WalletAPIAnnotation(APIAnnotationBase):
+    def __init__(self):
+        super().__init__("Wallet", {
+            'granular_data': [
+                AttributeTree(f'Wallet:CreditCard', [
+                    AttributeTree(f'Wallet:CreditCardName'),
+                    AttributeTree(f'Wallet:CreditCardType'),
+                    AttributeTree(f'Wallet:CreditCardNumber'),
+                    AttributeTree(f'Wallet:CreditCardPin')
+                ])
+            ],
+            'data_access': [
+                AttributeTree('Read'),
+                AttributeTree('Write')
+            ],
+            'position': [
+                AttributeTree('Previous'),
+                AttributeTree('Current'),
+                AttributeTree('Next')
+            ]
+        })
+
+    def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
+        api_to_granular_data = {
+            'add_credit_card': ('CreditCard', kwargs.get('card_name', '*')),
+            'remove_credit_card': ('CreditCard', kwargs.get('card_name', '*')),
+            'update_credit_card': ('CreditCard', kwargs.get('card_name', '*')),
+            'get_credit_card_info': ('CreditCard', kwargs.get('card_name', '*'))
+        }
+        label, detail = api_to_granular_data.get(endpoint_name, ('CreditCard', '*'))
+        if use_wildcard:
+            return f"{self.namespace}:{label}(*)"
+        else:
+            return f"{self.namespace}:{label}({detail})"
+
+    def get_access_level(self, endpoint_name):
+        return 'Write' if 'add' in endpoint_name or 'remove' in endpoint_name or 'update' in endpoint_name else 'Read'
+
+    def get_time_period(self, start_time, end_time, use_wildcard):
+        return "Current"
+
+    def generate_attributes(self, kwargs, endpoint_name, wildcard):
+        start_time = datetime.now()
+        end_time = start_time  # For wallet operations, the time period is typically immediate
+        granular_data = self.get_hierarchy(endpoint_name, kwargs, wildcard)
+        data_access = self.get_access_level(endpoint_name)
+        position = self.get_time_period(start_time, end_time, wildcard)
+        
+        return {
+            'granular_data': granular_data,
+            'data_access': data_access,
+            'position': position
+        }
+
+class WalletAPI:
+    def __init__(self, policy_system):
+        self.annotation = WalletAPIAnnotation()
+        self.policy_system = policy_system
+
+    @WalletAPIAnnotation.export
+    def get_attributes(self):
+        return self.annotation.attributes
+
+    @WalletAPIAnnotation.annotate
+    def add_credit_card(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="add_credit_card: add a new credit card with the given card name, card type, card number, and card pin",
+            **kwargs
+        )
+
+    @WalletAPIAnnotation.annotate
+    def remove_credit_card(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="remove_credit_card: remove the credit card with the given card name",
+            **kwargs
+        )
+
+    @WalletAPIAnnotation.annotate
+    def update_credit_card(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="update_credit_card: update the credit card information, including the card type, card number, and card pin",
+            **kwargs
+        )
+
+    @WalletAPIAnnotation.annotate
+    def get_credit_card_info(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="get_credit_card_info: get all the credit card information, including the card type, card number, and card pin",
+            **kwargs
+        )
 
 class WalletAgent(BaseAgent):
     """Wallet agent for managing wallet operations"""

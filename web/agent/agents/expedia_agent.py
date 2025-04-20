@@ -1,11 +1,223 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from .base_agent import BaseAgent
 from ..web_input import web_input_func
-from web.mock_app import ExpediaAPI
+from src.policy_system.api_annotation import APIAnnotationBase
+from src.utils.attribute_tree import AttributeTree
+from src.utils.dummy_data import generate_dummy_data
+from config import WILDCARD
 
 # Set up logging
 logger = logging.getLogger(__name__)
+
+class ExpediaAPIAnnotation(APIAnnotationBase):
+    def __init__(self):
+        super().__init__("Expedia", {
+            'granular_data': [
+                AttributeTree(f'Expedia:Destination', [
+                    AttributeTree(f'Expedia:Flight'),
+                    AttributeTree(f'Expedia:Hotel'),
+                    AttributeTree(f'Expedia:CarRental')
+                ]),
+                AttributeTree(f'Expedia:Experience', [
+                    AttributeTree(f'Expedia:Cruise')
+                ]),
+                AttributeTree(f'Expedia:Payment'),
+            ],
+            'data_access': [
+                AttributeTree('Read'),
+                AttributeTree('Write')
+            ],
+            'position': [
+                AttributeTree('Previous'),
+                AttributeTree('Current'),
+                AttributeTree('Next')
+            ]
+        })
+
+    def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
+        api_to_granular_data = {
+            'search_flights': ('Flight', kwargs.get('airline', '*')),
+            'book_flight': ('Flight', kwargs.get('airline', '*')),
+            'search_hotels': ('Hotel', kwargs.get('hotel_name', '*')),
+            'book_hotel': ('Hotel', kwargs.get('hotel_name', '*')),
+            'search_rental_cars': ('CarRental', kwargs.get('car_type', '*')),
+            'rent_car': ('CarRental', kwargs.get('car_type', '*')),
+            'search_experience': ('Experience', '*'),
+            'book_experience': ('Experience', '*'),
+            'search_cruise': ('Cruise', '*'),
+            'get_cruise_info': ('Cruise', '*'),
+            'book_cruise': ('Cruise', '*'),
+            'pay_for_itenary': ('Payment', '*')
+        }
+        label, detail = api_to_granular_data.get(endpoint_name, ('Destination', '*'))
+
+        if "cruise" in endpoint_name.lower():
+            label, detail = ('Cruise', kwargs.get('cruise_id', '*'))
+        
+        if use_wildcard:
+            return f"{self.namespace}:{label}(*)"
+        else:
+            return f"{self.namespace}:{label}({detail})"
+
+    def get_access_level(self, endpoint_name):
+        if endpoint_name == 'pay_for_itenary':
+            return 'Write'
+        return 'Read' if 'search' in endpoint_name or 'get' in endpoint_name else 'Write'
+
+    def get_time_period(self, start_time, end_time, use_wildcard):
+        current_time = datetime.now()
+        if start_time < current_time < end_time:
+            return 'Current'
+        elif current_time < start_time:
+            return 'Next'
+        else:
+            return 'Previous'
+
+    def generate_attributes(self, kwargs, endpoint_name, wildcard):
+        if 'search_flights' in endpoint_name or 'book_flight' in endpoint_name:
+            start_time = kwargs.get('departure_date', datetime.now())
+            end_time = kwargs.get('return_date', start_time + timedelta(days=1))
+        elif 'search_hotels' in endpoint_name or 'book_hotel' in endpoint_name:
+            start_time = kwargs.get('check_in_date', datetime.now())
+            end_time = kwargs.get('check_out_date', start_time + timedelta(days=1))
+        elif 'rent_car' in endpoint_name:
+            start_time = kwargs.get('pickup_date', datetime.now())
+            end_time = kwargs.get('return_date', start_time + timedelta(days=1))
+        else:
+            start_time = datetime.now()
+            end_time = start_time + timedelta(days=1)
+        
+        granular_data = self.get_hierarchy(endpoint_name, kwargs, wildcard)
+        data_access = self.get_access_level(endpoint_name)
+        position = self.get_time_period(start_time, end_time, wildcard)
+        
+        return {
+            'granular_data': granular_data,
+            'data_access': data_access,
+            'position': position
+        }
+
+class ExpediaAPI:
+    def __init__(self, policy_system):
+        self.annotation = ExpediaAPIAnnotation()
+        self.policy_system = policy_system
+
+    @ExpediaAPIAnnotation.export
+    def get_attributes(self):
+        return self.annotation.attributes
+
+    @ExpediaAPIAnnotation.annotate
+    def search_flights(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="search_flights: expedia search flights",
+            **kwargs
+        )
+
+    @ExpediaAPIAnnotation.annotate
+    def book_flight(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="book_flight: expedia book flight and return booking id",
+            **kwargs
+        )
+
+    @ExpediaAPIAnnotation.annotate
+    def search_hotels(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="search_hotels, expedia search hotels",
+            **kwargs
+        )
+
+    @ExpediaAPIAnnotation.annotate
+    def book_hotel(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="book_hotel, expedia book hotel and return booking id",
+            **kwargs
+        )
+
+    @ExpediaAPIAnnotation.annotate
+    def search_rental_cars(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="search_rental_cars, expedia search rental cars",
+            **kwargs
+        )
+
+    @ExpediaAPIAnnotation.annotate
+    def rent_car(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="rent_car, expedia rent car and return booking id",
+            **kwargs
+        )
+
+    @ExpediaAPIAnnotation.annotate
+    def book_experience(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="book_experience, expedia book experience and return booking id",
+            **kwargs
+        )
+
+    @ExpediaAPIAnnotation.annotate
+    def search_experience(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="search_experience, expedia search experience",
+            **kwargs
+        )
+
+    @ExpediaAPIAnnotation.annotate
+    def book_cruise(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="book_cruise, expedia book cruise and return booking id",
+            **kwargs
+        )
+
+    @ExpediaAPIAnnotation.annotate
+    def search_cruise(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="search_cruise, expedia search cruise",
+            **kwargs
+        )
+
+    @ExpediaAPIAnnotation.annotate
+    def get_cruise_info(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="get_cruise_info: Get detailed information about a specific cruise",
+            **kwargs
+        )
+
+    @ExpediaAPIAnnotation.annotate
+    def get_cruise_addons(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="get_cruise_addons: Get available add-ons for a specific cruise",
+            **kwargs
+        )
+
+    @ExpediaAPIAnnotation.annotate
+    def get_cruise_policies(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="get_cruise_policies: Get policies for a specific cruise",
+            **kwargs
+        )
+
+    @ExpediaAPIAnnotation.annotate
+    def get_cruise_payment_options(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="get_cruise_payment_options: Get payment options for a specific cruise",
+            **kwargs
+        )
+
+    @ExpediaAPIAnnotation.annotate
+    def pay_for_itenary(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="pay_for_itenary: Pay for a booked itinerary using payment details",
+            **kwargs
+        )
+
+    @ExpediaAPIAnnotation.annotate
+    def add_guest_info(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="add_guest_info: Add guest information to a booking",
+            **kwargs
+        )
 
 class ExpediaAgent(BaseAgent):
     """Expedia agent for managing travel bookings"""

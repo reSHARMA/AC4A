@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 # Create an instance of the PolicySystem
 policy_system = PolicySystem()
+policy_system.disable()
 
 # Store the group chat instance
 agent_group_chat = None

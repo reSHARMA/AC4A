@@ -27,11 +27,6 @@ formatter = logging.Formatter('\033[1;36m%(asctime)s - %(name)s - %(levelname)s 
 console.setFormatter(formatter)
 policy_logger.addHandler(console)
 
-# Create a file handler for debug log
-file_handler = logging.FileHandler("policy_debug.log")
-file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
-policy_logger.addHandler(file_handler)
-
 # Ensure logs don't propagate up to avoid duplicates
 policy_logger.propagate = False
 

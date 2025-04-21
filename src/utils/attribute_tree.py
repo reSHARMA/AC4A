@@ -7,14 +7,18 @@ logger = get_logger('attribute_tree')
 # AttributeTree class to represent hierarchical attribute definitions
 
 class AttributeTree:
-    def __init__(self, value, children=None, data='*'):
+    def __init__(self, value, children=None, data='*', access='', position=''):
         self.value = {value : data}
         self.children = children if children else []
+        self.access = access  # 'read' or 'write' or empty
+        self.position = position  # 'previous', 'current', 'next' or empty
 
     def print_tree(self, level=0):
         indent = "  " * level
         for key, value in self.value.items():
-            logger.info(f"{indent}{key}: {value}")
+            access_str = f" [access: {self.access}]" if self.access else ""
+            position_str = f" [position: {self.position}]" if self.position else ""
+            logger.info(f"{indent}{key}: {value}{access_str}{position_str}")
         for child in self.children:
             child.print_tree(level + 1)
 
@@ -65,18 +69,28 @@ class AttributeTree:
 
     def to_list(self):
         if not self.children:
-            return [self.value]
-        result = [self.value]
+            return [{
+                **self.value,
+                'access': self.access,
+                'position': self.position
+            }]
+        result = [{
+            **self.value,
+            'access': self.access,
+            'position': self.position
+        }]
         for child in self.children:
             result.extend(child.to_list())
         return result
 
     def __str__(self):
         key, value = list(self.value.items())[0]
+        access_str = f" [access: {self.access}]" if self.access else ""
+        position_str = f" [position: {self.position}]" if self.position else ""
         if self.children:
-            return f"{key}({value}) with {len(self.children)} children"
+            return f"{key}({value}){access_str}{position_str} with {len(self.children)} children"
         else:
-            return f"{key}({value})"
+            return f"{key}({value}){access_str}{position_str}"
     
     def __repr__(self):
         return self.__str__()
@@ -88,7 +102,9 @@ class AttributeTree:
         def _build_tree_string(node, level=0):
             indent = "  " * level
             key, value = list(node.value.items())[0]
-            lines.append(f"{indent}{key}: {value}")
+            access_str = f" [access: {node.access}]" if node.access else ""
+            position_str = f" [position: {node.position}]" if node.position else ""
+            lines.append(f"{indent}{key}: {value}{access_str}{position_str}")
             for child in node.children:
                 _build_tree_string(child, level + 1)
         

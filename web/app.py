@@ -103,10 +103,16 @@ def get_attribute_trees():
         def process_tree(tree):
             if not isinstance(tree, AttributeTree):
                 logger.warning(f"Found non-AttributeTree object: {type(tree)}")
-                return {"label": str(tree), "value": str(tree), "children": []}
+                return {"label": str(tree), "value": str(tree), "children": [], "access": "", "position": ""}
             
             key, value = list(tree.value.items())[0]
-            node = {"label": key, "value": value, "children": []}
+            node = {
+                "label": key, 
+                "value": value, 
+                "children": [],
+                "access": getattr(tree, 'access', ''),
+                "position": getattr(tree, 'position', '')
+            }
             
             for child in tree.children:
                 node["children"].append(process_tree(child))

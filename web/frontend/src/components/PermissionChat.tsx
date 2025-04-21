@@ -9,12 +9,12 @@ interface TreeNode {
   children: TreeNode[];
 }
 
-const TreeView = ({ data }: { data: TreeNode }) => {
+const TreeView = ({ data, isRoot = false }: { data: TreeNode, isRoot?: boolean }) => {
   const [isOpen, setIsOpen] = useState(false);
   const hasChildren = data.children && data.children.length > 0;
   
   return (
-    <Box ml={2}>
+    <Box ml={isRoot ? 0 : 2}>
       <Box 
         display="flex" 
         alignItems="center" 
@@ -112,26 +112,13 @@ const PermissionChat = () => {
         )}
         
         {!loading && !error && attributeTrees.length > 0 && (
-          <Accordion allowMultiple defaultIndex={[0]} width="100%">
+          <VStack align="stretch" spacing={2} width="100%">
             {attributeTrees.map((tree, index) => (
-              <AccordionItem key={index} border="none">
-                <AccordionButton p={2} _hover={{ bg: 'gray.100' }}>
-                  <Box flex="1" textAlign="left" fontWeight="semibold">
-                    <FaFolder style={{ display: 'inline', marginRight: '8px' }} color="#F9A826" />
-                    {tree.label}
-                  </Box>
-                  <AccordionIcon />
-                </AccordionButton>
-                <AccordionPanel pb={4} px={0}>
-                  <VStack align="stretch" spacing={0}>
-                    {tree.children.map((child, childIndex) => (
-                      <TreeView key={childIndex} data={child} />
-                    ))}
-                  </VStack>
-                </AccordionPanel>
-              </AccordionItem>
+              <Box key={index} p={2} borderRadius="md" bg="white" boxShadow="sm">
+                <TreeView data={tree} isRoot={true} />
+              </Box>
             ))}
-          </Accordion>
+          </VStack>
         )}
       </Box>
     </div>

@@ -315,18 +315,91 @@ const PermissionChat = () => {
             if (updatedParentNode) {
               console.log('Found parent node in updated trees');
               
-              // Add the new node to the parent
-              updatedParentNode.children.push(newNode);
+              // Find the original node in the attribute trees to get its children
+              const findOriginalNode = (tree: TreeNode): TreeNode | undefined => {
+                if (tree.label === policy.granular_data) {
+                  return tree;
+                }
+                
+                for (const child of tree.children) {
+                  const found = findOriginalNode(child);
+                  if (found) {
+                    return found;
+                  }
+                }
+                return undefined;
+              };
               
-              // Add the new node to our map with composite key
-              const newNodeKey = `${newNode.label}:${newNode.value}:${newNode.position}:${newNode.access}`;
-              updatedNodeMap.set(newNodeKey, newNode);
+              // Find the original node to get its children
+              let originalNode: TreeNode | undefined;
+              for (const tree of attributeTrees) {
+                originalNode = findOriginalNode(tree);
+                if (originalNode) {
+                  break;
+                }
+              }
               
-              // Mark that changes were made
-              changesMade = true;
-              
-              console.log('Added new node to parent and node map');
-              console.log('New node map size:', updatedNodeMap.size);
+              if (originalNode) {
+                console.log('Found original node with children:', originalNode);
+                
+                // Create a function to recursively create a subtree with inherited attributes
+                const createSubtree = (node: TreeNode): TreeNode => {
+                  const newNode: TreeNode = {
+                    label: node.label,
+                    value: node.value,
+                    children: [],
+                    access: policy.data_access.toLowerCase(),
+                    position: policy.position.toLowerCase()
+                  };
+                  
+                  // Recursively create children
+                  if (node.children && node.children.length > 0) {
+                    newNode.children = node.children.map(child => createSubtree(child));
+                  }
+                  
+                  return newNode;
+                };
+                
+                // Create the complete subtree
+                const newSubtree = createSubtree(originalNode);
+                console.log('Created new subtree:', newSubtree);
+                
+                // Add the new subtree to the parent
+                updatedParentNode.children.push(newSubtree);
+                
+                // Add all nodes in the subtree to the node map
+                const addNodesToMap = (node: TreeNode) => {
+                  const nodeKey = `${node.label}:${node.value}:${node.position}:${node.access}`;
+                  updatedNodeMap.set(nodeKey, node);
+                  
+                  if (node.children && node.children.length > 0) {
+                    node.children.forEach(addNodesToMap);
+                  }
+                };
+                
+                addNodesToMap(newSubtree);
+                
+                // Mark that changes were made
+                changesMade = true;
+                
+                console.log('Added new subtree to parent and node map');
+                console.log('New node map size:', updatedNodeMap.size);
+              } else {
+                console.log('Original node not found, adding just the new node');
+                
+                // Add just the new node if the original node is not found
+                updatedParentNode.children.push(newNode);
+                
+                // Add the new node to our map with composite key
+                const newNodeKey = `${newNode.label}:${newNode.value}:${newNode.position}:${newNode.access}`;
+                updatedNodeMap.set(newNodeKey, newNode);
+                
+                // Mark that changes were made
+                changesMade = true;
+                
+                console.log('Added new node to parent and node map');
+                console.log('New node map size:', updatedNodeMap.size);
+              }
             } else {
               console.error('Could not find parent node in updated trees');
             }
@@ -334,7 +407,103 @@ const PermissionChat = () => {
             console.error('Invalid parent tree index:', parentTreeIndex);
           }
         } else {
-          console.error(`No suitable parent node found for "${policy.granular_data}" in the attribute trees`);
+          console.log(`No suitable parent node found for "${policy.granular_data}" in the attribute trees`);
+          console.log('Creating a new root node for this policy');
+          
+          // Find the original node in the attribute trees to get its children
+          const findOriginalNode = (tree: TreeNode): TreeNode | undefined => {
+            if (tree.label === policy.granular_data) {
+              return tree;
+            }
+            
+            for (const child of tree.children) {
+              const found = findOriginalNode(child);
+              if (found) {
+                return found;
+              }
+            }
+            return undefined;
+          };
+          
+          // Find the original node to get its children
+          let originalNode: TreeNode | undefined;
+          for (const tree of attributeTrees) {
+            originalNode = findOriginalNode(tree);
+            if (originalNode) {
+              break;
+            }
+          }
+          
+          if (originalNode) {
+            console.log('Found original node with children:', originalNode);
+            
+            // Create a function to recursively create a subtree with inherited attributes
+            const createSubtree = (node: TreeNode): TreeNode => {
+              const newNode: TreeNode = {
+                label: node.label,
+                value: node.value,
+                children: [],
+                access: policy.data_access.toLowerCase(),
+                position: policy.position.toLowerCase()
+              };
+              
+              // Recursively create children
+              if (node.children && node.children.length > 0) {
+                newNode.children = node.children.map(child => createSubtree(child));
+              }
+              
+              return newNode;
+            };
+            
+            // Create the complete subtree
+            const newSubtree = createSubtree(originalNode);
+            console.log('Created new subtree for root:', newSubtree);
+            
+            // Add the new subtree as a root node
+            updatedTrees.push(newSubtree);
+            
+            // Add all nodes in the subtree to the node map
+            const addNodesToMap = (node: TreeNode) => {
+              const nodeKey = `${node.label}:${node.value}:${node.position}:${node.access}`;
+              updatedNodeMap.set(nodeKey, node);
+              
+              if (node.children && node.children.length > 0) {
+                node.children.forEach(addNodesToMap);
+              }
+            };
+            
+            addNodesToMap(newSubtree);
+            
+            // Mark that changes were made
+            changesMade = true;
+            
+            console.log('Added new subtree as root and to node map');
+            console.log('New node map size:', updatedNodeMap.size);
+          } else {
+            console.log('Original node not found, creating a new root node');
+            
+            // Create a new root node
+            const newRootNode: TreeNode = {
+              label: policy.granular_data,
+              value: policy.granular_data,
+              children: [],
+              access: policy.data_access.toLowerCase(),
+              position: policy.position.toLowerCase()
+            };
+            
+            // Add the new root node to the trees
+            updatedTrees.push(newRootNode);
+            
+            // Add the new root node to our map with composite key
+            const newNodeKey = `${newRootNode.label}:${newRootNode.value}:${newRootNode.position}:${newRootNode.access}`;
+            updatedNodeMap.set(newNodeKey, newRootNode);
+            
+            // Mark that changes were made
+            changesMade = true;
+            
+            console.log('Added new root node to trees and node map');
+            console.log('New node map size:', updatedNodeMap.size);
+          }
         }
       }
     });
@@ -587,6 +756,138 @@ const PermissionChat = () => {
     });
   };
 
+  const addCalendarDayPolicy = () => {
+    // First, add the policy to the backend
+    const apiUrl = import.meta.env.PROD 
+      ? 'http://localhost:5000/add_policy' 
+      : 'http://localhost:5000/add_policy';
+    
+    console.log('Adding Calendar:Day policy to:', apiUrl);
+    
+    const policyData = {
+      granular_data: "Calendar:Day",
+      data_access: "Write",
+      position: "Previous"
+    };
+    
+    console.log('Policy data being sent:', policyData);
+    
+    fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(policyData),
+    })
+    .then(response => {
+      if (!response.ok) {
+        return response.text().then(text => {
+          console.error('Error response text:', text);
+          throw new Error(`Failed to add policy: ${response.status} ${response.statusText}`);
+        });
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log('Calendar:Day policy added successfully:', data);
+      
+      // Fetch updated data after adding policy
+      const baseUrl = import.meta.env.PROD 
+        ? 'http://localhost:5000' 
+        : 'http://localhost:5000';
+      
+      // Fetch updated attribute trees and policies
+      Promise.all([
+        fetch(`${baseUrl}/get_attribute_trees`).then(res => res.json()),
+        fetch(`${baseUrl}/get_policies`).then(res => res.json())
+      ])
+      .then(([treesData, policiesData]) => {
+        // Update state with new data
+        setAttributeTrees(treesData.attribute_trees || []);
+        setPolicies(policiesData.policies || []);
+        
+        // Apply policies after updating state
+        setTimeout(() => {
+          applyPolicies();
+        }, 100);
+      })
+      .catch(err => {
+        console.error('Error fetching updated data:', err);
+        setError(err instanceof Error ? err.message : String(err));
+      });
+    })
+    .catch(err => {
+      console.error('Error adding Calendar:Day policy:', err);
+      setError(err instanceof Error ? err.message : String(err));
+    });
+  };
+
+  const addExpediaExperiencePolicy = () => {
+    // First, add the policy to the backend
+    const apiUrl = import.meta.env.PROD 
+      ? 'http://localhost:5000/add_policy' 
+      : 'http://localhost:5000/add_policy';
+    
+    console.log('Adding Expedia:Experience policy to:', apiUrl);
+    
+    const policyData = {
+      granular_data: "Expedia:Experience",
+      data_access: "Read",
+      position: "Current"
+    };
+    
+    console.log('Policy data being sent:', policyData);
+    
+    fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(policyData),
+    })
+    .then(response => {
+      if (!response.ok) {
+        return response.text().then(text => {
+          console.error('Error response text:', text);
+          throw new Error(`Failed to add policy: ${response.status} ${response.statusText}`);
+        });
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log('Expedia:Experience policy added successfully:', data);
+      
+      // Fetch updated data after adding policy
+      const baseUrl = import.meta.env.PROD 
+        ? 'http://localhost:5000' 
+        : 'http://localhost:5000';
+      
+      // Fetch updated attribute trees and policies
+      Promise.all([
+        fetch(`${baseUrl}/get_attribute_trees`).then(res => res.json()),
+        fetch(`${baseUrl}/get_policies`).then(res => res.json())
+      ])
+      .then(([treesData, policiesData]) => {
+        // Update state with new data
+        setAttributeTrees(treesData.attribute_trees || []);
+        setPolicies(policiesData.policies || []);
+        
+        // Apply policies after updating state
+        setTimeout(() => {
+          applyPolicies();
+        }, 100);
+      })
+      .catch(err => {
+        console.error('Error fetching updated data:', err);
+        setError(err instanceof Error ? err.message : String(err));
+      });
+    })
+    .catch(err => {
+      console.error('Error adding Expedia:Experience policy:', err);
+      setError(err instanceof Error ? err.message : String(err));
+    });
+  };
+
   return (
     <div className={styles.chatContainer}>
       <Box className={styles.messagesContainer} overflow="auto">
@@ -605,6 +906,20 @@ const PermissionChat = () => {
             <Button 
               size="sm" 
               colorScheme="green" 
+              onClick={addCalendarDayPolicy}
+            >
+              Add Calendar:Day Policy
+            </Button>
+            <Button 
+              size="sm" 
+              colorScheme="purple" 
+              onClick={addExpediaExperiencePolicy}
+            >
+              Add Expedia:Experience Policy
+            </Button>
+            <Button 
+              size="sm" 
+              colorScheme="teal" 
               onClick={requestPolicyUpdate}
             >
               Refresh Trees

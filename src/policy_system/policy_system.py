@@ -86,8 +86,21 @@ class PolicySystem:
                         if isinstance(values, list):
                             for value in values:
                                 if isinstance(value, AttributeTree):
-                                    existing_values.append(value)
-                                    logger.info(f"📈 Added AttributeTree to '{attr_type}'")
+                                    # Check if this tree already exists
+                                    key, _ = list(value.value.items())[0]
+                                    is_duplicate = False
+                                    
+                                    for existing_tree in existing_values:
+                                        if isinstance(existing_tree, AttributeTree):
+                                            existing_key, _ = list(existing_tree.value.items())[0]
+                                            if key == existing_key:
+                                                is_duplicate = True
+                                                logger.info(f"🔄 Skipping duplicate AttributeTree '{key}'")
+                                                break
+                                    
+                                    if not is_duplicate:
+                                        existing_values.append(value)
+                                        logger.info(f"📈 Added AttributeTree '{key}' to '{attr_type}'")
                                 else:
                                     if value not in existing_values:
                                         existing_values.append(value)

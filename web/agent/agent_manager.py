@@ -104,8 +104,26 @@ class AgentManager:
         logger.info(f"Exported attributes: {attribute_definitions.keys()}")
         
         if 'granular_data' in attribute_definitions:
-            self.attribute_trees = attribute_definitions['granular_data']
-            logger.info(f"Found granular_data with {len(self.attribute_trees)} trees")
+            # Get the trees from the policy system
+            trees = attribute_definitions['granular_data']
+            logger.info(f"Found granular_data with {len(trees)} trees")
+            
+            # Deduplicate trees based on their root key
+            unique_trees = []
+            seen_keys = set()
+            
+            for tree in trees:
+                if isinstance(tree, AttributeTree):
+                    key, _ = list(tree.value.items())[0]
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        unique_trees.append(tree)
+                        logger.info(f"Added unique tree: {key}")
+                    else:
+                        logger.info(f"Skipping duplicate tree: {key}")
+            
+            self.attribute_trees = unique_trees
+            logger.info(f"Deduplicated trees: {len(self.attribute_trees)} unique trees")
         else:
             logger.warning("No granular_data found in attribute definitions")
             self.attribute_trees = []

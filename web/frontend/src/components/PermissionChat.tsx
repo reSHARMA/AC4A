@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Box, Text, VStack, Spinner, Select, HStack, Badge } from '@chakra-ui/react'
+import { Box, Text, VStack, Spinner, Select, HStack, Badge, Button } from '@chakra-ui/react'
 import { FaFolder, FaFolderOpen, FaFile } from 'react-icons/fa'
 import styles from './Chat.module.css'
+import { io, Socket } from 'socket.io-client'
 
 interface TreeNode {
   label: string;
@@ -9,6 +10,12 @@ interface TreeNode {
   children: TreeNode[];
   access?: string;
   position?: string;
+}
+
+interface Policy {
+  granular_data: string;
+  data_access: string;
+  position: string;
 }
 
 const TreeView = ({ data, isRoot = false, onAccessChange, onPositionChange }: { 
@@ -96,42 +103,358 @@ const TreeView = ({ data, isRoot = false, onAccessChange, onPositionChange }: {
 
 const PermissionChat = () => {
   const [attributeTrees, setAttributeTrees] = useState<TreeNode[]>([]);
+  const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [nodeMap, setNodeMap] = useState<Map<string, TreeNode>>(new Map());
 
+  // Initialize socket connection
   useEffect(() => {
     // Use the full URL if we're in production, otherwise use the relative path
-    const apiUrl = import.meta.env.PROD 
-      ? 'http://localhost:5000/get_attribute_trees' 
-      : '/get_attribute_trees';
+    const baseUrl = import.meta.env.PROD 
+      ? 'http://localhost:5000' 
+      : 'http://localhost:5000';
     
-    console.log('Fetching from:', apiUrl);
+    console.log('Initializing socket connection to:', baseUrl);
+    const newSocket = io(baseUrl);
     
-    fetch(apiUrl)
-      .then(response => {
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
+    // Set up event listeners
+    newSocket.on('connect', () => {
+      console.log('Socket connected');
+    });
+    
+    newSocket.on('disconnect', () => {
+      console.log('Socket disconnected');
+    });
+    
+    newSocket.on('policy_update', (data) => {
+      console.log('Received policy update:', data);
+      setAttributeTrees(data.attribute_trees || []);
+      setPolicies(data.policies || []);
+      setLoading(false);
+    });
+    
+    setSocket(newSocket);
+    
+    // Clean up on unmount
+    return () => {
+      console.log('Cleaning up socket connection');
+      newSocket.disconnect();
+    };
+  }, []);
+
+  // Create node map when attribute trees are loaded
+  useEffect(() => {
+    if (attributeTrees.length > 0) {
+      console.log('Initializing node map with attribute trees');
+      console.log('Current node map size before initialization:', nodeMap.size);
+      
+      // Create a new map instead of modifying the existing one
+      const newNodeMap = new Map<string, TreeNode>();
+      
+      const addNodesToMap = (node: TreeNode) => {
+        // Create a composite key using all attributes
+        const nodeKey = `${node.label}:${node.value || '*'}:${node.access || ''}:${node.position || ''}`;
+        // Map the composite key to the full node data
+        newNodeMap.set(nodeKey, {
+          ...node,
+          value: node.value || node.label,
+          access: node.access || '',
+          position: node.position || ''
+        });
         
-        if (!response.ok) {
-          return response.text().then(text => {
-            console.error('Error response text:', text);
-            throw new Error(`Failed to fetch attribute trees: ${response.status} ${response.statusText}`);
-          });
+        // Process children
+        if (node.children && node.children.length > 0) {
+          node.children.forEach(addNodesToMap);
+        }
+      };
+      
+      // Build the map of existing nodes
+      attributeTrees.forEach((tree: TreeNode) => {
+        addNodesToMap(tree);
+      });
+      
+      console.log('Created new node map with size:', newNodeMap.size);
+      
+      // Only update the node map if it's different from the current one
+      if (newNodeMap.size !== nodeMap.size) {
+        console.log('Updating node map state with new map');
+        setNodeMap(newNodeMap);
+      } else {
+        console.log('Node map size unchanged, skipping update');
+      }
+    }
+  }, [attributeTrees]);
+
+  // Function to apply policies to the trees
+  const applyPolicies = () => {
+    if (attributeTrees.length === 0 || policies.length === 0) {
+      return;
+    }
+    
+    console.log('Starting to apply policies. Current attribute trees:', attributeTrees);
+    console.log('Policies to apply:', policies);
+    console.log('Current node map size:', nodeMap.size);
+    
+    // Create a deep copy of the trees to avoid mutating state directly
+    const updatedTrees = JSON.parse(JSON.stringify(attributeTrees));
+    
+    // Track which policies we've already processed
+    const processedPolicies = new Set<string>();
+    
+    // Track if any changes were made
+    let changesMade = false;
+    
+    // Create a new node map to track changes
+    const updatedNodeMap = new Map(nodeMap);
+    
+    // Apply each policy to the attribute trees
+    policies.forEach(policy => {
+      // Create a unique key for the policy
+      const policyKey = `${policy.granular_data}-${policy.data_access}-${policy.position}`;
+      
+      console.log('Processing policy:', policy);
+      console.log('Policy key:', policyKey);
+      console.log('Policy granular_data:', policy.granular_data);
+      console.log('Policy data_access:', policy.data_access);
+      console.log('Policy position:', policy.position);
+      
+      // Skip if we've already processed this policy
+      if (processedPolicies.has(policyKey)) {
+        console.log('Skipping already processed policy:', policy);
+        return;
+      }
+      
+      processedPolicies.add(policyKey);
+      console.log('Applying policy:', policy);
+      
+      // Create composite key for node lookup using all attributes
+      const nodeKey = `${policy.granular_data}:${policy.granular_data}:${policy.data_access.toLowerCase()}:${policy.position.toLowerCase()}`;
+      
+      // Check if a node with these exact attributes exists in our map
+      const existingNode = updatedNodeMap.get(nodeKey);
+      
+      if (existingNode) {
+        console.log('Found existing node with same attributes:', existingNode);
+        return; // Node already exists with these exact attributes
+      } else {
+        console.log('Node not found with these attributes, creating new node:', policy.granular_data);
+        
+        // Find the parent node by searching through the existing attribute trees
+        let parentNode: TreeNode | undefined;
+        let parentTreeIndex = -1;
+        
+        // Helper function to search through a tree
+        const findParentInTree = (tree: TreeNode, treeIndex: number): TreeNode | undefined => {
+          console.log(`Searching in tree node: ${tree.label}`);
+          console.log(`Looking for parent of node with label: ${policy.granular_data}`);
+          console.log(`Current node's children:`, tree.children.map(child => child.label));
+          
+          // Check if any of this node's children match the policy's granular_data by label only
+          const matchingChild = tree.children.find(child => child.label === policy.granular_data);
+          
+          if (matchingChild) {
+            console.log(`Found matching child with label: ${matchingChild.label}`);
+            parentTreeIndex = treeIndex;
+            return tree;
+          }
+          
+          // Recursively search through children
+          for (const child of tree.children) {
+            console.log(`Recursively searching in child: ${child.label}`);
+            const found = findParentInTree(child, treeIndex);
+            if (found) {
+              return found;
+            }
+          }
+          return undefined;
+        };
+        
+        // Search through all attribute trees
+        for (let i = 0; i < attributeTrees.length; i++) {
+          const tree = attributeTrees[i];
+          parentNode = findParentInTree(tree, i);
+          if (parentNode) {
+            break;
+          }
         }
         
-        return response.json();
-      })
-      .then(data => {
-        console.log('Received data:', data);
-        setAttributeTrees(data.attribute_trees || []);
+        if (parentNode) {
+          console.log('Found parent node:', parentNode);
+          console.log('Parent tree index:', parentTreeIndex);
+          
+          // Create the new node
+          const newNode: TreeNode = {
+            label: policy.granular_data,
+            value: policy.granular_data,
+            children: [],
+            access: policy.data_access.toLowerCase(),
+            position: policy.position.toLowerCase()
+          };
+          
+          // Add the new node to the parent in the updated trees
+          if (parentTreeIndex >= 0 && parentTreeIndex < updatedTrees.length) {
+            // Find the parent node in the updated trees
+            const findParentInUpdatedTree = (tree: TreeNode): TreeNode | undefined => {
+              if (tree.label === parentNode!.label) {
+                return tree;
+              }
+              
+              for (const child of tree.children) {
+                const found = findParentInUpdatedTree(child);
+                if (found) {
+                  return found;
+                }
+              }
+              return undefined;
+            };
+            
+            const updatedParentNode = findParentInUpdatedTree(updatedTrees[parentTreeIndex]);
+            
+            if (updatedParentNode) {
+              console.log('Found parent node in updated trees');
+              
+              // Add the new node to the parent
+              updatedParentNode.children.push(newNode);
+              
+              // Add the new node to our map with composite key
+              const newNodeKey = `${newNode.label}:${newNode.value}:${newNode.position}:${newNode.access}`;
+              updatedNodeMap.set(newNodeKey, newNode);
+              
+              // Mark that changes were made
+              changesMade = true;
+              
+              console.log('Added new node to parent and node map');
+              console.log('New node map size:', updatedNodeMap.size);
+            } else {
+              console.error('Could not find parent node in updated trees');
+            }
+          } else {
+            console.error('Invalid parent tree index:', parentTreeIndex);
+          }
+        } else {
+          console.error(`No suitable parent node found for "${policy.granular_data}" in the attribute trees`);
+        }
+      }
+    });
+    
+    console.log('Finished applying policies. Updated trees:', updatedTrees);
+    console.log('Final node map size:', updatedNodeMap.size);
+    
+    // Only update the state if there are actual changes
+    if (changesMade) {
+      console.log('Changes detected, updating state');
+      setAttributeTrees(updatedTrees);
+      
+      // Update the node map state to trigger a re-render
+      setNodeMap(updatedNodeMap);
+    } else {
+      console.log('No changes detected, skipping state update');
+    }
+  };
+
+  // Request policy update from the backend
+  const requestPolicyUpdate = () => {
+    if (socket && socket.connected) {
+      console.log('Requesting policy update from backend');
+      socket.emit('request_policy_update');
+      // Apply policies after requesting update
+      applyPolicies();
+    } else {
+      console.warn('Socket not connected, cannot request policy update');
+    }
+  };
+
+  // Fetch attribute trees and policies
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Use the full URL if we're in production, otherwise use the relative path
+        const baseUrl = import.meta.env.PROD 
+          ? 'http://localhost:5000' 
+          : 'http://localhost:5000';
+        
+        // Fetch attribute trees
+        console.log('Fetching attribute trees from:', `${baseUrl}/get_attribute_trees`);
+        const treesResponse = await fetch(`${baseUrl}/get_attribute_trees`);
+        
+        if (!treesResponse.ok) {
+          const errorText = await treesResponse.text();
+          console.error('Error response text:', errorText);
+          throw new Error(`Failed to fetch attribute trees: ${treesResponse.status} ${treesResponse.statusText}`);
+        }
+        
+        const treesData = await treesResponse.json();
+        console.log('Received attribute trees:', treesData);
+        
+        // Fetch policies
+        console.log('Fetching policies from:', `${baseUrl}/get_policies`);
+        const policiesResponse = await fetch(`${baseUrl}/get_policies`);
+        
+        if (!policiesResponse.ok) {
+          const errorText = await policiesResponse.text();
+          console.error('Error response text:', errorText);
+          throw new Error(`Failed to fetch policies: ${policiesResponse.status} ${policiesResponse.statusText}`);
+        }
+        
+        const policiesData = await policiesResponse.json();
+        console.log('Received policies:', policiesData);
+        
+        // Set state
+        setAttributeTrees(treesData.attribute_trees || []);
+        setPolicies(policiesData.policies || []);
         setLoading(false);
-      })
-      .catch(err => {
-        console.error('Error fetching attribute trees:', err);
-        setError(err.message);
+        
+        // Apply policies after fetching data
+        console.log('Applying policies after fetching data');
+        setTimeout(() => {
+          applyPolicies();
+        }, 100);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError(err instanceof Error ? err.message : String(err));
         setLoading(false);
-      });
+      }
+    };
+    
+    fetchData();
   }, []);
+
+  // Helper function to find the parent node of a given node
+  const findParentNode = (trees: TreeNode[], targetNode: TreeNode): TreeNode | null => {
+    // Helper function to search recursively through a tree
+    const searchTree = (node: TreeNode): TreeNode | null => {
+      // Check if this node is the parent of the target node
+      if (node.children && node.children.includes(targetNode)) {
+        return node;
+      }
+      
+      // Check children
+      if (node.children && node.children.length > 0) {
+        for (const child of node.children) {
+          const result = searchTree(child);
+          if (result) {
+            return result;
+          }
+        }
+      }
+      
+      return null;
+    };
+    
+    // Search through all trees
+    for (const tree of trees) {
+      const result = searchTree(tree);
+      if (result) {
+        return result;
+      }
+    }
+    
+    return null;
+  };
 
   const handleAccessChange = (node: TreeNode, value: string) => {
     // Create a deep copy of the trees to avoid mutating state directly
@@ -189,12 +512,105 @@ const PermissionChat = () => {
     console.log('Position updated:', node.label, value);
   };
 
+  const addCalendarWeekPolicy = () => {
+    // First, add the policy to the backend
+    const apiUrl = import.meta.env.PROD 
+      ? 'http://localhost:5000/add_policy' 
+      : 'http://localhost:5000/add_policy'; // Always use the full URL for now
+    
+    console.log('Adding policy to:', apiUrl);
+    
+    const policyData = {
+      granular_data: "Calendar:Week",
+      data_access: "Read",
+      position: "Current"
+    };
+    
+    console.log('Policy data being sent:', policyData);
+    console.log('Current attribute trees:', attributeTrees);
+    
+    fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(policyData),
+    })
+    .then(response => {
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
+      if (!response.ok) {
+        return response.text().then(text => {
+          console.error('Error response text:', text);
+          throw new Error(`Failed to add policy: ${response.status} ${response.statusText}`);
+        });
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log('Policy added successfully:', data);
+      
+      // Fetch updated data after adding policy
+      console.log('Fetching updated data after adding policy');
+      const baseUrl = import.meta.env.PROD 
+        ? 'http://localhost:5000' 
+        : 'http://localhost:5000';
+      
+      // Fetch updated attribute trees and policies
+      Promise.all([
+        fetch(`${baseUrl}/get_attribute_trees`).then(res => res.json()),
+        fetch(`${baseUrl}/get_policies`).then(res => res.json())
+      ])
+      .then(([treesData, policiesData]) => {
+        console.log('Received updated attribute trees:', treesData);
+        console.log('Received updated policies:', policiesData);
+        
+        // Update state with new data
+        setAttributeTrees(treesData.attribute_trees || []);
+        setPolicies(policiesData.policies || []);
+        
+        // Apply policies after updating state
+        console.log('Applying policies after updating state');
+        setTimeout(() => {
+          applyPolicies();
+        }, 100);
+      })
+      .catch(err => {
+        console.error('Error fetching updated data:', err);
+        setError(err instanceof Error ? err.message : String(err));
+      });
+    })
+    .catch(err => {
+      console.error('Error adding policy:', err);
+      setError(err instanceof Error ? err.message : String(err));
+    });
+  };
+
   return (
     <div className={styles.chatContainer}>
       <Box className={styles.messagesContainer} overflow="auto">
-        <Text fontSize="lg" fontWeight="bold" mb={4}>
-          Permission Attribute Trees
-        </Text>
+        <HStack justify="space-between" mb={4}>
+          <Text fontSize="lg" fontWeight="bold">
+            Permission Attribute Trees
+          </Text>
+          <HStack spacing={2}>
+            <Button 
+              size="sm" 
+              colorScheme="blue" 
+              onClick={addCalendarWeekPolicy}
+            >
+              Add Calendar:Week Policy
+            </Button>
+            <Button 
+              size="sm" 
+              colorScheme="green" 
+              onClick={requestPolicyUpdate}
+            >
+              Refresh Trees
+            </Button>
+          </HStack>
+        </HStack>
         
         {loading && (
           <Box textAlign="center" py={4}>

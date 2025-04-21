@@ -95,7 +95,6 @@ def get_attribute_trees():
             logger.info("Policy system enabled")
         
         # Get attribute trees from the agent manager
-        logger.info("Fetching attribute trees from agent manager")
         attribute_trees = agent_manager.get_attribute_trees()
         logger.info(f"Retrieved {len(attribute_trees)} attribute trees")
         
@@ -120,25 +119,151 @@ def get_attribute_trees():
             return node
         
         # Process each tree in granular_data
-        logger.info("Processing attribute trees for UI display")
-        result = []
-        for i, tree in enumerate(attribute_trees):
-            logger.info(f"Processing tree {i}")
-            processed_tree = process_tree(tree)
-            result.append(processed_tree)
-            logger.info(f"Processed tree {i}: {processed_tree}")
+        processed_trees = []
+        seen_keys = set()
         
-        logger.info("Successfully processed all trees")
+        for tree in attribute_trees:
+            if isinstance(tree, AttributeTree):
+                key, _ = list(tree.value.items())[0]
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    processed_tree = process_tree(tree)
+                    processed_trees.append(processed_tree)
+                    logger.info(f"Added unique processed tree: {key}")
+                else:
+                    logger.info(f"Skipping duplicate processed tree: {key}")
+            else:
+                processed_tree = process_tree(tree)
+                processed_trees.append(processed_tree)
         
-        # Set response headers explicitly
-        response = jsonify({"attribute_trees": result})
-        response.headers['Content-Type'] = 'application/json'
-        return response
+        # Emit policy update to all connected clients
+        emit_policy_update()
+        
+        return jsonify({"attribute_trees": processed_trees})
     except Exception as e:
         logger.error(f"Error in get_attribute_trees: {str(e)}", exc_info=True)
         error_response = jsonify({"error": str(e)})
         error_response.headers['Content-Type'] = 'application/json'
         return error_response, 500
+
+@app.route('/add_policy', methods=['POST'])
+def add_policy():
+    """Add a new policy to the policy system"""
+    try:
+        logger.info("Received request to add policy")
+        
+        # Ensure agent manager is initialized
+        if not agent_manager.initialized:
+            logger.info("Agent manager not initialized, initializing now")
+            agent_manager.initialize_agents()
+            logger.info("Agent manager initialized")
+            
+            logger.info("Enabling policy system")
+            agent_manager.enable_policy_system()
+            logger.info("Policy system enabled")
+        
+        # Get policy data from request
+        policy_data = request.json
+        logger.info(f"Policy data: {policy_data}")
+        
+        # Add policy to the policy system
+        agent_manager.policy_system.add_policy(policy_data)
+        logger.info(f"Added policy: {policy_data}")
+        
+        # Emit policy update to all connected clients
+        emit_policy_update()
+        
+        return jsonify({"status": "success", "message": "Policy added successfully"})
+    except Exception as e:
+        logger.error(f"Error in add_policy: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+def emit_policy_update():
+    """Emit policy update to all connected clients"""
+    try:
+        logger.info("Emitting policy update to all connected clients")
+        
+        # Get attribute trees
+        attribute_trees = agent_manager.get_attribute_trees()
+        
+        # Process trees into a format suitable for UI display
+        def process_tree(tree):
+            if not isinstance(tree, AttributeTree):
+                logger.warning(f"Found non-AttributeTree object: {type(tree)}")
+                return {"label": str(tree), "value": str(tree), "children": [], "access": "", "position": ""}
+            
+            key, value = list(tree.value.items())[0]
+            node = {
+                "label": key, 
+                "value": value, 
+                "children": [],
+                "access": getattr(tree, 'access', ''),
+                "position": getattr(tree, 'position', '')
+            }
+            
+            for child in tree.children:
+                node["children"].append(process_tree(child))
+            
+            return node
+        
+        # Process each tree in granular_data
+        processed_trees = []
+        seen_keys = set()
+        
+        for tree in attribute_trees:
+            if isinstance(tree, AttributeTree):
+                key, _ = list(tree.value.items())[0]
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    processed_tree = process_tree(tree)
+                    processed_trees.append(processed_tree)
+                    logger.info(f"Added unique processed tree: {key}")
+                else:
+                    logger.info(f"Skipping duplicate processed tree: {key}")
+            else:
+                processed_tree = process_tree(tree)
+                processed_trees.append(processed_tree)
+        
+        # Get policies
+        policies = agent_manager.policy_system.policy_rules
+        
+        # Emit the update
+        socketio.emit('policy_update', {
+            "attribute_trees": processed_trees,
+            "policies": policies
+        })
+        
+        logger.info("Policy update emitted successfully")
+    except Exception as e:
+        logger.error(f"Error emitting policy update: {str(e)}", exc_info=True)
+
+@app.route('/get_policies', methods=['GET'])
+def get_policies():
+    """Get all policies from the policy system"""
+    try:
+        logger.info("Received request to get policies")
+        
+        # Ensure agent manager is initialized
+        if not agent_manager.initialized:
+            logger.info("Agent manager not initialized, initializing now")
+            agent_manager.initialize_agents()
+            logger.info("Agent manager initialized")
+            
+            logger.info("Enabling policy system")
+            agent_manager.enable_policy_system()
+            logger.info("Policy system enabled")
+        
+        # Get policies from the policy system
+        policies = agent_manager.policy_system.policy_rules
+        logger.info(f"Retrieved {len(policies)} policies")
+        
+        # Emit policy update to all connected clients
+        emit_policy_update()
+        
+        return jsonify({"policies": policies})
+    except Exception as e:
+        logger.error(f"Error in get_policies: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/reset_session', methods=['POST'])
 def reset_session():
@@ -185,10 +310,19 @@ def handle_connect():
     welcome_message = {"role": "System", "content": "Welcome to the Autogen Chat! Type a message to start."}
     socketio.emit('message', welcome_message)
     conversation_history.append(welcome_message)
+    
+    # Send initial policy update
+    emit_policy_update()
 
 @socketio.on('disconnect')
 def handle_disconnect():
     logger.info('Client disconnected')
+
+@socketio.on('request_policy_update')
+def handle_policy_update_request():
+    """Handle request for policy update"""
+    logger.info("Received request for policy update")
+    emit_policy_update()
 
 @socketio.on('user_message')
 def handle_message(data):

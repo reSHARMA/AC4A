@@ -12,20 +12,10 @@ from .model_client import setup_model_client
 from .web_input import web_input_func
 from .selector import selector_exp
 from .queues import agent_message_queue, set_agent_session_active
-from src.policy_system.policy_system import PolicySystem
-from .agents.calendar_agent import CalendarAgent
-from .agents.wallet_agent import WalletAgent
-from .agents.expedia_agent import ExpediaAgent
-from .agents.contact_manager_agent import ContactManagerAgent
-from .agents.planner_agent import PlannerAgent
-from .agents.user_agent import UserAgent
+from .agent_manager import agent_manager
 
 # Set up logging
 logger = logging.getLogger(__name__)
-
-# Create an instance of the PolicySystem
-policy_system = PolicySystem()
-policy_system.disable()
 
 # Store the group chat instance
 agent_group_chat = None
@@ -52,24 +42,19 @@ async def run_agent() -> str:
         logger.info("Setting up model client")
         model_client = setup_model_client()
         
-        # Create agents
-        logger.info("Creating agents")
+        # Initialize agents via the agent manager
+        logger.info("Initializing agents via AgentManager")
+        agents = agent_manager.get_agents_list()
         
-        # Create specialized agents
-        logger.info("Creating specialized agents")
-        user = UserAgent(model_client).create_agent()
-        planner = PlannerAgent(model_client).create_agent()
-        calendar = CalendarAgent(model_client, policy_system).create_agent()
-        wallet = WalletAgent(model_client, policy_system).create_agent()
-        expedia = ExpediaAgent(model_client, policy_system).create_agent()
-        contact_manager = ContactManagerAgent(model_client, policy_system).create_agent()
+        # Get attribute trees from the agent manager
+        attribute_trees = agent_manager.get_attribute_trees()
+        logger.info(f"Retrieved {len(attribute_trees)} attribute trees from AgentManager")
 
         logger.info("Setting up termination condition")
         termination = TextMentionTermination("terminate") | TextMentionTermination("perm_err") | TextMentionTermination("error")
         
         # Create group chat
         logger.info("Creating group chat")
-        agents = [user, planner, calendar, wallet, expedia, contact_manager]
         group_chat = SelectorGroupChat(
             agents,
             max_turns=55,

@@ -14,22 +14,10 @@ from .queues import (
 )
 from .agent_core import run_agent, agent_group_chat
 from .model_client import setup_model_client
-from .agents.user_agent import UserAgent
-from .agents.planner_agent import PlannerAgent
-from .agents.calendar_agent import CalendarAgent
-from .agents.wallet_agent import WalletAgent
-from .agents.expedia_agent import ExpediaAgent
-from .agents.contact_manager_agent import ContactManagerAgent
-from autogen_agentchat.teams import SelectorGroupChat
-from autogen_agentchat.conditions import TextMentionTermination
-from src.policy_system.policy_system import PolicySystem
-from .selector import selector_exp
+from .agent_manager import agent_manager
 from .queues import set_agent_session_active, is_agent_session_active, set_agent_waiting_for_input
 # Set up logging
 logger = logging.getLogger(__name__)
-
-# Create an instance of the PolicySystem
-policy_system = PolicySystem()
 
 # Global variables for agent session management
 agent_thread = None

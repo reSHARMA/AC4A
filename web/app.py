@@ -7,6 +7,7 @@ sys.path.insert(0, root_dir)
 
 from flask import Flask, render_template, request, jsonify, session
 from flask_socketio import SocketIO, emit
+from flask_cors import CORS
 import threading
 import queue
 import logging
@@ -26,6 +27,10 @@ from web.agent.queues import (
     input_response_queue,
     agent_message_queue
 )
+
+# Import the agent manager
+from web.agent.agent_manager import agent_manager
+from src.utils.attribute_tree import AttributeTree
 
 # Set up logging - change level to INFO to reduce logs
 logging.basicConfig(level=logging.INFO)
@@ -54,7 +59,14 @@ if not policy_logger.handlers:
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Required for session management
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+CORS(app, resources={
+    r"/*": {
+        "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],  # Vite dev server
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
+socketio = SocketIO(app, cors_allowed_origins=["http://localhost:5173", "http://127.0.0.1:5173"], async_mode='threading')
 
 # Store conversation history
 conversation_history = []
@@ -65,6 +77,62 @@ new_session_needed = False
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/get_attribute_trees', methods=['GET'])
+def get_attribute_trees():
+    """Get attribute trees for UI display"""
+    try:
+        logger.info("Received request for attribute trees")
+        
+        # Ensure agent manager is initialized
+        if not agent_manager.initialized:
+            logger.info("Agent manager not initialized, initializing now")
+            agent_manager.initialize_agents()
+            logger.info("Agent manager initialized")
+            
+            logger.info("Enabling policy system")
+            agent_manager.enable_policy_system()
+            logger.info("Policy system enabled")
+        
+        # Get attribute trees from the agent manager
+        logger.info("Fetching attribute trees from agent manager")
+        attribute_trees = agent_manager.get_attribute_trees()
+        logger.info(f"Retrieved {len(attribute_trees)} attribute trees")
+        
+        # Process trees into a format suitable for UI display
+        def process_tree(tree):
+            if not isinstance(tree, AttributeTree):
+                logger.warning(f"Found non-AttributeTree object: {type(tree)}")
+                return {"label": str(tree), "value": str(tree), "children": []}
+            
+            key, value = list(tree.value.items())[0]
+            node = {"label": key, "value": value, "children": []}
+            
+            for child in tree.children:
+                node["children"].append(process_tree(child))
+            
+            return node
+        
+        # Process each tree in granular_data
+        logger.info("Processing attribute trees for UI display")
+        result = []
+        for i, tree in enumerate(attribute_trees):
+            logger.info(f"Processing tree {i}")
+            processed_tree = process_tree(tree)
+            result.append(processed_tree)
+            logger.info(f"Processed tree {i}: {processed_tree}")
+        
+        logger.info("Successfully processed all trees")
+        
+        # Set response headers explicitly
+        response = jsonify({"attribute_trees": result})
+        response.headers['Content-Type'] = 'application/json'
+        return response
+    except Exception as e:
+        logger.error(f"Error in get_attribute_trees: {str(e)}", exc_info=True)
+        error_response = jsonify({"error": str(e)})
+        error_response.headers['Content-Type'] = 'application/json'
+        return error_response, 500
 
 @app.route('/reset_session', methods=['POST'])
 def reset_session():

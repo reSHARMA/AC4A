@@ -40,6 +40,21 @@ const TreeView = ({ data, isRoot = false, onAccessChange, onPositionChange }: {
     }
   };
   
+  // Determine if this node has any permissions or specific value
+  const hasPermissions = data.access || data.position || data.value || true; // Always show badges
+  
+  // Format the value display - don't show any value in the label
+  const getValueDisplay = () => {
+    return null; // Never show value in the label
+  };
+  
+  // Get the badge text for the value
+  const getValueBadgeText = () => {
+    if (data.value === '') return "DEFAULT";
+    if (data.value === '*') return "All Values";
+    return data.value;
+  };
+  
   return (
     <Box ml={isRoot ? 0 : 2}>
       <Box 
@@ -55,7 +70,7 @@ const TreeView = ({ data, isRoot = false, onAccessChange, onPositionChange }: {
           <FaFile color="#718096" />
         )}
         <Text ml={2} fontWeight={hasChildren ? "medium" : "normal"}>
-          {data.label} {data.value !== '*' && data.value !== data.label && `(${data.value})`}
+          {data.label} {getValueDisplay()}
         </Text>
         
         <HStack ml="auto" spacing={2}>
@@ -83,6 +98,12 @@ const TreeView = ({ data, isRoot = false, onAccessChange, onPositionChange }: {
             <option value="current">Current</option>
             <option value="next">Next</option>
           </Select>
+          
+          {hasPermissions && (
+            <Badge colorScheme={hasPermissions ? "green" : "gray"} ml={1}>
+              {getValueBadgeText()}
+            </Badge>
+          )}
         </HStack>
       </Box>
       
@@ -156,14 +177,17 @@ const PermissionChat = () => {
       const newNodeMap = new Map<string, TreeNode>();
       
       const addNodesToMap = (node: TreeNode) => {
+        // Parse the node label to get the base label and value
+        const { baseLabel, value } = parseNodeLabel(node.label);
+        
         // Create a composite key using all attributes
-        const nodeKey = `${node.label}:${node.value || '*'}:${node.access || ''}:${node.position || ''}`;
+        const nodeKey = `${baseLabel}:${value || ''}:${node.access || ''}:${node.position || ''}`;
+        
         // Map the composite key to the full node data
         newNodeMap.set(nodeKey, {
           ...node,
-          value: node.value || node.label,
-          access: node.access || '',
-          position: node.position || ''
+          label: baseLabel, // Use the base label without the value
+          value: value || '' // Use empty string for initial nodes
         });
         
         // Process children
@@ -188,6 +212,21 @@ const PermissionChat = () => {
       }
     }
   }, [attributeTrees]);
+
+  // Function to parse a node label and extract its value
+  const parseNodeLabel = (label: string): { baseLabel: string, value: string | null } => {
+    const match = label.match(/^(.*?)\((.*?)\)$/);
+    if (match) {
+      return {
+        baseLabel: match[1],
+        value: match[2]
+      };
+    }
+    return {
+      baseLabel: label,
+      value: null
+    };
+  };
 
   // Function to apply policies to the trees
   const applyPolicies = () => {
@@ -231,8 +270,11 @@ const PermissionChat = () => {
       processedPolicies.add(policyKey);
       console.log('Applying policy:', policy);
       
+      // Parse the granular_data to separate label and value
+      const { baseLabel, value } = parseNodeLabel(policy.granular_data);
+      
       // Create composite key for node lookup using all attributes
-      const nodeKey = `${policy.granular_data}:${policy.granular_data}:${policy.data_access.toLowerCase()}:${policy.position.toLowerCase()}`;
+      const nodeKey = `${baseLabel}:${value || '*'}:${policy.data_access.toLowerCase()}:${policy.position.toLowerCase()}`;
       
       // Check if a node with these exact attributes exists in our map
       const existingNode = updatedNodeMap.get(nodeKey);
@@ -241,7 +283,7 @@ const PermissionChat = () => {
         console.log('Found existing node with same attributes:', existingNode);
         return; // Node already exists with these exact attributes
       } else {
-        console.log('Node not found with these attributes, creating new node:', policy.granular_data);
+        console.log('Node not found with these attributes, creating new node:', baseLabel);
         
         // Find the parent node by searching through the existing attribute trees
         let parentNode: TreeNode | undefined;
@@ -250,11 +292,14 @@ const PermissionChat = () => {
         // Helper function to search through a tree
         const findParentInTree = (tree: TreeNode, treeIndex: number): TreeNode | undefined => {
           console.log(`Searching in tree node: ${tree.label}`);
-          console.log(`Looking for parent of node with label: ${policy.granular_data}`);
+          console.log(`Looking for parent of node with label: ${baseLabel}`);
           console.log(`Current node's children:`, tree.children.map(child => child.label));
           
           // Check if any of this node's children match the policy's granular_data by label only
-          const matchingChild = tree.children.find(child => child.label === policy.granular_data);
+          const matchingChild = tree.children.find(child => {
+            const { baseLabel: childBaseLabel } = parseNodeLabel(child.label);
+            return childBaseLabel === baseLabel;
+          });
           
           if (matchingChild) {
             console.log(`Found matching child with label: ${matchingChild.label}`);
@@ -288,8 +333,8 @@ const PermissionChat = () => {
           
           // Create the new node
           const newNode: TreeNode = {
-            label: policy.granular_data,
-            value: policy.granular_data,
+            label: baseLabel,
+            value: value || '', // Use the value from the policy, or empty string if none
             children: [],
             access: policy.data_access.toLowerCase(),
             position: policy.position.toLowerCase()
@@ -319,7 +364,8 @@ const PermissionChat = () => {
               
               // Find the original node in the attribute trees to get its children
               const findOriginalNode = (tree: TreeNode): TreeNode | undefined => {
-                if (tree.label === policy.granular_data) {
+                const { baseLabel: nodeBaseLabel } = parseNodeLabel(tree.label);
+                if (nodeBaseLabel === baseLabel) {
                   return tree;
                 }
                 
@@ -346,9 +392,12 @@ const PermissionChat = () => {
                 
                 // Create a function to recursively create a subtree with inherited attributes
                 const createSubtree = (node: TreeNode): TreeNode => {
+                  const { baseLabel: nodeBaseLabel, value: nodeValue } = parseNodeLabel(node.label);
                   const newNode: TreeNode = {
-                    label: node.label,
-                    value: node.value,
+                    label: nodeBaseLabel,
+                    // If this is the root node of the subtree, use the policy value
+                    // Otherwise, if parent has a specific value, children should have "All Values"
+                    value: nodeBaseLabel === baseLabel ? (value || '') : (value ? '*' : ''),
                     children: [],
                     access: policy.data_access.toLowerCase(),
                     position: policy.position.toLowerCase()
@@ -409,12 +458,13 @@ const PermissionChat = () => {
             console.error('Invalid parent tree index:', parentTreeIndex);
           }
         } else {
-          console.log(`No suitable parent node found for "${policy.granular_data}" in the attribute trees`);
+          console.log(`No suitable parent node found for "${baseLabel}" in the attribute trees`);
           console.log('Creating a new root node for this policy');
           
           // Find the original node in the attribute trees to get its children
           const findOriginalNode = (tree: TreeNode): TreeNode | undefined => {
-            if (tree.label === policy.granular_data) {
+            const { baseLabel: nodeBaseLabel } = parseNodeLabel(tree.label);
+            if (nodeBaseLabel === baseLabel) {
               return tree;
             }
             
@@ -441,9 +491,12 @@ const PermissionChat = () => {
             
             // Create a function to recursively create a subtree with inherited attributes
             const createSubtree = (node: TreeNode): TreeNode => {
+              const { baseLabel: nodeBaseLabel, value: nodeValue } = parseNodeLabel(node.label);
               const newNode: TreeNode = {
-                label: node.label,
-                value: node.value,
+                label: nodeBaseLabel,
+                // If this is the root node of the subtree, use the policy value
+                // Otherwise, if parent has a specific value, children should have "All Values"
+                value: nodeBaseLabel === baseLabel ? (value || '') : (value ? '*' : ''),
                 children: [],
                 access: policy.data_access.toLowerCase(),
                 position: policy.position.toLowerCase()
@@ -486,8 +539,8 @@ const PermissionChat = () => {
             
             // Create a new root node
             const newRootNode: TreeNode = {
-              label: policy.granular_data,
-              value: policy.granular_data,
+              label: baseLabel,
+              value: value || '', // Use the value from the policy, or empty string if none
               children: [],
               access: policy.data_access.toLowerCase(),
               position: policy.position.toLowerCase()
@@ -692,9 +745,9 @@ const PermissionChat = () => {
     console.log('Adding policy to:', apiUrl);
     
     const policyData = {
-      granular_data: "Calendar:Week",
-      data_access: "Read",
-      position: "Current"
+      granular_data: "Calendar:Week(67th)",
+      data_access: "Write",
+      position: "Next"
     };
     
     console.log('Policy data being sent:', policyData);
@@ -767,8 +820,8 @@ const PermissionChat = () => {
     console.log('Adding Calendar:Day policy to:', apiUrl);
     
     const policyData = {
-      granular_data: "Calendar:Day",
-      data_access: "Write",
+      granular_data: "Calendar:Day(Monday)",
+      data_access: "Read",
       position: "Previous"
     };
     
@@ -834,7 +887,7 @@ const PermissionChat = () => {
     
     const policyData = {
       granular_data: "Expedia:Experience",
-      data_access: "Read",
+      data_access: "Write",
       position: "Current"
     };
     
@@ -985,11 +1038,15 @@ const PermissionChat = () => {
       return node;
     }
 
-    // If this node has access or position set, keep it
-    if (node.access || node.position) {
+    // Parse the node label to get the base label and value
+    const { baseLabel, value } = parseNodeLabel(node.label);
+    
+    // If this node has access, position, or a specific value (not '*'), keep it
+    if (node.access || node.position || (value && value !== '*' && value !== 'default')) {
       // Create a new node with filtered children
       const filteredNode: TreeNode = {
         ...node,
+        label: baseLabel, // Use the base label without the value
         children: []
       };
 
@@ -1006,7 +1063,7 @@ const PermissionChat = () => {
       return filteredNode;
     }
 
-    // If this node doesn't have access or position set, but has children that do
+    // If this node doesn't have access, position, or a specific value, but has children that do
     if (node.children && node.children.length > 0) {
       const filteredChildren: TreeNode[] = [];
       
@@ -1036,9 +1093,60 @@ const PermissionChat = () => {
       }
     }
 
-    // If this node has no access/position and no children with access/position, filter it out
+    // If this node has no access/position/value and no children with access/position/value, filter it out
     return null;
   };
+
+  // Function to initialize the node map with default values
+  const initializeNodeMap = () => {
+    if (attributeTrees.length > 0) {
+      console.log('Initializing node map with attribute trees');
+      console.log('Current node map size before initialization:', nodeMap.size);
+      
+      // Create a new map instead of modifying the existing one
+      const newNodeMap = new Map<string, TreeNode>();
+      
+      const addNodesToMap = (node: TreeNode) => {
+        // Parse the node label to get the base label and value
+        const { baseLabel, value } = parseNodeLabel(node.label);
+        
+        // Create a composite key using all attributes
+        const nodeKey = `${baseLabel}:${value || ''}:${node.access || ''}:${node.position || ''}`;
+        
+        // Map the composite key to the full node data
+        newNodeMap.set(nodeKey, {
+          ...node,
+          label: baseLabel, // Use the base label without the value
+          value: value || '' // Use empty string for initial nodes
+        });
+        
+        // Process children
+        if (node.children && node.children.length > 0) {
+          node.children.forEach(addNodesToMap);
+        }
+      };
+      
+      // Build the map of existing nodes
+      attributeTrees.forEach((tree: TreeNode) => {
+        addNodesToMap(tree);
+      });
+      
+      console.log('Created new node map with size:', newNodeMap.size);
+      
+      // Only update the node map if it's different from the current one
+      if (newNodeMap.size !== nodeMap.size) {
+        console.log('Updating node map state with new map');
+        setNodeMap(newNodeMap);
+      } else {
+        console.log('Node map size unchanged, skipping update');
+      }
+    }
+  };
+
+  // Create node map when attribute trees are loaded
+  useEffect(() => {
+    initializeNodeMap();
+  }, [attributeTrees]);
 
   return (
     <div className={styles.chatContainer}>

@@ -177,28 +177,53 @@ class PolicySystem:
                         if "(" in part and ")" in part:
                             key, value = part.split("(")
                             value = value.rstrip(")")
-                            parsed_values.append({key: value})
+                            # Handle empty value as default
+                            if value == "":
+                                parsed_values.append({key: "default"})
+                                logger.debug(f"Parsed empty value as default for key: {key}")
+                            # Handle * as all values
+                            elif value == "*":
+                                parsed_values.append({key: "*"})
+                                logger.debug(f"Parsed wildcard value for key: {key}")
+                            # Handle specific value
+                            else:
+                                parsed_values.append({key: value})
+                                logger.debug(f"Parsed specific value '{value}' for key: {key}")
                             logger.debug(f"Parsed part with key-value: {key} - {value}")
                         else:
-                            parsed_values.append({part: '*'})
-                            logger.debug(f"Parsed part with wildcard: {part} - *")
+                            # No parentheses means default value
+                            parsed_values.append({part: "default"})
+                            logger.debug(f"Parsed part with default value: {part} - default")
                 else:
                     if "(" in rule_value and ")" in rule_value:
                         key, value = rule_value.split("(")
                         value = value.rstrip(")")
-                        parsed_values.append({key: value})
+                        # Handle empty value as default
+                        if value == "":
+                            parsed_values.append({key: "default"})
+                            logger.debug(f"Parsed empty value as default for key: {key}")
+                        # Handle * as all values
+                        elif value == "*":
+                            parsed_values.append({key: "*"})
+                            logger.debug(f"Parsed wildcard value for key: {key}")
+                        # Handle specific value
+                        else:
+                            parsed_values.append({key: value})
+                            logger.debug(f"Parsed specific value '{value}' for key: {key}")
                         logger.debug(f"Parsed single rule with key-value: {key} - {value}")
                     else:
-                        parsed_values.append({rule_value: '*'})
-                        logger.debug(f"Parsed single rule with wildcard: {rule_value} - *")
+                        # No parentheses means default value
+                        parsed_values.append({rule_value: "default"})
+                        logger.debug(f"Parsed single rule with default value: {rule_value} - default")
                 
-                logger.debug(f"Parsed rule value: {parsed_values}")
+                logger.debug(f"Final parsed rule value: {parsed_values}")
                 return parsed_values
 
             parsed_rule_value = parse_rule_value(rule_value)
             attr_value = parse_rule_value(attributes.get(attr))
 
             logger.debug(f"Attribute value for {attr}: {attr_value}")
+            logger.debug(f"Rule value for {attr}: {parsed_rule_value}")
 
             if not self.validate_attribute(parsed_rule_value, attr_value, attr):
                 logger.debug(f"Validation failed for attribute: {attr}")

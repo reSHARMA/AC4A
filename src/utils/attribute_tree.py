@@ -7,7 +7,7 @@ logger = get_logger('attribute_tree')
 # AttributeTree class to represent hierarchical attribute definitions
 
 class AttributeTree:
-    def __init__(self, value, children=None, data='*', access='', position=''):
+    def __init__(self, value, children=None, data='', access='', position=''):
         self.value = {value : data}
         self.children = children if children else []
         self.access = access  # 'read' or 'write' or empty

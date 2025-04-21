@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Box, Text, VStack, Spinner, Select, HStack, Badge, Button } from '@chakra-ui/react'
+import React from 'react'
+import { Box, Text, VStack, Spinner, Select, HStack, Badge, Button, Switch } from '@chakra-ui/react'
 import { FaFolder, FaFolderOpen, FaFile } from 'react-icons/fa'
 import styles from './Chat.module.css'
 import { io, Socket } from 'socket.io-client'
@@ -108,6 +109,7 @@ const PermissionChat = () => {
   const [error, setError] = useState<string | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [nodeMap, setNodeMap] = useState<Map<string, TreeNode>>(new Map());
+  const [showOnlyPermittedNodes, setShowOnlyPermittedNodes] = useState(false);
 
   // Initialize socket connection
   useEffect(() => {
@@ -888,6 +890,156 @@ const PermissionChat = () => {
     });
   };
 
+  // Function to filter nodes based on the toggle state
+  const filterNodes = (node: TreeNode): TreeNode | null => {
+    // If we're not filtering, return the node as is
+    if (!showOnlyPermittedNodes) {
+      return node;
+    }
+
+    // If this node has access or position set, keep it
+    if (node.access || node.position) {
+      // Create a new node with filtered children
+      const filteredNode: TreeNode = {
+        ...node,
+        children: []
+      };
+
+      // Recursively filter children
+      if (node.children && node.children.length > 0) {
+        node.children.forEach(child => {
+          const filteredChild = filterNodes(child);
+          if (filteredChild) {
+            filteredNode.children.push(filteredChild);
+          }
+        });
+      }
+
+      return filteredNode;
+    }
+
+    // If this node doesn't have access or position set, but has children that do
+    if (node.children && node.children.length > 0) {
+      const filteredChildren: TreeNode[] = [];
+      
+      node.children.forEach(child => {
+        const filteredChild = filterNodes(child);
+        if (filteredChild) {
+          filteredChildren.push(filteredChild);
+        }
+      });
+
+      // If any children passed the filter, return them directly
+      if (filteredChildren.length > 0) {
+        // If there's only one child, return it directly
+        if (filteredChildren.length === 1) {
+          return filteredChildren[0];
+        }
+        
+        // If there are multiple children, create a new node with these children
+        // but don't include the original node's label/value
+        return {
+          label: "Filtered Nodes",
+          value: "Filtered Nodes",
+          children: filteredChildren,
+          access: "",
+          position: ""
+        };
+      }
+    }
+
+    // If this node has no access/position and no children with access/position, filter it out
+    return null;
+  };
+
+  // Function to extract all nodes with permissions from the trees
+  const extractPermittedNodes = (trees: TreeNode[]): TreeNode[] => {
+    const permittedNodes: TreeNode[] = [];
+    
+    const extractFromNode = (node: TreeNode) => {
+      // If this node has access or position set, add it to the permitted nodes
+      if (node.access || node.position) {
+        permittedNodes.push({...node});
+      }
+      
+      // Recursively process children
+      if (node.children && node.children.length > 0) {
+        node.children.forEach(child => {
+          extractFromNode(child);
+        });
+      }
+    };
+    
+    // Process each tree
+    trees.forEach(tree => {
+      extractFromNode(tree);
+    });
+    
+    return permittedNodes;
+  };
+
+  // Function to promote nodes with values up one level
+  const promoteNodesWithValues = (node: TreeNode): TreeNode | null => {
+    // If we're not filtering, return the node as is
+    if (!showOnlyPermittedNodes) {
+      return node;
+    }
+
+    // If this node has access or position set, keep it
+    if (node.access || node.position) {
+      // Create a new node with filtered children
+      const filteredNode: TreeNode = {
+        ...node,
+        children: []
+      };
+
+      // Recursively filter children
+      if (node.children && node.children.length > 0) {
+        node.children.forEach(child => {
+          const filteredChild = promoteNodesWithValues(child);
+          if (filteredChild) {
+            filteredNode.children.push(filteredChild);
+          }
+        });
+      }
+
+      return filteredNode;
+    }
+
+    // If this node doesn't have access or position set, but has children that do
+    if (node.children && node.children.length > 0) {
+      const filteredChildren: TreeNode[] = [];
+      
+      node.children.forEach(child => {
+        const filteredChild = promoteNodesWithValues(child);
+        if (filteredChild) {
+          filteredChildren.push(filteredChild);
+        }
+      });
+
+      // If any children passed the filter, return them directly
+      if (filteredChildren.length > 0) {
+        // If there's only one child, return it directly
+        if (filteredChildren.length === 1) {
+          return filteredChildren[0];
+        }
+        
+        // If there are multiple children, return them as an array
+        // This will be handled by the rendering logic
+        return {
+          label: "Multiple Roots",
+          value: "Multiple Roots",
+          children: filteredChildren,
+          access: "",
+          position: ""
+        };
+      }
+    }
+
+    // If this node has no access/position and no children with access/position, filter it out
+    return null;
+  };
+
   return (
     <div className={styles.chatContainer}>
       <Box className={styles.messagesContainer} overflow="auto">
@@ -926,6 +1078,15 @@ const PermissionChat = () => {
             </Button>
           </HStack>
         </HStack>
+
+        <HStack mb={4} justify="flex-end">
+          <Text fontSize="sm">Show only nodes with permissions:</Text>
+          <Switch 
+            isChecked={showOnlyPermittedNodes} 
+            onChange={(e) => setShowOnlyPermittedNodes(e.target.checked)}
+            colorScheme="blue"
+          />
+        </HStack>
         
         {loading && (
           <Box textAlign="center" py={4}>
@@ -951,16 +1112,45 @@ const PermissionChat = () => {
         
         {!loading && !error && attributeTrees.length > 0 && (
           <VStack align="stretch" spacing={2} width="100%">
-            {attributeTrees.map((tree, index) => (
-              <Box key={index} p={2} borderRadius="md" bg="white" boxShadow="sm">
-                <TreeView 
-                  data={tree} 
-                  isRoot={true} 
-                  onAccessChange={handleAccessChange}
-                  onPositionChange={handlePositionChange}
-                />
-              </Box>
-            ))}
+            {attributeTrees.map((tree, index) => {
+              // Apply filtering if needed
+              const filteredTree = promoteNodesWithValues(tree);
+              
+              // Only render if the tree has nodes after filtering
+              if (filteredTree) {
+                // Check if this is a "Multiple Roots" node
+                if (filteredTree.label === "Multiple Roots") {
+                  // Render each child as a separate root
+                  return (
+                    <React.Fragment key={index}>
+                      {filteredTree.children.map((child, childIndex) => (
+                        <Box key={`${index}-${childIndex}`} p={2} borderRadius="md" bg="white" boxShadow="sm">
+                          <TreeView 
+                            data={child} 
+                            isRoot={true} 
+                            onAccessChange={handleAccessChange}
+                            onPositionChange={handlePositionChange}
+                          />
+                        </Box>
+                      ))}
+                    </React.Fragment>
+                  );
+                }
+                
+                // Normal case - render the filtered tree
+                return (
+                  <Box key={index} p={2} borderRadius="md" bg="white" boxShadow="sm">
+                    <TreeView 
+                      data={filteredTree} 
+                      isRoot={true} 
+                      onAccessChange={handleAccessChange}
+                      onPositionChange={handlePositionChange}
+                    />
+                  </Box>
+                );
+              }
+              return null;
+            })}
           </VStack>
         )}
       </Box>

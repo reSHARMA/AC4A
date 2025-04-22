@@ -58,15 +58,15 @@ if not policy_logger.handlers:
     policy_logger.propagate = False  # Avoid duplicate logs
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # Required for session management
+app.config['SECRET_KEY'] = 'your-secret-key'  # Required for session management
 CORS(app, resources={
     r"/*": {
-        "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],  # Vite dev server
+        "origins": ["http://127.0.0.1:5173", "http://localhost:5173"],
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type"]
     }
 })
-socketio = SocketIO(app, cors_allowed_origins=["http://localhost:5173", "http://127.0.0.1:5173"], async_mode='threading')
+socketio = SocketIO(app, cors_allowed_origins=["http://127.0.0.1:5173", "http://localhost:5173"])
 
 # Store conversation history
 conversation_history = []

@@ -1344,6 +1344,14 @@ const PermissionChat: React.FC = (): JSX.Element => {
     try {
       setIsLoading(true);
       
+      // Transform the policy data into the format expected by the backend
+      // Ensure the format matches exactly how it was stored
+      const transformedPolicyData = {
+        granular_data: policyData.label.includes('(') ? policyData.label : `${policyData.label}(${policyData.value || ''})`,
+        data_access: policyData.access.toLowerCase(),
+        position: policyData.position.toLowerCase()
+      };
+      
       // Send delete request to backend
       const apiUrl = import.meta.env.PROD 
         ? 'http://localhost:5000/delete_policy' 
@@ -1354,7 +1362,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(policyData),
+        body: JSON.stringify(transformedPolicyData),
       });
 
       if (!response.ok) {

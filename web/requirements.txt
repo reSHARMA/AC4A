@@ -8,4 +8,4 @@ python-dotenv>=0.0.0
 autogen-core==0.4.0
 autogen-agentchat==0.4.0
 flask-socketio==5.1.1
-eventlet==0.30.0 
+eventlet==0.33.3 

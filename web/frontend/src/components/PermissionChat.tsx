@@ -241,6 +241,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
   const [nodeMap, setNodeMap] = useState<Map<string, TreeNode>>(new Map());
   const [viewMode, setViewMode] = useState<ViewMode>('permitted');
   const [editModeTrees, setEditModeTrees] = useState<TreeNode[]>([]);
+  const [shouldApplyPolicies, setShouldApplyPolicies] = useState(false);
 
   // Initialize socket connection
   useEffect(() => {
@@ -998,13 +999,18 @@ const PermissionChat: React.FC = (): JSX.Element => {
     console.log('Value updated:', node.label, value);
   };
 
+  useEffect(() => {
+    if (shouldApplyPolicies) {
+      applyPolicies();
+      setShouldApplyPolicies(false);
+    }
+  }, [shouldApplyPolicies, attributeTrees, policies]);
+
   const addCalendarWeekPolicy = () => {
     // First, add the policy to the backend
     const apiUrl = import.meta.env.PROD 
       ? 'http://localhost:5000/add_policy' 
-      : 'http://localhost:5000/add_policy'; // Always use the full URL for now
-    
-    console.log('Adding policy to:', apiUrl);
+      : 'http://localhost:5000/add_policy';
     
     const policyData = {
       granular_data: "Calendar:Week(67th)",
@@ -1012,9 +1018,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
       position: "Next"
     };
     
-    console.log('Policy data being sent:', policyData);
-    console.log('Current attribute trees:', attributeTrees);
+    // Set loading state
+    setIsLoading(true);
     
+    // First add the policy
     fetch(apiUrl, {
       method: 'POST',
       headers: {
@@ -1023,53 +1030,37 @@ const PermissionChat: React.FC = (): JSX.Element => {
       body: JSON.stringify(policyData),
     })
     .then(response => {
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-      
       if (!response.ok) {
-        return response.text().then(text => {
-          console.error('Error response text:', text);
-          throw new Error(`Failed to add policy: ${response.status} ${response.statusText}`);
-        });
+        throw new Error(`Failed to add policy: ${response.status} ${response.statusText}`);
       }
       return response.json();
     })
     .then(data => {
-      console.log('Policy added successfully:', data);
-      
-      // Fetch updated data after adding policy
-      console.log('Fetching updated data after adding policy');
+      // After successful policy addition, fetch updated data
       const baseUrl = import.meta.env.PROD 
         ? 'http://localhost:5000' 
         : 'http://localhost:5000';
       
-      // Fetch updated attribute trees and policies
-      Promise.all([
+      // Fetch both attribute trees and policies in parallel
+      return Promise.all([
         fetch(`${baseUrl}/get_attribute_trees`).then(res => res.json()),
         fetch(`${baseUrl}/get_policies`).then(res => res.json())
-      ])
-      .then(([treesData, policiesData]) => {
-        console.log('Received updated attribute trees:', treesData);
-        console.log('Received updated policies:', policiesData);
-        
-        // Update state with new data
-        setAttributeTrees(treesData.attribute_trees || []);
-        setPolicies(policiesData.policies || []);
-        
-        // Apply policies after updating state
-        console.log('Applying policies after updating state');
-        setTimeout(() => {
-          applyPolicies();
-        }, 100);
-      })
-      .catch(err => {
-        console.error('Error fetching updated data:', err);
-        setError(err instanceof Error ? err.message : String(err));
-      });
+      ]);
+    })
+    .then(([treesData, policiesData]) => {
+      // Update state with new data
+      setAttributeTrees(treesData.attribute_trees || []);
+      setPolicies(policiesData.policies || []);
+      
+      // Trigger policy application after state updates
+      setShouldApplyPolicies(true);
     })
     .catch(err => {
       console.error('Error adding policy:', err);
       setError(err instanceof Error ? err.message : String(err));
+    })
+    .finally(() => {
+      setIsLoading(false);
     });
   };
 
@@ -1345,7 +1336,6 @@ const PermissionChat: React.FC = (): JSX.Element => {
       setIsLoading(true);
       
       // Transform the policy data into the format expected by the backend
-      // Ensure the format matches exactly how it was stored
       const transformedPolicyData = {
         granular_data: policyData.label.includes('(') ? policyData.label : `${policyData.label}(${policyData.value || ''})`,
         data_access: policyData.access.toLowerCase(),
@@ -1366,16 +1356,15 @@ const PermissionChat: React.FC = (): JSX.Element => {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
         throw new Error(`Failed to delete policy: ${response.status} ${response.statusText}`);
       }
 
-      // Fetch updated data after deleting policy
+      // After successful deletion, fetch updated data
       const baseUrl = import.meta.env.PROD 
         ? 'http://localhost:5000' 
         : 'http://localhost:5000';
       
-      // Fetch updated attribute trees and policies
+      // Fetch both attribute trees and policies in parallel
       const [treesData, policiesData] = await Promise.all([
         fetch(`${baseUrl}/get_attribute_trees`).then(res => res.json()),
         fetch(`${baseUrl}/get_policies`).then(res => res.json())
@@ -1385,10 +1374,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
       setAttributeTrees(treesData.attribute_trees || []);
       setPolicies(policiesData.policies || []);
       
-      // Apply policies after updating state
-      setTimeout(() => {
-        applyPolicies();
-      }, 100);
+      // Trigger policy application after state updates
+      setShouldApplyPolicies(true);
     } catch (err) {
       console.error('Error deleting policy:', err);
       setError(err instanceof Error ? err.message : String(err));

@@ -4,6 +4,7 @@ import { Box, Text, VStack, Spinner, Select, HStack, Badge, Button, Switch, Inpu
 import { FaFolder, FaFolderOpen, FaFile, FaTrash } from 'react-icons/fa'
 import styles from './Chat.module.css'
 import { io, Socket } from 'socket.io-client'
+import { JSX } from 'react/jsx-runtime'
 
 interface TreeNode {
   label: string;
@@ -922,7 +923,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
     // Function to update the node in the tree
     const updateNode = (trees: TreeNode[]): boolean => {
       for (let i = 0; i < trees.length; i++) {
-        if (trees[i] === node) {
+        if (trees[i].label === node.label) {
           trees[i].access = value;
           return true;
         }
@@ -950,7 +951,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
     // Function to update the node in the tree
     const updateNode = (trees: TreeNode[]): boolean => {
       for (let i = 0; i < trees.length; i++) {
-        if (trees[i] === node) {
+        if (trees[i].label === node.label) {
           trees[i].position = value;
           return true;
         }
@@ -978,7 +979,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
     // Function to update the node in the tree
     const updateNode = (trees: TreeNode[]): boolean => {
       for (let i = 0; i < trees.length; i++) {
-        if (trees[i] === node) {
+        if (trees[i].label === node.label) {
           trees[i].value = value;
           return true;
         }
@@ -1262,30 +1263,25 @@ const PermissionChat: React.FC = (): JSX.Element => {
       return null;
     }
 
-    // If we're in 'edit' view, only show nodes with default values
+    // If we're in 'edit' view, show all nodes that are either unmodified or have been modified
     if (viewMode === 'edit') {
-      // If this node has no access or position set, keep it
-      if (!node.access && !node.position) {
-        // Create a new node with filtered children
-        const filteredNode: TreeNode = {
-          ...node,
-          children: []
-        };
+      // Create a new node with filtered children
+      const filteredNode: TreeNode = {
+        ...node,
+        children: []
+      };
 
-        // Recursively filter children
-        if (node.children && node.children.length > 0) {
-          node.children.forEach(child => {
-            const filteredChild = filterNodes(child);
-            if (filteredChild) {
-              filteredNode.children.push(filteredChild);
-            }
-          });
-        }
-
-        return filteredNode;
+      // Recursively filter children
+      if (node.children && node.children.length > 0) {
+        node.children.forEach(child => {
+          const filteredChild = filterNodes(child);
+          if (filteredChild) {
+            filteredNode.children.push(filteredChild);
+          }
+        });
       }
 
-      return null;
+      return filteredNode;
     }
 
     return node;
@@ -1307,7 +1303,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
         // Recursively copy all children and their children
         if (node.children && node.children.length > 0) {
           node.children.forEach(child => {
-            const childCopy = {
+            const childCopy: TreeNode = {
               ...child,
               children: []
             };
@@ -1315,7 +1311,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
             // Recursively copy the child's children
             if (child.children && child.children.length > 0) {
               child.children.forEach(grandChild => {
-                const grandChildCopy = {
+                const grandChildCopy: TreeNode = {
                   ...grandChild,
                   children: []
                 };
@@ -1411,6 +1407,84 @@ const PermissionChat: React.FC = (): JSX.Element => {
     </Box>
   );
 
+  // Add this function near other state management functions
+  const handleSubmitChanges = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Find all modified nodes (nodes with non-default values)
+      const modifiedNodes: TreeNode[] = [];
+      
+      const findModifiedNodes = (node: TreeNode) => {
+        // If this node has non-default values, add it
+        if (node.value !== '' && node.value !== 'default' && (node.access || node.position)) {
+          modifiedNodes.push(node);
+        }
+        
+        // Check children
+        if (node.children && node.children.length > 0) {
+          node.children.forEach(findModifiedNodes);
+        }
+      };
+      
+      // Search through all trees
+      attributeTrees.forEach(findModifiedNodes);
+      
+      console.log('Found modified nodes:', modifiedNodes);
+      
+      // For each modified node, create a policy
+      const policyPromises = modifiedNodes.map(node => {
+        const policyData = {
+          granular_data: node.label.includes('(') ? node.label : `${node.label}(${node.value || ''})`,
+          data_access: node.access.toLowerCase(),
+          position: node.position.toLowerCase()
+        };
+        
+        const apiUrl = import.meta.env.PROD 
+          ? 'http://localhost:5000/add_policy' 
+          : 'http://localhost:5000/add_policy';
+        
+        return fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(policyData),
+        });
+      });
+      
+      // Wait for all policies to be added
+      await Promise.all(policyPromises);
+      
+      // After all policies are added, fetch updated data
+      const baseUrl = import.meta.env.PROD 
+        ? 'http://localhost:5000' 
+        : 'http://localhost:5000';
+      
+      // Fetch updated attribute trees and policies
+      const [treesData, policiesData] = await Promise.all([
+        fetch(`${baseUrl}/get_attribute_trees`).then(res => res.json()),
+        fetch(`${baseUrl}/get_policies`).then(res => res.json())
+      ]);
+      
+      // Update state with new data
+      setAttributeTrees(treesData.attribute_trees || []);
+      setPolicies(policiesData.policies || []);
+      
+      // Trigger policy application
+      setShouldApplyPolicies(true);
+      
+      // Switch back to permitted view to see the changes
+      setViewMode('permitted');
+      
+    } catch (err) {
+      console.error('Error submitting changes:', err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className={styles.chatContainer}>
       <Box className={styles.messagesContainer} overflow="auto">
@@ -1419,6 +1493,16 @@ const PermissionChat: React.FC = (): JSX.Element => {
             Permission Attribute Trees
           </Text>
           <HStack spacing={2}>
+            {viewMode === 'edit' && (
+              <Button 
+                size="sm" 
+                colorScheme="green" 
+                onClick={handleSubmitChanges}
+                isLoading={isLoading}
+              >
+                Submit Changes
+              </Button>
+            )}
             <Button 
               size="sm" 
               colorScheme="blue" 

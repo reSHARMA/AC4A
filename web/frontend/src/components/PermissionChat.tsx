@@ -1,6 +1,6 @@
 /** @jsxImportSource @emotion/react */
 import React, { useState, useEffect, useRef, ReactNode } from 'react'
-import { Box, Text, VStack, Spinner, Select, HStack, Badge, Button, Switch } from '@chakra-ui/react'
+import { Box, Text, VStack, Spinner, Select, HStack, Badge, Button, Switch, Input } from '@chakra-ui/react'
 import { FaFolder, FaFolderOpen, FaFile } from 'react-icons/fa'
 import styles from './Chat.module.css'
 import { io, Socket } from 'socket.io-client'
@@ -42,6 +42,8 @@ const TreeView: React.FC<TreeViewProps> = ({
   onValueChange 
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isEditingValue, setIsEditingValue] = useState(false);
+  const [editedValue, setEditedValue] = useState(data.value);
   const hasChildren = data.children && data.children.length > 0;
 
   const handleAccessChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -53,6 +55,28 @@ const TreeView: React.FC<TreeViewProps> = ({
   const handlePositionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (onPositionChange) {
       onPositionChange(data, e.target.value);
+    }
+  };
+
+  const handleValueClick = () => {
+    if (onValueChange) {
+      setIsEditingValue(true);
+    }
+  };
+
+  const handleValueSubmit = () => {
+    if (onValueChange && editedValue !== data.value) {
+      onValueChange(data, editedValue);
+    }
+    setIsEditingValue(false);
+  };
+
+  const handleValueKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleValueSubmit();
+    } else if (e.key === 'Escape') {
+      setIsEditingValue(false);
+      setEditedValue(data.value);
     }
   };
 
@@ -92,15 +116,67 @@ const TreeView: React.FC<TreeViewProps> = ({
         <HStack ml="auto" spacing={2}>
           {hasPermissions && (
             <>
-              <Badge colorScheme="blue" ml={1}>
-                {data.access ? data.access.toUpperCase() : "Access"}
-              </Badge>
-              <Badge colorScheme="purple" ml={1}>
-                {data.position ? data.position.toUpperCase() : "Position"}
-              </Badge>
-              <Badge colorScheme={hasPermissions ? "green" : "gray"} ml={1}>
-                {getValueBadgeText()}
-              </Badge>
+              {onAccessChange ? (
+                <Select 
+                  size="xs" 
+                  width="80px" 
+                  value={data.access || ""} 
+                  onChange={handleAccessChange}
+                  onClick={(e) => e.stopPropagation()}
+                  placeholder="Access"
+                >
+                  <option value="read">Read</option>
+                  <option value="write">Write</option>
+                </Select>
+              ) : (
+                <Badge colorScheme="blue" ml={1}>
+                  {data.access ? data.access.toUpperCase() : "Access"}
+                </Badge>
+              )}
+              
+              {onPositionChange ? (
+                <Select 
+                  size="xs" 
+                  width="90px" 
+                  value={data.position || ""} 
+                  onChange={handlePositionChange}
+                  onClick={(e) => e.stopPropagation()}
+                  placeholder="Position"
+                >
+                  <option value="previous">Previous</option>
+                  <option value="current">Current</option>
+                  <option value="next">Next</option>
+                </Select>
+              ) : (
+                <Badge colorScheme="purple" ml={1}>
+                  {data.position ? data.position.toUpperCase() : "Position"}
+                </Badge>
+              )}
+
+              {isEditingValue ? (
+                <Input
+                  size="xs"
+                  width="100px"
+                  value={editedValue}
+                  onChange={(e) => setEditedValue(e.target.value)}
+                  onBlur={handleValueSubmit}
+                  onKeyDown={handleValueKeyPress}
+                  autoFocus
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <Badge 
+                  colorScheme={hasPermissions ? "green" : "gray"} 
+                  ml={1}
+                  cursor={onValueChange ? "pointer" : "default"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleValueClick();
+                  }}
+                >
+                  {getValueBadgeText()}
+                </Badge>
+              )}
             </>
           )}
         </HStack>

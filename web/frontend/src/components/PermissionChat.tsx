@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
-import React from 'react'
+/** @jsxImportSource @emotion/react */
+import React, { useState, useEffect, useRef, ReactNode } from 'react'
 import { Box, Text, VStack, Spinner, Select, HStack, Badge, Button, Switch } from '@chakra-ui/react'
 import { FaFolder, FaFolderOpen, FaFile } from 'react-icons/fa'
 import styles from './Chat.module.css'
@@ -8,9 +8,9 @@ import { io, Socket } from 'socket.io-client'
 interface TreeNode {
   label: string;
   value: string;
+  access: string;
+  position: string;
   children: TreeNode[];
-  access?: string;
-  position?: string;
 }
 
 interface Policy {
@@ -21,20 +21,25 @@ interface Policy {
 
 interface TreeViewProps {
   data: TreeNode;
-  isRoot?: boolean;
+  isRoot: boolean;
   onAccessChange?: (node: TreeNode, newAccess: string) => void;
   onPositionChange?: (node: TreeNode, newPosition: string) => void;
   onValueChange?: (node: TreeNode, newValue: string) => void;
-  isEditMode?: boolean;
 }
+
+interface Message {
+  role: string;
+  content: string;
+}
+
+type ViewMode = 'permitted' | 'edit' | 'all';
 
 const TreeView: React.FC<TreeViewProps> = ({ 
   data, 
-  isRoot = false,
+  isRoot, 
   onAccessChange, 
   onPositionChange, 
-  onValueChange,
-  isEditMode = false 
+  onValueChange 
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const hasChildren = data.children && data.children.length > 0;
@@ -85,44 +90,18 @@ const TreeView: React.FC<TreeViewProps> = ({
         </Text>
         
         <HStack ml="auto" spacing={2}>
-          {isEditMode ? (
-            <>
-              <Select 
-                size="xs" 
-                width="80px" 
-                value={data.access || ""} 
-                onChange={handleAccessChange}
-                onClick={(e) => e.stopPropagation()}
-                placeholder="Access"
-              >
-                <option value="read">Read</option>
-                <option value="write">Write</option>
-              </Select>
-              
-              <Select 
-                size="xs" 
-                width="90px" 
-                value={data.position || ""} 
-                onChange={handlePositionChange}
-                onClick={(e) => e.stopPropagation()}
-                placeholder="Position"
-              >
-                <option value="previous">Previous</option>
-                <option value="current">Current</option>
-                <option value="next">Next</option>
-              </Select>
-            </>
-          ) : (
-            <>
-              <Badge colorScheme="blue" variant="subtle">{data.access || 'Access'}</Badge>
-              <Badge colorScheme="green" variant="subtle">{data.position || 'Position'}</Badge>
-            </>
-          )}
-          
           {hasPermissions && (
-            <Badge colorScheme={hasPermissions ? "green" : "gray"} ml={1}>
-              {getValueBadgeText()}
-            </Badge>
+            <>
+              <Badge colorScheme="blue" ml={1}>
+                {data.access ? data.access.toUpperCase() : "Access"}
+              </Badge>
+              <Badge colorScheme="purple" ml={1}>
+                {data.position ? data.position.toUpperCase() : "Position"}
+              </Badge>
+              <Badge colorScheme={hasPermissions ? "green" : "gray"} ml={1}>
+                {getValueBadgeText()}
+              </Badge>
+            </>
           )}
         </HStack>
       </Box>
@@ -133,10 +112,10 @@ const TreeView: React.FC<TreeViewProps> = ({
             <TreeView
               key={index} 
               data={child}
+              isRoot={false}
               onAccessChange={onAccessChange}
               onPositionChange={onPositionChange}
               onValueChange={onValueChange}
-              isEditMode={isEditMode}
             />
           ))}
         </Box>
@@ -145,7 +124,7 @@ const TreeView: React.FC<TreeViewProps> = ({
   );
 };
 
-const PermissionChat: React.FC = () => {
+const PermissionChat: React.FC = (): JSX.Element => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [attributeTrees, setAttributeTrees] = useState<TreeNode[]>([]);
@@ -155,7 +134,7 @@ const PermissionChat: React.FC = () => {
   const wsRef = useRef<WebSocket | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [nodeMap, setNodeMap] = useState<Map<string, TreeNode>>(new Map());
-  const [viewMode, setViewMode] = useState<'all' | 'permitted' | 'edit'>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('permitted');
   const [editModeTrees, setEditModeTrees] = useState<TreeNode[]>([]);
 
   // Initialize socket connection
@@ -465,6 +444,7 @@ const PermissionChat: React.FC = () => {
                     // Otherwise, if parent has a specific value, children should have "All Values"
                     value: nodeBaseLabel === baseLabel ? (value || '') : (value ? '*' : ''),
                     children: [],
+                    // Always propagate the access and position from the policy to all nodes in the subtree
                     access: policy.data_access.toLowerCase(),
                     position: policy.position.toLowerCase()
                   };
@@ -473,7 +453,7 @@ const PermissionChat: React.FC = () => {
                   existingNodesMap.set(newNodeKey, newNode);
                   console.log(`Added node with key ${newNodeKey} to existingNodesMap`);
                   
-                  // Recursively create children
+                  // Recursively create children with the same access and position
                   if (node.children && node.children.length > 0) {
                     newNode.children = node.children.map(child => createSubtree(child));
                   }
@@ -608,6 +588,7 @@ const PermissionChat: React.FC = () => {
                 // Otherwise, if parent has a specific value, children should have "All Values"
                 value: nodeBaseLabel === baseLabel ? (value || '') : (value ? '*' : ''),
                 children: [],
+                // Always propagate the access and position from the policy to all nodes in the subtree
                 access: policy.data_access.toLowerCase(),
                 position: policy.position.toLowerCase()
               };
@@ -616,7 +597,7 @@ const PermissionChat: React.FC = () => {
               existingNodesMap.set(newNodeKey, newNode);
               console.log(`Added node with key ${newNodeKey} to existingNodesMap`);
               
-              // Recursively create children
+              // Recursively create children with the same access and position
               if (node.children && node.children.length > 0) {
                 newNode.children = node.children.map(child => createSubtree(child));
               }
@@ -877,6 +858,34 @@ const PermissionChat: React.FC = () => {
     console.log('Position updated:', node.label, value);
   };
 
+  const handleValueChange = (node: TreeNode, value: string) => {
+    // Create a deep copy of the trees to avoid mutating state directly
+    const updatedTrees = JSON.parse(JSON.stringify(attributeTrees));
+    
+    // Function to update the node in the tree
+    const updateNode = (trees: TreeNode[]): boolean => {
+      for (let i = 0; i < trees.length; i++) {
+        if (trees[i] === node) {
+          trees[i].value = value;
+          return true;
+        }
+        
+        if (trees[i].children && trees[i].children.length > 0) {
+          if (updateNode(trees[i].children)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+    
+    updateNode(updatedTrees);
+    setAttributeTrees(updatedTrees);
+    
+    // Here you would typically send the updated trees to the backend
+    console.log('Value updated:', node.label, value);
+  };
+
   const addCalendarWeekPolicy = () => {
     // First, add the policy to the backend
     const apiUrl = import.meta.env.PROD 
@@ -1086,9 +1095,24 @@ const PermissionChat: React.FC = () => {
 
   // Function to filter nodes based on the view mode
   const filterNodes = (node: TreeNode): TreeNode | null => {
-    // If we're in 'all' view, return the node as is
+    // If we're in 'all' view, return the node as is with all its properties
     if (viewMode === 'all') {
-      return node;
+      const filteredNode: TreeNode = {
+        ...node,
+        children: []
+      };
+
+      // Recursively filter children while preserving all properties
+      if (node.children && node.children.length > 0) {
+        node.children.forEach(child => {
+          const filteredChild = filterNodes(child);
+          if (filteredChild) {
+            filteredNode.children.push(filteredChild);
+          }
+        });
+      }
+
+      return filteredNode;
     }
 
     // If we're in 'permitted' view, only show nodes with permissions
@@ -1203,6 +1227,18 @@ const PermissionChat: React.FC = () => {
     return permissionNodes;
   };
 
+  const renderTree = (tree: TreeNode, index: number) => (
+    <Box key={index} p={2} borderRadius="md" bg="white" boxShadow="sm">
+      <TreeView 
+        data={tree} 
+        isRoot={true}
+        onAccessChange={viewMode === 'edit' ? handleAccessChange : undefined}
+        onPositionChange={viewMode === 'edit' ? handlePositionChange : undefined}
+        onValueChange={viewMode === 'edit' ? handleValueChange : undefined}
+      />
+    </Box>
+  );
+
   return (
     <div className={styles.chatContainer}>
       <Box className={styles.messagesContainer} overflow="auto">
@@ -1290,41 +1326,13 @@ const PermissionChat: React.FC = () => {
         
         {!isLoading && !error && attributeTrees.length > 0 && (
           <VStack align="stretch" spacing={2} width="100%">
-            {viewMode === 'permitted' ? (
-              // For permitted view, show all permission nodes as roots
-              getAllPermissionNodes(attributeTrees).map((tree, index) => (
-                <Box key={index} p={2} borderRadius="md" bg="white" boxShadow="sm">
-                  <TreeView 
-                    data={tree} 
-                    isRoot={true}
-                    onAccessChange={viewMode === 'edit' ? handleAccessChange : undefined}
-                    onPositionChange={viewMode === 'edit' ? handlePositionChange : undefined}
-                    onValueChange={viewMode === 'edit' ? handleValueChange : undefined}
-                    isEditMode={viewMode === 'edit'}
-                  />
-                </Box>
-              ))
-            ) : (
-              // For other views, use the normal filtering
-              attributeTrees.map((tree, index) => {
-                const filteredTree = filterNodes(tree);
-                if (filteredTree) {
-                  return (
-                    <Box key={index} p={2} borderRadius="md" bg="white" boxShadow="sm">
-                      <TreeView 
-                        data={filteredTree} 
-                        isRoot={true}
-                        onAccessChange={viewMode === 'edit' ? handleAccessChange : undefined}
-                        onPositionChange={viewMode === 'edit' ? handlePositionChange : undefined}
-                        onValueChange={viewMode === 'edit' ? handleValueChange : undefined}
-                        isEditMode={viewMode === 'edit'}
-                      />
-                    </Box>
-                  );
-                }
-                return null;
-              })
-            )}
+            {viewMode === 'permitted' 
+              ? getAllPermissionNodes(attributeTrees).map((tree, index) => renderTree(tree, index))
+              : attributeTrees.map((tree, index) => {
+                  const filteredTree = filterNodes(tree);
+                  return filteredTree ? renderTree(filteredTree, index) : null;
+                })
+            }
           </VStack>
         )}
       </Box>

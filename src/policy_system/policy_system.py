@@ -303,3 +303,21 @@ class PolicySystem:
 
     def export_attributes(self):
         return self.attribute_definitions
+
+    def remove_policy(self, policy_rule):
+        """Remove a policy from the policy system based on its composite key"""
+        logger.info(f"Attempting to remove policy: {policy_rule}")
+        
+        # Create composite key for the policy to remove
+        target_key = f"{policy_rule['granular_data'].lower()}-{policy_rule['data_access'].lower()}-{policy_rule['position'].lower()}"
+        
+        # Find and remove the matching policy
+        for i, rule in enumerate(self.policy_rules):
+            rule_key = f"{rule['granular_data'].lower()}-{rule['data_access'].lower()}-{rule['position'].lower()}"
+            if rule_key == target_key:
+                logger.info(f"Found matching policy at index {i}, removing it")
+                self.policy_rules.pop(i)
+                return True
+                
+        logger.warning(f"No matching policy found for key: {target_key}")
+        return False

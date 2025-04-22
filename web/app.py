@@ -265,6 +265,42 @@ def get_policies():
         logger.error(f"Error in get_policies: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
+@app.route('/delete_policy', methods=['POST'])
+def delete_policy():
+    """Delete a policy from the policy system"""
+    try:
+        logger.info("Received request to delete policy")
+        
+        # Ensure agent manager is initialized
+        if not agent_manager.initialized:
+            logger.info("Agent manager not initialized, initializing now")
+            agent_manager.initialize_agents()
+            logger.info("Agent manager initialized")
+            
+            logger.info("Enabling policy system")
+            agent_manager.enable_policy_system()
+            logger.info("Policy system enabled")
+        
+        # Get policy data from request
+        policy_data = request.json
+        logger.info(f"Policy data to delete: {policy_data}")
+        
+        # Remove policy from the policy system
+        success = agent_manager.policy_system.remove_policy(policy_data)
+        if not success:
+            logger.warning(f"Failed to remove policy: {policy_data}")
+            return jsonify({"error": "Policy not found"}), 404
+        
+        logger.info(f"Successfully removed policy: {policy_data}")
+        
+        # Emit policy update to all connected clients
+        emit_policy_update()
+        
+        return jsonify({"status": "success", "message": "Policy deleted successfully"})
+    except Exception as e:
+        logger.error(f"Error in delete_policy: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/reset_session', methods=['POST'])
 def reset_session():
     """Reset the agent session and conversation history"""

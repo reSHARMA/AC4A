@@ -1,7 +1,7 @@
 /** @jsxImportSource @emotion/react */
-import React, { useState, useEffect, useRef, ReactNode } from 'react'
-import { Box, Text, VStack, Spinner, Select, HStack, Badge, Button, Switch, Input } from '@chakra-ui/react'
-import { FaFolder, FaFolderOpen, FaFile } from 'react-icons/fa'
+import React, { useState, useEffect, useRef } from 'react'
+import { Box, Text, VStack, Spinner, Select, HStack, Badge, Button, Switch, Input, IconButton } from '@chakra-ui/react'
+import { FaFolder, FaFolderOpen, FaFile, FaTrash } from 'react-icons/fa'
 import styles from './Chat.module.css'
 import { io, Socket } from 'socket.io-client'
 
@@ -22,9 +22,11 @@ interface Policy {
 interface TreeViewProps {
   data: TreeNode;
   isRoot: boolean;
+  viewMode: ViewMode;
   onAccessChange?: (node: TreeNode, newAccess: string) => void;
   onPositionChange?: (node: TreeNode, newPosition: string) => void;
   onValueChange?: (node: TreeNode, newValue: string) => void;
+  onDelete?: (node: TreeNode) => void;
 }
 
 interface Message {
@@ -36,10 +38,12 @@ type ViewMode = 'permitted' | 'edit' | 'all';
 
 const TreeView: React.FC<TreeViewProps> = ({ 
   data, 
-  isRoot, 
-  onAccessChange, 
-  onPositionChange, 
-  onValueChange 
+  isRoot = false,
+  viewMode,
+  onAccessChange,
+  onPositionChange,
+  onValueChange,
+  onDelete
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditingValue, setIsEditingValue] = useState(false);
@@ -80,12 +84,19 @@ const TreeView: React.FC<TreeViewProps> = ({
     }
   };
 
-  // Determine if this node has any permissions or specific value
-  const hasPermissions = data.access || data.position || data.value || true; // Always show badges
-  
-  // Format the value display - don't show any value in the label
+  // Function to handle delete button click
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent tree node expansion
+    if (onDelete) {
+      onDelete(data);
+    }
+  };
+
+  // Function to get value display
   const getValueDisplay = () => {
-    return null; // Never show value in the label
+    if (data.value === '') return "DEFAULT";
+    if (data.value === '*') return "All Values";
+    return data.value;
   };
 
   // Get the badge text for the value
@@ -110,74 +121,90 @@ const TreeView: React.FC<TreeViewProps> = ({
           <FaFile color="#718096" />
         )}
         <Text ml={2} fontWeight={hasChildren ? "medium" : "normal"}>
-          {data.label} {getValueDisplay()}
+          {data.label}
         </Text>
         
         <HStack ml="auto" spacing={2}>
-          {hasPermissions && (
-            <>
-              {onAccessChange ? (
-                <Select 
-                  size="xs" 
-                  width="80px" 
-                  value={data.access || ""} 
-                  onChange={handleAccessChange}
-                  onClick={(e) => e.stopPropagation()}
-                  placeholder="Access"
-                >
-                  <option value="read">Read</option>
-                  <option value="write">Write</option>
-                </Select>
-              ) : (
-                <Badge colorScheme="blue" ml={1}>
-                  {data.access ? data.access.toUpperCase() : "Access"}
-                </Badge>
-              )}
-              
-              {onPositionChange ? (
-                <Select 
-                  size="xs" 
-                  width="90px" 
-                  value={data.position || ""} 
-                  onChange={handlePositionChange}
-                  onClick={(e) => e.stopPropagation()}
-                  placeholder="Position"
-                >
-                  <option value="previous">Previous</option>
-                  <option value="current">Current</option>
-                  <option value="next">Next</option>
-                </Select>
-              ) : (
-                <Badge colorScheme="purple" ml={1}>
-                  {data.position ? data.position.toUpperCase() : "Position"}
-                </Badge>
-              )}
+          {/* Value badge/input */}
+          {onValueChange ? (
+            isEditingValue ? (
+              <Input
+                size="xs"
+                width="100px"
+                value={editedValue}
+                onChange={(e) => setEditedValue(e.target.value)}
+                onKeyDown={handleValueKeyPress}
+                onBlur={handleValueSubmit}
+                autoFocus
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <Badge 
+                colorScheme="green" 
+                ml={1}
+                cursor="pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleValueClick();
+                }}
+              >
+                {getValueBadgeText()}
+              </Badge>
+            )
+          ) : (
+            <Badge colorScheme="green" ml={1}>
+              {getValueBadgeText()}
+            </Badge>
+          )}
 
-              {isEditingValue ? (
-                <Input
-                  size="xs"
-                  width="100px"
-                  value={editedValue}
-                  onChange={(e) => setEditedValue(e.target.value)}
-                  onBlur={handleValueSubmit}
-                  onKeyDown={handleValueKeyPress}
-                  autoFocus
-                  onClick={(e) => e.stopPropagation()}
-                />
-              ) : (
-                <Badge 
-                  colorScheme={hasPermissions ? "green" : "gray"} 
-                  ml={1}
-                  cursor={onValueChange ? "pointer" : "default"}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleValueClick();
-                  }}
-                >
-                  {getValueBadgeText()}
-                </Badge>
-              )}
-            </>
+          {/* Access badge/select */}
+          {onAccessChange ? (
+            <Select 
+              size="xs" 
+              width="80px" 
+              value={data.access || ""} 
+              onChange={handleAccessChange}
+              onClick={(e) => e.stopPropagation()}
+              placeholder="Access"
+            >
+              <option value="read">Read</option>
+              <option value="write">Write</option>
+            </Select>
+          ) : (
+            <Badge colorScheme="blue" ml={1}>
+              {data.access ? data.access.toUpperCase() : "Access"}
+            </Badge>
+          )}
+          
+          {/* Position badge/select */}
+          {onPositionChange ? (
+            <Select 
+              size="xs" 
+              width="90px" 
+              value={data.position || ""} 
+              onChange={handlePositionChange}
+              onClick={(e) => e.stopPropagation()}
+              placeholder="Position"
+            >
+              <option value="previous">Previous</option>
+              <option value="current">Current</option>
+              <option value="next">Next</option>
+            </Select>
+          ) : (
+            <Badge colorScheme="purple" ml={1}>
+              {data.position ? data.position.toUpperCase() : "Position"}
+            </Badge>
+          )}
+
+          {/* Delete button - only show in all permission view */}
+          {isRoot && onDelete && viewMode === 'permitted' && (
+            <IconButton
+              size="xs"
+              colorScheme="red"
+              aria-label="Delete policy"
+              icon={<FaTrash />}
+              onClick={handleDelete}
+            />
           )}
         </HStack>
       </Box>
@@ -189,9 +216,11 @@ const TreeView: React.FC<TreeViewProps> = ({
               key={index} 
               data={child}
               isRoot={false}
+              viewMode={viewMode}
               onAccessChange={onAccessChange}
               onPositionChange={onPositionChange}
               onValueChange={onValueChange}
+              onDelete={onDelete}
             />
           ))}
         </Box>
@@ -268,7 +297,9 @@ const PermissionChat: React.FC = (): JSX.Element => {
         newNodeMap.set(nodeKey, {
           ...node,
           label: baseLabel, // Use the base label without the value
-          value: value || '' // Use empty string for initial nodes
+          value: value || node.value || '', // Preserve existing value or use parsed value
+          access: node.access || '', // Ensure access is preserved
+          position: node.position || '' // Ensure position is preserved
         });
         
         // Process children
@@ -336,10 +367,15 @@ const PermissionChat: React.FC = (): JSX.Element => {
     
     const addNodesToMap = (node: TreeNode) => {
       // Create a composite key using all attributes
-      const nodeKey = `${node.label}:${node.value}:${node.position}:${node.access}`;
+      const nodeKey = `${node.label}:${node.value || ''}:${node.position || ''}:${node.access || ''}`;
       
       // Map the composite key to the full node data
-      existingNodesMap.set(nodeKey, node);
+      existingNodesMap.set(nodeKey, {
+        ...node,
+        value: node.value || '', // Ensure value is preserved
+        access: node.access || '', // Ensure access is preserved
+        position: node.position || '' // Ensure position is preserved
+      });
       
       // Process children
       if (node.children && node.children.length > 0) {
@@ -1303,14 +1339,66 @@ const PermissionChat: React.FC = (): JSX.Element => {
     return permissionNodes;
   };
 
+  // Function to handle policy deletion
+  const handleDeletePolicy = async (policyData: any) => {
+    try {
+      setIsLoading(true);
+      
+      // Send delete request to backend
+      const apiUrl = import.meta.env.PROD 
+        ? 'http://localhost:5000/delete_policy' 
+        : 'http://localhost:5000/delete_policy';
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(policyData),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to delete policy: ${response.status} ${response.statusText}`);
+      }
+
+      // Fetch updated data after deleting policy
+      const baseUrl = import.meta.env.PROD 
+        ? 'http://localhost:5000' 
+        : 'http://localhost:5000';
+      
+      // Fetch updated attribute trees and policies
+      const [treesData, policiesData] = await Promise.all([
+        fetch(`${baseUrl}/get_attribute_trees`).then(res => res.json()),
+        fetch(`${baseUrl}/get_policies`).then(res => res.json())
+      ]);
+
+      // Update state with new data
+      setAttributeTrees(treesData.attribute_trees || []);
+      setPolicies(policiesData.policies || []);
+      
+      // Apply policies after updating state
+      setTimeout(() => {
+        applyPolicies();
+      }, 100);
+    } catch (err) {
+      console.error('Error deleting policy:', err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const renderTree = (tree: TreeNode, index: number) => (
     <Box key={index} p={2} borderRadius="md" bg="white" boxShadow="sm">
       <TreeView 
         data={tree} 
         isRoot={true}
+        viewMode={viewMode}
         onAccessChange={viewMode === 'edit' ? handleAccessChange : undefined}
         onPositionChange={viewMode === 'edit' ? handlePositionChange : undefined}
         onValueChange={viewMode === 'edit' ? handleValueChange : undefined}
+        onDelete={handleDeletePolicy}
       />
     </Box>
   );

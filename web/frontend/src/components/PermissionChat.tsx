@@ -250,6 +250,30 @@ const PermissionChat = () => {
     // Create a new node map to track changes
     const updatedNodeMap = new Map(nodeMap);
     
+    // First, build a map of all existing nodes in the trees to check for duplicates
+    const existingNodesMap = new Map<string, TreeNode>();
+    
+    const addNodesToMap = (node: TreeNode) => {
+      // Create a composite key using all attributes
+      const nodeKey = `${node.label}:${node.value}:${node.position}:${node.access}`;
+      
+      // Map the composite key to the full node data
+      existingNodesMap.set(nodeKey, node);
+      
+      // Process children
+      if (node.children && node.children.length > 0) {
+        node.children.forEach(addNodesToMap);
+      }
+    };
+    
+    // Build the map of existing nodes
+    updatedTrees.forEach((tree: TreeNode) => {
+      addNodesToMap(tree);
+    });
+    
+    console.log('Built map of existing nodes with size:', existingNodesMap.size);
+    console.log('Existing node keys:', Array.from(existingNodesMap.keys()));
+    
     // Apply each policy to the attribute trees
     policies.forEach(policy => {
       // Create a unique key for the policy
@@ -276,8 +300,11 @@ const PermissionChat = () => {
       // Create composite key for node lookup using all attributes
       const nodeKey = `${baseLabel}:${value || '*'}:${policy.data_access.toLowerCase()}:${policy.position.toLowerCase()}`;
       
+      console.log('Looking for node with key:', nodeKey);
+      console.log('Node exists in map:', existingNodesMap.has(nodeKey));
+      
       // Check if a node with these exact attributes exists in our map
-      const existingNode = updatedNodeMap.get(nodeKey);
+      const existingNode = existingNodesMap.get(nodeKey);
       
       if (existingNode) {
         console.log('Found existing node with same attributes:', existingNode);
@@ -393,6 +420,19 @@ const PermissionChat = () => {
                 // Create a function to recursively create a subtree with inherited attributes
                 const createSubtree = (node: TreeNode): TreeNode => {
                   const { baseLabel: nodeBaseLabel, value: nodeValue } = parseNodeLabel(node.label);
+                  
+                  // Create a composite key for this node
+                  const newNodeKey = `${nodeBaseLabel}:${nodeBaseLabel === baseLabel ? (value || '') : (value ? '*' : '')}:${policy.position.toLowerCase()}:${policy.data_access.toLowerCase()}`;
+                  
+                  console.log(`Creating node with key: ${newNodeKey}`);
+                  console.log(`Node exists in map:`, existingNodesMap.has(newNodeKey));
+                  
+                  // Check if this node already exists
+                  if (existingNodesMap.has(newNodeKey)) {
+                    console.log(`Node with key ${newNodeKey} already exists, skipping`);
+                    return existingNodesMap.get(newNodeKey)!;
+                  }
+                  
                   const newNode: TreeNode = {
                     label: nodeBaseLabel,
                     // If this is the root node of the subtree, use the policy value
@@ -402,6 +442,10 @@ const PermissionChat = () => {
                     access: policy.data_access.toLowerCase(),
                     position: policy.position.toLowerCase()
                   };
+                  
+                  // Add the new node to our map
+                  existingNodesMap.set(newNodeKey, newNode);
+                  console.log(`Added node with key ${newNodeKey} to existingNodesMap`);
                   
                   // Recursively create children
                   if (node.children && node.children.length > 0) {
@@ -415,20 +459,33 @@ const PermissionChat = () => {
                 const newSubtree = createSubtree(originalNode);
                 console.log('Created new subtree:', newSubtree);
                 
-                // Add the new subtree to the parent
-                updatedParentNode.children.push(newSubtree);
+                // Check if the parent already has a child with the same composite key
+                const existingChildIndex = updatedParentNode.children.findIndex(child => {
+                  const childKey = `${child.label}:${child.value}:${child.position}:${child.access}`;
+                  const newKey = `${newSubtree.label}:${newSubtree.value}:${newSubtree.position}:${newSubtree.access}`;
+                  return childKey === newKey;
+                });
+                
+                if (existingChildIndex >= 0) {
+                  console.log(`Parent already has a child with the same composite key at index ${existingChildIndex}`);
+                  console.log('Replacing existing child with new subtree');
+                  updatedParentNode.children[existingChildIndex] = newSubtree;
+                } else {
+                  console.log('Adding new subtree to parent');
+                  updatedParentNode.children.push(newSubtree);
+                }
                 
                 // Add all nodes in the subtree to the node map
-                const addNodesToMap = (node: TreeNode) => {
+                const addNodesToNodeMap = (node: TreeNode) => {
                   const nodeKey = `${node.label}:${node.value}:${node.position}:${node.access}`;
                   updatedNodeMap.set(nodeKey, node);
                   
                   if (node.children && node.children.length > 0) {
-                    node.children.forEach(addNodesToMap);
+                    node.children.forEach(addNodesToNodeMap);
                   }
                 };
                 
-                addNodesToMap(newSubtree);
+                addNodesToNodeMap(newSubtree);
                 
                 // Mark that changes were made
                 changesMade = true;
@@ -438,12 +495,26 @@ const PermissionChat = () => {
               } else {
                 console.log('Original node not found, adding just the new node');
                 
-                // Add just the new node if the original node is not found
-                updatedParentNode.children.push(newNode);
+                // Check if the parent already has a child with the same composite key
+                const existingChildIndex = updatedParentNode.children.findIndex(child => {
+                  const childKey = `${child.label}:${child.value}:${child.position}:${child.access}`;
+                  const newKey = `${newNode.label}:${newNode.value}:${newNode.position}:${newNode.access}`;
+                  return childKey === newKey;
+                });
+                
+                if (existingChildIndex >= 0) {
+                  console.log(`Parent already has a child with the same composite key at index ${existingChildIndex}`);
+                  console.log('Replacing existing child with new node');
+                  updatedParentNode.children[existingChildIndex] = newNode;
+                } else {
+                  console.log('Adding new node to parent');
+                  updatedParentNode.children.push(newNode);
+                }
                 
                 // Add the new node to our map with composite key
                 const newNodeKey = `${newNode.label}:${newNode.value}:${newNode.position}:${newNode.access}`;
                 updatedNodeMap.set(newNodeKey, newNode);
+                existingNodesMap.set(newNodeKey, newNode);
                 
                 // Mark that changes were made
                 changesMade = true;
@@ -492,6 +563,19 @@ const PermissionChat = () => {
             // Create a function to recursively create a subtree with inherited attributes
             const createSubtree = (node: TreeNode): TreeNode => {
               const { baseLabel: nodeBaseLabel, value: nodeValue } = parseNodeLabel(node.label);
+              
+              // Create a composite key for this node
+              const newNodeKey = `${nodeBaseLabel}:${nodeBaseLabel === baseLabel ? (value || '') : (value ? '*' : '')}:${policy.position.toLowerCase()}:${policy.data_access.toLowerCase()}`;
+              
+              console.log(`Creating node with key: ${newNodeKey}`);
+              console.log(`Node exists in map:`, existingNodesMap.has(newNodeKey));
+              
+              // Check if this node already exists
+              if (existingNodesMap.has(newNodeKey)) {
+                console.log(`Node with key ${newNodeKey} already exists, skipping`);
+                return existingNodesMap.get(newNodeKey)!;
+              }
+              
               const newNode: TreeNode = {
                 label: nodeBaseLabel,
                 // If this is the root node of the subtree, use the policy value
@@ -501,6 +585,10 @@ const PermissionChat = () => {
                 access: policy.data_access.toLowerCase(),
                 position: policy.position.toLowerCase()
               };
+              
+              // Add the new node to our map
+              existingNodesMap.set(newNodeKey, newNode);
+              console.log(`Added node with key ${newNodeKey} to existingNodesMap`);
               
               // Recursively create children
               if (node.children && node.children.length > 0) {
@@ -514,20 +602,33 @@ const PermissionChat = () => {
             const newSubtree = createSubtree(originalNode);
             console.log('Created new subtree for root:', newSubtree);
             
-            // Add the new subtree as a root node
-            updatedTrees.push(newSubtree);
+            // Check if a root node with the same composite key already exists
+            const existingRootIndex = updatedTrees.findIndex((tree: TreeNode) => {
+              const treeKey = `${tree.label}:${tree.value}:${tree.position}:${tree.access}`;
+              const newKey = `${newSubtree.label}:${newSubtree.value}:${newSubtree.position}:${newSubtree.access}`;
+              return treeKey === newKey;
+            });
+            
+            if (existingRootIndex >= 0) {
+              console.log(`Root node with the same composite key already exists at index ${existingRootIndex}`);
+              console.log('Replacing existing root with new subtree');
+              updatedTrees[existingRootIndex] = newSubtree;
+            } else {
+              console.log('Adding new subtree as root node');
+              updatedTrees.push(newSubtree);
+            }
             
             // Add all nodes in the subtree to the node map
-            const addNodesToMap = (node: TreeNode) => {
+            const addNodesToNodeMap = (node: TreeNode) => {
               const nodeKey = `${node.label}:${node.value}:${node.position}:${node.access}`;
               updatedNodeMap.set(nodeKey, node);
               
               if (node.children && node.children.length > 0) {
-                node.children.forEach(addNodesToMap);
+                node.children.forEach(addNodesToNodeMap);
               }
             };
             
-            addNodesToMap(newSubtree);
+            addNodesToNodeMap(newSubtree);
             
             // Mark that changes were made
             changesMade = true;
@@ -546,12 +647,26 @@ const PermissionChat = () => {
               position: policy.position.toLowerCase()
             };
             
-            // Add the new root node to the trees
-            updatedTrees.push(newRootNode);
+            // Check if a root node with the same composite key already exists
+            const existingRootIndex = updatedTrees.findIndex((tree: TreeNode) => {
+              const treeKey = `${tree.label}:${tree.value}:${tree.position}:${tree.access}`;
+              const newKey = `${newRootNode.label}:${newRootNode.value}:${newRootNode.position}:${newRootNode.access}`;
+              return treeKey === newKey;
+            });
+            
+            if (existingRootIndex >= 0) {
+              console.log(`Root node with the same composite key already exists at index ${existingRootIndex}`);
+              console.log('Replacing existing root with new node');
+              updatedTrees[existingRootIndex] = newRootNode;
+            } else {
+              console.log('Adding new root node to trees');
+              updatedTrees.push(newRootNode);
+            }
             
             // Add the new root node to our map with composite key
             const newNodeKey = `${newRootNode.label}:${newRootNode.value}:${newRootNode.position}:${newRootNode.access}`;
             updatedNodeMap.set(newNodeKey, newRootNode);
+            existingNodesMap.set(newNodeKey, newRootNode);
             
             // Mark that changes were made
             changesMade = true;

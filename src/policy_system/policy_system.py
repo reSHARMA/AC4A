@@ -125,11 +125,22 @@ class PolicySystem:
             user_response = input(f"{txt} (yes/no): ").strip().lower()
             if user_response != "yes":
                 return
+
+        # Check for duplicate policy using the same key matching logic as remove_policy
+        target_key = f"{policy_rule['granular_data'].lower()}-{policy_rule['data_access'].lower()}-{policy_rule['position'].lower()}"
+        
+        for rule in self.policy_rules:
+            rule_key = f"{rule['granular_data'].lower()}-{rule['data_access'].lower()}-{rule['position'].lower()}"
+            if rule_key == target_key:
+                logger.info(f"Duplicate policy found with key: {target_key}, skipping addition")
+                return
+
         # Calculate and store fixed times for symbolic expressions
         for attr, value in policy_rule.items():
             if callable(value):
                 policy_rule[attr] = value()
         self.policy_rules.append(policy_rule)
+        logger.info(f"Added new policy with key: {target_key}")
 
     def is_action_allowed(self, attributes, print_policy=True):
         if not self.status:

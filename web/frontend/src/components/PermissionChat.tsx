@@ -234,6 +234,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [attributeTrees, setAttributeTrees] = useState<TreeNode[]>([]);
+  const [editViewTrees, setEditViewTrees] = useState<TreeNode[]>([]);  // Separate trees for edit view
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -241,8 +242,28 @@ const PermissionChat: React.FC = (): JSX.Element => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [nodeMap, setNodeMap] = useState<Map<string, TreeNode>>(new Map());
   const [viewMode, setViewMode] = useState<ViewMode>('permitted');
-  const [editModeTrees, setEditModeTrees] = useState<TreeNode[]>([]);
   const [shouldApplyPolicies, setShouldApplyPolicies] = useState(false);
+
+  // Function to reset trees for edit view
+  const resetEditViewTrees = (trees: TreeNode[]): TreeNode[] => {
+    return trees.map(tree => ({
+      ...tree,
+      value: '',
+      access: '',
+      position: '',
+      children: tree.children ? resetEditViewTrees(tree.children) : []
+    }));
+  };
+
+  // Handle view mode changes
+  const handleViewModeChange = (newMode: ViewMode) => {
+    if (newMode === 'edit') {
+      // Create a fresh copy of the current trees for edit view
+      const freshEditTrees = resetEditViewTrees(JSON.parse(JSON.stringify(attributeTrees)));
+      setEditViewTrees(freshEditTrees);
+    }
+    setViewMode(newMode);
+  };
 
   // Initialize socket connection
   useEffect(() => {
@@ -917,8 +938,9 @@ const PermissionChat: React.FC = (): JSX.Element => {
   };
 
   const handleAccessChange = (node: TreeNode, value: string) => {
-    // Create a deep copy of the trees to avoid mutating state directly
-    const updatedTrees = JSON.parse(JSON.stringify(attributeTrees));
+    // Create a deep copy of the appropriate trees based on view mode
+    const treesToUpdate = viewMode === 'edit' ? editViewTrees : attributeTrees;
+    const updatedTrees = JSON.parse(JSON.stringify(treesToUpdate));
     
     // Function to update the node in the tree
     const updateNode = (trees: TreeNode[]): boolean => {
@@ -938,15 +960,21 @@ const PermissionChat: React.FC = (): JSX.Element => {
     };
     
     updateNode(updatedTrees);
-    setAttributeTrees(updatedTrees);
     
-    // Here you would typically send the updated trees to the backend
+    // Update the appropriate state based on view mode
+    if (viewMode === 'edit') {
+      setEditViewTrees(updatedTrees);
+    } else {
+      setAttributeTrees(updatedTrees);
+    }
+    
     console.log('Access updated:', node.label, value);
   };
   
   const handlePositionChange = (node: TreeNode, value: string) => {
-    // Create a deep copy of the trees to avoid mutating state directly
-    const updatedTrees = JSON.parse(JSON.stringify(attributeTrees));
+    // Create a deep copy of the appropriate trees based on view mode
+    const treesToUpdate = viewMode === 'edit' ? editViewTrees : attributeTrees;
+    const updatedTrees = JSON.parse(JSON.stringify(treesToUpdate));
     
     // Function to update the node in the tree
     const updateNode = (trees: TreeNode[]): boolean => {
@@ -966,15 +994,21 @@ const PermissionChat: React.FC = (): JSX.Element => {
     };
     
     updateNode(updatedTrees);
-    setAttributeTrees(updatedTrees);
     
-    // Here you would typically send the updated trees to the backend
+    // Update the appropriate state based on view mode
+    if (viewMode === 'edit') {
+      setEditViewTrees(updatedTrees);
+    } else {
+      setAttributeTrees(updatedTrees);
+    }
+    
     console.log('Position updated:', node.label, value);
   };
 
   const handleValueChange = (node: TreeNode, value: string) => {
-    // Create a deep copy of the trees to avoid mutating state directly
-    const updatedTrees = JSON.parse(JSON.stringify(attributeTrees));
+    // Create a deep copy of the appropriate trees based on view mode
+    const treesToUpdate = viewMode === 'edit' ? editViewTrees : attributeTrees;
+    const updatedTrees = JSON.parse(JSON.stringify(treesToUpdate));
     
     // Function to update the node in the tree
     const updateNode = (trees: TreeNode[]): boolean => {
@@ -994,9 +1028,14 @@ const PermissionChat: React.FC = (): JSX.Element => {
     };
     
     updateNode(updatedTrees);
-    setAttributeTrees(updatedTrees);
     
-    // Here you would typically send the updated trees to the backend
+    // Update the appropriate state based on view mode
+    if (viewMode === 'edit') {
+      setEditViewTrees(updatedTrees);
+    } else {
+      setAttributeTrees(updatedTrees);
+    }
+    
     console.log('Value updated:', node.label, value);
   };
 
@@ -1412,7 +1451,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
     try {
       setIsLoading(true);
       
-      // Find all modified nodes (nodes with non-default values)
+      // Find all modified nodes from edit view trees
       const modifiedNodes: TreeNode[] = [];
       
       const findModifiedNodes = (node: TreeNode) => {
@@ -1427,8 +1466,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
         }
       };
       
-      // Search through all trees
-      attributeTrees.forEach(findModifiedNodes);
+      // Search through edit view trees
+      editViewTrees.forEach(findModifiedNodes);
       
       console.log('Found modified nodes:', modifiedNodes);
       
@@ -1467,14 +1506,14 @@ const PermissionChat: React.FC = (): JSX.Element => {
         fetch(`${baseUrl}/get_policies`).then(res => res.json())
       ]);
       
-      // Update state with new data
+      // Update the main trees with new data from backend
       setAttributeTrees(treesData.attribute_trees || []);
       setPolicies(policiesData.policies || []);
       
       // Trigger policy application
       setShouldApplyPolicies(true);
       
-      // Switch back to permitted view to see the changes
+      // Switch to permitted view to see the changes
       setViewMode('permitted');
       
     } catch (err) {
@@ -1538,21 +1577,21 @@ const PermissionChat: React.FC = (): JSX.Element => {
           <Button
             size="md"
             colorScheme={viewMode === 'all' ? 'blue' : 'gray'}
-            onClick={() => setViewMode('all')}
+            onClick={() => handleViewModeChange('all')}
           >
             All Attributes
           </Button>
           <Button
             size="md"
             colorScheme={viewMode === 'permitted' ? 'blue' : 'gray'}
-            onClick={() => setViewMode('permitted')}
+            onClick={() => handleViewModeChange('permitted')}
           >
             All Permissions
           </Button>
           <Button
             size="md"
             colorScheme={viewMode === 'edit' ? 'blue' : 'gray'}
-            onClick={() => setViewMode('edit')}
+            onClick={() => handleViewModeChange('edit')}
           >
             Edit View
           </Button>
@@ -1584,10 +1623,15 @@ const PermissionChat: React.FC = (): JSX.Element => {
           <VStack align="stretch" spacing={2} width="100%">
             {viewMode === 'permitted' 
               ? getAllPermissionNodes(attributeTrees).map((tree, index) => renderTree(tree, index))
-              : attributeTrees.map((tree, index) => {
-                  const filteredTree = filterNodes(tree);
-                  return filteredTree ? renderTree(filteredTree, index) : null;
-                })
+              : viewMode === 'edit'
+                ? editViewTrees.map((tree, index) => {
+                    const filteredTree = filterNodes(tree);
+                    return filteredTree ? renderTree(filteredTree, index) : null;
+                  })
+                : attributeTrees.map((tree, index) => {
+                    const filteredTree = filterNodes(tree);
+                    return filteredTree ? renderTree(filteredTree, index) : null;
+                  })
             }
           </VStack>
         )}

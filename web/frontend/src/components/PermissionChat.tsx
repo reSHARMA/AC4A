@@ -1046,194 +1046,149 @@ const PermissionChat: React.FC = (): JSX.Element => {
     }
   }, [shouldApplyPolicies, attributeTrees, policies]);
 
-  const addCalendarWeekPolicy = () => {
-    // First, add the policy to the backend
-    const apiUrl = import.meta.env.PROD 
-      ? 'http://localhost:5000/add_policy' 
-      : 'http://localhost:5000/add_policy';
-    
-    const policyData = {
-      granular_data: "Calendar:Week(67th)",
-      data_access: "Write",
-      position: "Next"
-    };
-    
-    // Set loading state
-    setIsLoading(true);
-    
-    // First add the policy
-    fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(policyData),
-    })
-    .then(response => {
+  const handleSubmitChanges = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Find all modified nodes from edit view trees
+      const modifiedNodes: TreeNode[] = [];
+      
+      const findModifiedNodes = (node: TreeNode) => {
+        // If this node has non-default values, add it
+        if (node.value !== '' && node.value !== 'default' && (node.access || node.position)) {
+          modifiedNodes.push(node);
+        }
+        
+        // Check children
+        if (node.children && node.children.length > 0) {
+          node.children.forEach(findModifiedNodes);
+        }
+      };
+      
+      // Search through edit view trees
+      editViewTrees.forEach(findModifiedNodes);
+      
+      console.log('Found modified nodes:', modifiedNodes);
+      
+      // For each modified node, create a policy
+      const policyPromises = modifiedNodes.map(node => {
+        const policyData = {
+          granular_data: node.label.includes('(') ? node.label : `${node.label}(${node.value || ''})`,
+          data_access: node.access.toLowerCase(),
+          position: node.position.toLowerCase()
+        };
+        
+        const apiUrl = import.meta.env.PROD 
+          ? 'http://localhost:5000/add_policy' 
+          : 'http://localhost:5000/add_policy';
+        
+        return fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(policyData),
+        });
+      });
+      
+      // Wait for all policies to be added
+      await Promise.all(policyPromises);
+      
+      // After all policies are added, fetch updated data
+      const baseUrl = import.meta.env.PROD 
+        ? 'http://localhost:5000' 
+        : 'http://localhost:5000';
+      
+      // Fetch updated attribute trees and policies
+      const [treesData, policiesData] = await Promise.all([
+        fetch(`${baseUrl}/get_attribute_trees`).then(res => res.json()),
+        fetch(`${baseUrl}/get_policies`).then(res => res.json())
+      ]);
+      
+      // Update the main trees with new data from backend
+      setAttributeTrees(treesData.attribute_trees || []);
+      setPolicies(policiesData.policies || []);
+      
+      // Trigger policy application
+      setShouldApplyPolicies(true);
+      
+      // Switch to permitted view to see the changes
+      setViewMode('permitted');
+      
+    } catch (err) {
+      console.error('Error submitting changes:', err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const renderTree = (tree: TreeNode, index: number) => (
+    <Box key={index} p={2} borderRadius="md" bg="white" boxShadow="sm">
+      <TreeView 
+        data={tree} 
+        isRoot={true}
+        viewMode={viewMode}
+        onAccessChange={viewMode === 'edit' ? handleAccessChange : undefined}
+        onPositionChange={viewMode === 'edit' ? handlePositionChange : undefined}
+        onValueChange={viewMode === 'edit' ? handleValueChange : undefined}
+        onDelete={handleDeletePolicy}
+      />
+    </Box>
+  );
+
+  // Function to handle policy deletion
+  const handleDeletePolicy = async (policyData: any) => {
+    try {
+      setIsLoading(true);
+      
+      // Transform the policy data into the format expected by the backend
+      const transformedPolicyData = {
+        granular_data: policyData.label.includes('(') ? policyData.label : `${policyData.label}(${policyData.value || ''})`,
+        data_access: policyData.access.toLowerCase(),
+        position: policyData.position.toLowerCase()
+      };
+      
+      // Send delete request to backend
+      const apiUrl = import.meta.env.PROD 
+        ? 'http://localhost:5000/delete_policy' 
+        : 'http://localhost:5000/delete_policy';
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(transformedPolicyData),
+      });
+
       if (!response.ok) {
-        throw new Error(`Failed to add policy: ${response.status} ${response.statusText}`);
+        throw new Error(`Failed to delete policy: ${response.status} ${response.statusText}`);
       }
-      return response.json();
-    })
-    .then(data => {
-      // After successful policy addition, fetch updated data
+
+      // After successful deletion, fetch updated data
       const baseUrl = import.meta.env.PROD 
         ? 'http://localhost:5000' 
         : 'http://localhost:5000';
       
       // Fetch both attribute trees and policies in parallel
-      return Promise.all([
+      const [treesData, policiesData] = await Promise.all([
         fetch(`${baseUrl}/get_attribute_trees`).then(res => res.json()),
         fetch(`${baseUrl}/get_policies`).then(res => res.json())
       ]);
-    })
-    .then(([treesData, policiesData]) => {
+
       // Update state with new data
       setAttributeTrees(treesData.attribute_trees || []);
       setPolicies(policiesData.policies || []);
       
       // Trigger policy application after state updates
       setShouldApplyPolicies(true);
-    })
-    .catch(err => {
-      console.error('Error adding policy:', err);
+    } catch (err) {
+      console.error('Error deleting policy:', err);
       setError(err instanceof Error ? err.message : String(err));
-    })
-    .finally(() => {
+    } finally {
       setIsLoading(false);
-    });
-  };
-
-  const addCalendarDayPolicy = () => {
-    // First, add the policy to the backend
-    const apiUrl = import.meta.env.PROD 
-      ? 'http://localhost:5000/add_policy' 
-      : 'http://localhost:5000/add_policy';
-    
-    console.log('Adding Calendar:Day policy to:', apiUrl);
-    
-    const policyData = {
-      granular_data: "Calendar:Day(Monday)",
-      data_access: "Read",
-      position: "Previous"
-    };
-    
-    console.log('Policy data being sent:', policyData);
-    
-    fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(policyData),
-    })
-    .then(response => {
-      if (!response.ok) {
-        return response.text().then(text => {
-          console.error('Error response text:', text);
-          throw new Error(`Failed to add policy: ${response.status} ${response.statusText}`);
-        });
-      }
-      return response.json();
-    })
-    .then(data => {
-      console.log('Calendar:Day policy added successfully:', data);
-      
-      // Fetch updated data after adding policy
-      const baseUrl = import.meta.env.PROD 
-        ? 'http://localhost:5000' 
-        : 'http://localhost:5000';
-      
-      // Fetch updated attribute trees and policies
-      Promise.all([
-        fetch(`${baseUrl}/get_attribute_trees`).then(res => res.json()),
-        fetch(`${baseUrl}/get_policies`).then(res => res.json())
-      ])
-      .then(([treesData, policiesData]) => {
-        // Update state with new data
-        setAttributeTrees(treesData.attribute_trees || []);
-        setPolicies(policiesData.policies || []);
-        
-        // Apply policies after updating state
-        setTimeout(() => {
-          applyPolicies();
-        }, 100);
-      })
-      .catch(err => {
-        console.error('Error fetching updated data:', err);
-        setError(err instanceof Error ? err.message : String(err));
-      });
-    })
-    .catch(err => {
-      console.error('Error adding Calendar:Day policy:', err);
-      setError(err instanceof Error ? err.message : String(err));
-    });
-  };
-
-  const addExpediaExperiencePolicy = () => {
-    // First, add the policy to the backend
-    const apiUrl = import.meta.env.PROD 
-      ? 'http://localhost:5000/add_policy' 
-      : 'http://localhost:5000/add_policy';
-    
-    console.log('Adding Expedia:Experience policy to:', apiUrl);
-    
-    const policyData = {
-      granular_data: "Expedia:Experience(*)",
-      data_access: "Write",
-      position: "Current"
-    };
-    
-    console.log('Policy data being sent:', policyData);
-    
-    fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(policyData),
-    })
-    .then(response => {
-      if (!response.ok) {
-        return response.text().then(text => {
-          console.error('Error response text:', text);
-          throw new Error(`Failed to add policy: ${response.status} ${response.statusText}`);
-        });
-      }
-      return response.json();
-    })
-    .then(data => {
-      console.log('Expedia:Experience policy added successfully:', data);
-      
-      // Fetch updated data after adding policy
-      const baseUrl = import.meta.env.PROD 
-        ? 'http://localhost:5000' 
-        : 'http://localhost:5000';
-      
-      // Fetch updated attribute trees and policies
-      Promise.all([
-        fetch(`${baseUrl}/get_attribute_trees`).then(res => res.json()),
-        fetch(`${baseUrl}/get_policies`).then(res => res.json())
-      ])
-      .then(([treesData, policiesData]) => {
-        // Update state with new data
-        setAttributeTrees(treesData.attribute_trees || []);
-        setPolicies(policiesData.policies || []);
-        
-        // Apply policies after updating state
-        setTimeout(() => {
-          applyPolicies();
-        }, 100);
-      })
-      .catch(err => {
-        console.error('Error fetching updated data:', err);
-        setError(err instanceof Error ? err.message : String(err));
-      });
-    })
-    .catch(err => {
-      console.error('Error adding Expedia:Experience policy:', err);
-      setError(err instanceof Error ? err.message : String(err));
-    });
+    }
   };
 
   // Function to filter nodes based on the view mode
@@ -1378,152 +1333,6 @@ const PermissionChat: React.FC = (): JSX.Element => {
     return permissionNodes;
   };
 
-  // Function to handle policy deletion
-  const handleDeletePolicy = async (policyData: any) => {
-    try {
-      setIsLoading(true);
-      
-      // Transform the policy data into the format expected by the backend
-      const transformedPolicyData = {
-        granular_data: policyData.label.includes('(') ? policyData.label : `${policyData.label}(${policyData.value || ''})`,
-        data_access: policyData.access.toLowerCase(),
-        position: policyData.position.toLowerCase()
-      };
-      
-      // Send delete request to backend
-      const apiUrl = import.meta.env.PROD 
-        ? 'http://localhost:5000/delete_policy' 
-        : 'http://localhost:5000/delete_policy';
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(transformedPolicyData),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete policy: ${response.status} ${response.statusText}`);
-      }
-
-      // After successful deletion, fetch updated data
-      const baseUrl = import.meta.env.PROD 
-        ? 'http://localhost:5000' 
-        : 'http://localhost:5000';
-      
-      // Fetch both attribute trees and policies in parallel
-      const [treesData, policiesData] = await Promise.all([
-        fetch(`${baseUrl}/get_attribute_trees`).then(res => res.json()),
-        fetch(`${baseUrl}/get_policies`).then(res => res.json())
-      ]);
-
-      // Update state with new data
-      setAttributeTrees(treesData.attribute_trees || []);
-      setPolicies(policiesData.policies || []);
-      
-      // Trigger policy application after state updates
-      setShouldApplyPolicies(true);
-    } catch (err) {
-      console.error('Error deleting policy:', err);
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const renderTree = (tree: TreeNode, index: number) => (
-    <Box key={index} p={2} borderRadius="md" bg="white" boxShadow="sm">
-      <TreeView 
-        data={tree} 
-        isRoot={true}
-        viewMode={viewMode}
-        onAccessChange={viewMode === 'edit' ? handleAccessChange : undefined}
-        onPositionChange={viewMode === 'edit' ? handlePositionChange : undefined}
-        onValueChange={viewMode === 'edit' ? handleValueChange : undefined}
-        onDelete={handleDeletePolicy}
-      />
-    </Box>
-  );
-
-  // Add this function near other state management functions
-  const handleSubmitChanges = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Find all modified nodes from edit view trees
-      const modifiedNodes: TreeNode[] = [];
-      
-      const findModifiedNodes = (node: TreeNode) => {
-        // If this node has non-default values, add it
-        if (node.value !== '' && node.value !== 'default' && (node.access || node.position)) {
-          modifiedNodes.push(node);
-        }
-        
-        // Check children
-        if (node.children && node.children.length > 0) {
-          node.children.forEach(findModifiedNodes);
-        }
-      };
-      
-      // Search through edit view trees
-      editViewTrees.forEach(findModifiedNodes);
-      
-      console.log('Found modified nodes:', modifiedNodes);
-      
-      // For each modified node, create a policy
-      const policyPromises = modifiedNodes.map(node => {
-        const policyData = {
-          granular_data: node.label.includes('(') ? node.label : `${node.label}(${node.value || ''})`,
-          data_access: node.access.toLowerCase(),
-          position: node.position.toLowerCase()
-        };
-        
-        const apiUrl = import.meta.env.PROD 
-          ? 'http://localhost:5000/add_policy' 
-          : 'http://localhost:5000/add_policy';
-        
-        return fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(policyData),
-        });
-      });
-      
-      // Wait for all policies to be added
-      await Promise.all(policyPromises);
-      
-      // After all policies are added, fetch updated data
-      const baseUrl = import.meta.env.PROD 
-        ? 'http://localhost:5000' 
-        : 'http://localhost:5000';
-      
-      // Fetch updated attribute trees and policies
-      const [treesData, policiesData] = await Promise.all([
-        fetch(`${baseUrl}/get_attribute_trees`).then(res => res.json()),
-        fetch(`${baseUrl}/get_policies`).then(res => res.json())
-      ]);
-      
-      // Update the main trees with new data from backend
-      setAttributeTrees(treesData.attribute_trees || []);
-      setPolicies(policiesData.policies || []);
-      
-      // Trigger policy application
-      setShouldApplyPolicies(true);
-      
-      // Switch to permitted view to see the changes
-      setViewMode('permitted');
-      
-    } catch (err) {
-      console.error('Error submitting changes:', err);
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className={styles.chatContainer}>
       <Box className={styles.messagesContainer} overflow="auto">
@@ -1542,34 +1351,6 @@ const PermissionChat: React.FC = (): JSX.Element => {
                 Submit Changes
               </Button>
             )}
-            <Button 
-              size="sm" 
-              colorScheme="blue" 
-              onClick={addCalendarWeekPolicy}
-            >
-              Add Calendar:Week Policy
-            </Button>
-            <Button 
-              size="sm" 
-              colorScheme="green" 
-              onClick={addCalendarDayPolicy}
-            >
-              Add Calendar:Day Policy
-            </Button>
-            <Button 
-              size="sm" 
-              colorScheme="purple" 
-              onClick={addExpediaExperiencePolicy}
-            >
-              Add Expedia:Experience Policy
-            </Button>
-            <Button 
-              size="sm" 
-              colorScheme="teal" 
-              onClick={requestPolicyUpdate}
-            >
-              Refresh Trees
-            </Button>
           </HStack>
         </HStack>
 

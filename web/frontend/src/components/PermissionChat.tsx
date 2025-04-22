@@ -1298,18 +1298,31 @@ const PermissionChat: React.FC = (): JSX.Element => {
     const traverse = (node: TreeNode) => {
       // If this node has a non-default value, add it and its children as a root
       if (node.value !== '' && node.value !== 'default') {
+        // Create a deep copy of the node with all its children
         const permissionNode: TreeNode = {
           ...node,
           children: []
         };
         
-        // Add all children as they are
+        // Recursively copy all children and their children
         if (node.children && node.children.length > 0) {
           node.children.forEach(child => {
             const childCopy = {
               ...child,
               children: []
             };
+            
+            // Recursively copy the child's children
+            if (child.children && child.children.length > 0) {
+              child.children.forEach(grandChild => {
+                const grandChildCopy = {
+                  ...grandChild,
+                  children: []
+                };
+                childCopy.children.push(grandChildCopy);
+              });
+            }
+            
             permissionNode.children.push(childCopy);
           });
         }

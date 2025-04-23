@@ -14,7 +14,7 @@ const Navbar = () => {
         justify="space-between"
       >
         <Heading size="lg" color="brand.600">
-          Data Policy Lang
+          AC4A: Access Control for Agents
         </Heading>
         <Flex gap={4}>
           <Button

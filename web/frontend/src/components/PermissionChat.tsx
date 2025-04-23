@@ -41,8 +41,8 @@ const TreeView: React.FC<TreeViewProps> = ({
   data, 
   isRoot = false,
   viewMode,
-  onAccessChange,
-  onPositionChange,
+  onAccessChange, 
+  onPositionChange, 
   onValueChange,
   onDelete
 }) => {
@@ -159,48 +159,48 @@ const TreeView: React.FC<TreeViewProps> = ({
           )}
 
           {/* Access badge/select */}
-          {onAccessChange ? (
-            <Select 
-              size="xs" 
-              width="80px" 
-              value={data.access || ""} 
-              onChange={handleAccessChange}
-              onClick={(e) => e.stopPropagation()}
-              placeholder="Access"
-            >
-              <option value="read">Read</option>
-              <option value="write">Write</option>
-            </Select>
-          ) : (
-            <Badge colorScheme="blue" ml={1}>
-              {data.access ? data.access.toUpperCase() : "Access"}
-            </Badge>
-          )}
-          
+              {onAccessChange ? (
+                <Select 
+                  size="xs" 
+                  width="80px" 
+                  value={data.access || ""} 
+                  onChange={handleAccessChange}
+                  onClick={(e) => e.stopPropagation()}
+                  placeholder="Access"
+                >
+                  <option value="read">Read</option>
+                  <option value="write">Write</option>
+                </Select>
+              ) : (
+                <Badge colorScheme="blue" ml={1}>
+                  {data.access ? data.access.toUpperCase() : "Access"}
+                </Badge>
+              )}
+              
           {/* Position badge/select */}
-          {onPositionChange ? (
-            <Select 
-              size="xs" 
-              width="90px" 
-              value={data.position || ""} 
-              onChange={handlePositionChange}
-              onClick={(e) => e.stopPropagation()}
-              placeholder="Position"
-            >
-              <option value="previous">Previous</option>
-              <option value="current">Current</option>
-              <option value="next">Next</option>
-            </Select>
-          ) : (
-            <Badge colorScheme="purple" ml={1}>
-              {data.position ? data.position.toUpperCase() : "Position"}
-            </Badge>
-          )}
+              {onPositionChange ? (
+                <Select 
+                  size="xs" 
+                  width="90px" 
+                  value={data.position || ""} 
+                  onChange={handlePositionChange}
+                  onClick={(e) => e.stopPropagation()}
+                  placeholder="Position"
+                >
+                  <option value="previous">Previous</option>
+                  <option value="current">Current</option>
+                  <option value="next">Next</option>
+                </Select>
+              ) : (
+                <Badge colorScheme="purple" ml={1}>
+                  {data.position ? data.position.toUpperCase() : "Position"}
+                </Badge>
+              )}
 
           {/* Delete button - only show in all permission view */}
           {isRoot && onDelete && viewMode === 'permitted' && (
             <IconButton
-              size="xs"
+                  size="xs"
               colorScheme="red"
               aria-label="Delete policy"
               icon={<FaTrash />}
@@ -384,9 +384,45 @@ const PermissionChat: React.FC = (): JSX.Element => {
 
   // Function to create a hierarchical tree from a chained label
   const createTreeFromChainedLabel = (granular_data: string, access: string, position: string): TreeNode => {
+    console.log('createTreeFromChainedLabel called with:');
+    console.log('granular_data:', granular_data);
+    console.log('access:', access);
+    console.log('position:', position);
+    
     const parts = parseLabel(granular_data);
+    console.log('Parsed parts:', parts);
+    
     if (parts.length === 0) {
       throw new Error('Cannot create tree from empty label');
+    }
+
+    // Find the original node in the attribute trees to get its children structure
+    const findOriginalNode = (tree: TreeNode): TreeNode | undefined => {
+      const { baseLabel: nodeBaseLabel } = parseNodeLabel(tree.label);
+      if (nodeBaseLabel === parts[0].baseLabel) {
+        return tree;
+      }
+      
+      for (const child of tree.children) {
+        const found = findOriginalNode(child);
+        if (found) {
+          return found;
+        }
+      }
+      return undefined;
+    };
+
+    // Find the original node to get its children structure
+    let originalNode: TreeNode | undefined;
+    for (const tree of attributeTrees) {
+      originalNode = findOriginalNode(tree);
+      if (originalNode) {
+        break;
+      }
+    }
+
+    if (!originalNode) {
+      throw new Error(`Could not find original node for ${parts[0].baseLabel}`);
     }
 
     // Create the root node
@@ -398,19 +434,53 @@ const PermissionChat: React.FC = (): JSX.Element => {
       children: []
     };
 
-    // Add children for each subsequent part
-    let current = root;
-    for (let i = 1; i < parts.length; i++) {
-      const child: TreeNode = {
-        label: parts[i].baseLabel,
-        value: parts[i].value,
+    // Track which part we're currently processing
+    let currentPartIdx = 1;
+
+    // Helper function to create a child node with appropriate value
+    const createChildNode = (originalChild: TreeNode): TreeNode => {
+      const childNode: TreeNode = {
+        label: originalChild.label,
+        value: '',
         access: access,
         position: position,
         children: []
       };
-      current.children.push(child);
-      current = child;
-    }
+
+      // If this child matches the next part in our sequence
+      if (currentPartIdx < parts.length && originalChild.label === parts[currentPartIdx].baseLabel) {
+        childNode.value = parts[currentPartIdx].value;
+        currentPartIdx++;
+      }
+      // For nodes after the last explicitly mentioned node, use ALL_VALUES
+      else if (currentPartIdx >= parts.length) {
+        childNode.value = '*';
+      }
+      // For intermediate nodes, use empty value
+      else {
+        childNode.value = '';
+      }
+
+      console.log('Created child node:', childNode.label, 'with value:', childNode.value);
+      return childNode;
+    };
+
+    // Recursive function to build the tree
+    const buildTree = (currentOriginalNode: TreeNode, currentRoot: TreeNode) => {
+      // Process each child of the current original node
+      for (const originalChild of currentOriginalNode.children) {
+        const childNode = createChildNode(originalChild);
+        currentRoot.children.push(childNode);
+        
+        // Recursively process the child's children
+        if (originalChild.children && originalChild.children.length > 0) {
+          buildTree(originalChild, childNode);
+        }
+      }
+    };
+
+    // Start building the tree from the root
+    buildTree(originalNode, root);
 
     return root;
   };
@@ -578,40 +648,40 @@ const PermissionChat: React.FC = (): JSX.Element => {
             
             if (updatedParentNode) {
               console.log('Found parent node in updated trees');
-              
-              // Check if the parent already has a child with the same composite key
-              const existingChildIndex = updatedParentNode.children.findIndex(child => {
+                
+                // Check if the parent already has a child with the same composite key
+                const existingChildIndex = updatedParentNode.children.findIndex(child => {
                 const childKey = createNodeKey(child.label, child.access, child.position);
                 const newKey = createNodeKey(newNodeTree.label, newNodeTree.access, newNodeTree.position);
-                return childKey === newKey;
-              });
-              
-              if (existingChildIndex >= 0) {
-                console.log(`Parent already has a child with the same composite key at index ${existingChildIndex}`);
+                  return childKey === newKey;
+                });
+                
+                if (existingChildIndex >= 0) {
+                  console.log(`Parent already has a child with the same composite key at index ${existingChildIndex}`);
                 console.log('Replacing existing child with new node tree');
                 updatedParentNode.children[existingChildIndex] = newNodeTree;
-              } else {
+                } else {
                 console.log('Adding new node tree to parent');
                 updatedParentNode.children.push(newNodeTree);
-              }
-              
-              // Add all nodes in the tree to our map
-              const addNodesToNodeMap = (node: TreeNode) => {
-                const nodeKey = createNodeKey(node.label, node.access, node.position);
-                updatedNodeMap.set(nodeKey, node);
-                
-                if (node.children && node.children.length > 0) {
-                  node.children.forEach(addNodesToNodeMap);
                 }
-              };
-              
+                
+              // Add all nodes in the tree to our map
+                const addNodesToNodeMap = (node: TreeNode) => {
+                const nodeKey = createNodeKey(node.label, node.access, node.position);
+                  updatedNodeMap.set(nodeKey, node);
+                  
+                  if (node.children && node.children.length > 0) {
+                    node.children.forEach(addNodesToNodeMap);
+                  }
+                };
+                
               addNodesToNodeMap(newNodeTree);
-              
-              // Mark that changes were made
-              changesMade = true;
-              
+                
+                // Mark that changes were made
+                changesMade = true;
+                
               console.log('Added new node tree to parent and node map');
-              console.log('New node map size:', updatedNodeMap.size);
+                console.log('New node map size:', updatedNodeMap.size);
             } else {
               console.error('Could not find parent node in updated trees');
             }
@@ -628,40 +698,40 @@ const PermissionChat: React.FC = (): JSX.Element => {
             policy.data_access.toLowerCase(),
             policy.position.toLowerCase()
           );
-          
-          // Check if a root node with the same composite key already exists
-          const existingRootIndex = updatedTrees.findIndex((tree: TreeNode) => {
+            
+            // Check if a root node with the same composite key already exists
+            const existingRootIndex = updatedTrees.findIndex((tree: TreeNode) => {
             const treeKey = createNodeKey(tree.label, tree.access, tree.position);
             const newKey = createNodeKey(newRootNodeTree.label, newRootNodeTree.access, newRootNodeTree.position);
-            return treeKey === newKey;
-          });
-          
-          if (existingRootIndex >= 0) {
-            console.log(`Root node with the same composite key already exists at index ${existingRootIndex}`);
+              return treeKey === newKey;
+            });
+            
+            if (existingRootIndex >= 0) {
+              console.log(`Root node with the same composite key already exists at index ${existingRootIndex}`);
             console.log('Replacing existing root with new node tree');
             updatedTrees[existingRootIndex] = newRootNodeTree;
-          } else {
+            } else {
             console.log('Adding new root node tree to trees');
             updatedTrees.push(newRootNodeTree);
-          }
-          
-          // Add all nodes in the tree to our map
-          const addNodesToNodeMap = (node: TreeNode) => {
-            const nodeKey = createNodeKey(node.label, node.access, node.position);
-            updatedNodeMap.set(nodeKey, node);
-            
-            if (node.children && node.children.length > 0) {
-              node.children.forEach(addNodesToNodeMap);
             }
-          };
-          
+            
+          // Add all nodes in the tree to our map
+            const addNodesToNodeMap = (node: TreeNode) => {
+            const nodeKey = createNodeKey(node.label, node.access, node.position);
+              updatedNodeMap.set(nodeKey, node);
+              
+              if (node.children && node.children.length > 0) {
+                node.children.forEach(addNodesToNodeMap);
+              }
+            };
+            
           addNodesToNodeMap(newRootNodeTree);
-          
-          // Mark that changes were made
-          changesMade = true;
-          
+            
+            // Mark that changes were made
+            changesMade = true;
+            
           console.log('Added new root node tree to trees and node map');
-          console.log('New node map size:', updatedNodeMap.size);
+            console.log('New node map size:', updatedNodeMap.size);
         }
       }
     });
@@ -811,7 +881,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
     if (viewMode === 'edit') {
       setEditViewTrees(updatedTrees);
     } else {
-      setAttributeTrees(updatedTrees);
+    setAttributeTrees(updatedTrees);
     }
     
     console.log('Access updated:', node.label, value);
@@ -845,7 +915,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
     if (viewMode === 'edit') {
       setEditViewTrees(updatedTrees);
     } else {
-      setAttributeTrees(updatedTrees);
+    setAttributeTrees(updatedTrees);
     }
     
     console.log('Position updated:', node.label, value);
@@ -879,7 +949,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
     if (viewMode === 'edit') {
       setEditViewTrees(updatedTrees);
     } else {
-      setAttributeTrees(updatedTrees);
+    setAttributeTrees(updatedTrees);
     }
     
     console.log('Value updated:', node.label, value);
@@ -930,7 +1000,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
         if (chainableChildren.length > 0) {
           // Create combined policies for each chainable child
           chainableChildren.forEach(child => {
-            const policyData = {
+    const policyData = {
               granular_data: createCombinedLabel(node, child),
               data_access: node.access.toLowerCase(),
               position: node.position.toLowerCase()
@@ -941,13 +1011,13 @@ const PermissionChat: React.FC = (): JSX.Element => {
               : 'http://localhost:5000/add_policy';
             
             policyPromises.push(
-              fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(policyData),
-              })
+    fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(policyData),
+    })
             );
             
             // Mark both nodes as processed
@@ -962,18 +1032,18 @@ const PermissionChat: React.FC = (): JSX.Element => {
             position: node.position.toLowerCase()
           };
           
-          const apiUrl = import.meta.env.PROD 
-            ? 'http://localhost:5000/add_policy' 
-            : 'http://localhost:5000/add_policy';
-          
+    const apiUrl = import.meta.env.PROD 
+      ? 'http://localhost:5000/add_policy' 
+      : 'http://localhost:5000/add_policy';
+    
           policyPromises.push(
-            fetch(apiUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(policyData),
-            })
+    fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(policyData),
+    })
           );
           
           processedNodes.add(node.label);
@@ -995,9 +1065,9 @@ const PermissionChat: React.FC = (): JSX.Element => {
       ]);
       
       // Update the main trees with new data from backend
-      setAttributeTrees(treesData.attribute_trees || []);
-      setPolicies(policiesData.policies || []);
-      
+        setAttributeTrees(treesData.attribute_trees || []);
+        setPolicies(policiesData.policies || []);
+        
       // Trigger policy application
       setShouldApplyPolicies(true);
       
@@ -1006,7 +1076,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
       
     } catch (err) {
       console.error('Error submitting changes:', err);
-      setError(err instanceof Error ? err.message : String(err));
+        setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
     }
@@ -1056,10 +1126,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
         : 'http://localhost:5000/delete_policy';
       
       const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
         body: JSON.stringify(transformedPolicyData),
       });
 
@@ -1078,15 +1148,15 @@ const PermissionChat: React.FC = (): JSX.Element => {
         fetch(`${baseUrl}/get_policies`).then(res => res.json())
       ]);
 
-      // Update state with new data
-      setAttributeTrees(treesData.attribute_trees || []);
-      setPolicies(policiesData.policies || []);
-      
+        // Update state with new data
+        setAttributeTrees(treesData.attribute_trees || []);
+        setPolicies(policiesData.policies || []);
+        
       // Trigger policy application after state updates
       setShouldApplyPolicies(true);
     } catch (err) {
       console.error('Error deleting policy:', err);
-      setError(err instanceof Error ? err.message : String(err));
+        setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
     }
@@ -1133,61 +1203,47 @@ const PermissionChat: React.FC = (): JSX.Element => {
       return filteredNode;
     }
 
-    // If we're in 'permitted' view, only show nodes with permissions
+    // If we're in 'permitted' view, show nodes with permissions and maintain hierarchy
     if (viewMode === 'permitted') {
-      // Skip nodes without access or position
-      if (!node.access && !node.position) {
-        return null;
-      }
+      // Create a copy of the node to avoid modifying the original
+      const filteredNode: TreeNode = {
+        label: node.label,
+        value: node.value,
+        access: node.access,
+        position: node.position,
+        children: []
+      };
 
-      // Always parse the label, whether it's chained or not
-      const chain = parseLabel(node.label);
-      
-      // Create a proper hierarchical structure
-      const filteredNode = createTreeFromChainedLabel(node.label, node.access, node.position);
+      // If this node has access and position, it's part of a permission chain
+      const isPartOfPermissionChain = node.access && node.position;
 
-      // Handle children
-      if (node.children && node.children.length > 0) {
-        const processedChildren: TreeNode[] = [];
-        
-        node.children.forEach(child => {
-          // Skip children without access or position
-          if (!child.access && !child.position) {
-            return;
-          }
-
-          // If child has same access and position, it's part of the chain
-          if (child.access === node.access && child.position === node.position) {
-            const childChain = parseLabel(child.label);
-            const mergedChain = [...chain, ...childChain];
-            const mergedNode = createTreeFromChainedLabel(mergedChain.join('::'), node.access, node.position);
-            processedChildren.push(mergedNode);
-          } else {
-            // Different access/position means it's a separate branch
+      // If this node has a value or is part of a permission chain, process its children
+      if (node.value !== '' || isPartOfPermissionChain) {
+        if (node.children && node.children.length > 0) {
+          node.children.forEach(child => {
             const filteredChild = filterNodes(child);
             if (filteredChild) {
-              processedChildren.push(filteredChild);
+              filteredNode.children.push(filteredChild);
             }
-          }
-        });
+          });
+        }
 
-        // Add processed children to the filtered node
-        if (processedChildren.length > 0) {
-          filteredNode.children = processedChildren;
+        // Only return the node if it has children or is part of a permission chain
+        if (filteredNode.children.length > 0 || isPartOfPermissionChain) {
+          return filteredNode;
         }
       }
 
-      return filteredNode;
+      return null;
     }
 
-    // If we're in 'edit' view, show all nodes that are either unmodified or have been modified
+    // If we're in 'edit' view, show all nodes
     if (viewMode === 'edit') {
       const filteredNode: TreeNode = {
         ...node,
         children: []
       };
 
-      // Recursively filter children
       if (node.children && node.children.length > 0) {
         node.children.forEach(child => {
           const filteredChild = filterNodes(child);
@@ -1207,51 +1263,134 @@ const PermissionChat: React.FC = (): JSX.Element => {
   const getAllPermissionNodes = (trees: TreeNode[]): TreeNode[] => {
     const permissionNodes: TreeNode[] = [];
     
-    const traverse = (node: TreeNode) => {
-      // If this node has a non-default value, add it and its children as a root
-      if (node.value !== '' && node.value !== 'default') {
-        // Create a deep copy of the node with all its children
-        const permissionNode: TreeNode = {
-          ...node,
-          children: []
+    // Helper function to find a node by label in a tree
+    const findNodeByLabel = (tree: TreeNode, label: string): TreeNode | null => {
+      if (tree.label === label) {
+        return tree;
+      }
+      for (const child of tree.children) {
+        const found = findNodeByLabel(child, label);
+        if (found) {
+          return found;
+        }
+      }
+      return null;
+    };
+
+    // Helper function to find path between two nodes
+    const findPath = (start: TreeNode, end: TreeNode): TreeNode[] => {
+      const path: TreeNode[] = [];
+      let current: TreeNode | null = end;
+      
+      while (current && current !== start) {
+        path.unshift(current);
+        // Find parent of current node
+        const findParent = (tree: TreeNode): TreeNode | null => {
+          if (tree.children.includes(current!)) {
+            return tree;
+          }
+          for (const child of tree.children) {
+            const parent = findParent(child);
+            if (parent) {
+              return parent;
+            }
+          }
+          return null;
         };
         
-        // Recursively copy all children and their children
-        if (node.children && node.children.length > 0) {
-          node.children.forEach(child => {
-            const childCopy: TreeNode = {
-              ...child,
-              children: []
-            };
-            
-            // Recursively copy the child's children
-            if (child.children && child.children.length > 0) {
-              child.children.forEach(grandChild => {
-                const grandChildCopy: TreeNode = {
-                  ...grandChild,
-                  children: []
-                };
-                childCopy.children.push(grandChildCopy);
-              });
-            }
-            
-            permissionNode.children.push(childCopy);
-          });
-        }
-        
-        permissionNodes.push(permissionNode);
-        return; // Don't traverse children of this node
+        current = findParent(start);
       }
-      
-      // If this node has default value, traverse its children
-      if (node.children && node.children.length > 0) {
-        node.children.forEach(traverse);
+      if (current === start) {
+        path.unshift(start);
       }
+      return path;
     };
-    
-    // Traverse all trees
-    trees.forEach(traverse);
-    
+
+    // Process each policy
+    policies.forEach(policy => {
+      const parts = policy.granular_data.split('::').map(part => {
+        const [label, value] = part.split('(');
+        return {
+          label,
+          value: value ? value.replace(')', '') : ''
+        };
+      });
+
+      if (parts.length === 0) return;
+
+      // Find the first node in the policy chain
+      let firstNode: TreeNode | null = null;
+      for (const tree of trees) {
+        firstNode = findNodeByLabel(tree, parts[0].label);
+        if (firstNode) break;
+      }
+
+      if (!firstNode) return;
+
+      // Create the root node for the permission chain
+      const rootNode: TreeNode = {
+        label: firstNode.label,
+        value: parts[0].value,
+        access: policy.data_access,
+        position: policy.position,
+        children: []
+      };
+
+      // Process each subsequent part in the chain
+      let currentNode = firstNode;
+      for (let i = 1; i < parts.length; i++) {
+        // Find the next node in the chain
+        const nextNode = findNodeByLabel(currentNode, parts[i].label);
+        if (!nextNode) break;
+
+        // Find the path between current and next node
+        const path = findPath(currentNode, nextNode);
+        
+        // Create nodes for the path
+        let currentParent = rootNode;
+        for (let j = 1; j < path.length; j++) {
+          const pathNode = path[j];
+          const newNode: TreeNode = {
+            label: pathNode.label,
+            value: pathNode === nextNode ? parts[i].value : '',
+            access: policy.data_access,
+            position: policy.position,
+            children: []
+          };
+
+          // Add to the last child of currentParent
+          let lastChild = currentParent;
+          while (lastChild.children.length > 0) {
+            lastChild = lastChild.children[lastChild.children.length - 1];
+          }
+          lastChild.children.push(newNode);
+          currentParent = newNode;
+        }
+
+        currentNode = nextNode;
+      }
+
+      // Add all children of the last node as "All Values"
+      if (currentNode.children.length > 0) {
+        let lastNode = rootNode;
+        while (lastNode.children.length > 0) {
+          lastNode = lastNode.children[lastNode.children.length - 1];
+        }
+
+        currentNode.children.forEach(child => {
+          lastNode.children.push({
+            label: child.label,
+            value: '*',
+            access: policy.data_access,
+            position: policy.position,
+            children: []
+          });
+        });
+      }
+
+      permissionNodes.push(rootNode);
+    });
+
     return permissionNodes;
   };
 
@@ -1298,14 +1437,14 @@ const PermissionChat: React.FC = (): JSX.Element => {
           </Text>
           <HStack spacing={2}>
             {viewMode === 'edit' && (
-              <Button 
-                size="sm" 
-                colorScheme="green" 
+            <Button 
+              size="sm" 
+              colorScheme="green" 
                 onClick={handleSubmitChanges}
                 isLoading={isLoading}
-              >
+            >
                 Submit Changes
-              </Button>
+            </Button>
             )}
           </HStack>
         </HStack>
@@ -1365,10 +1504,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
                     const filteredTree = filterNodes(tree);
                     return filteredTree ? renderTree(filteredTree, index) : null;
                   })
-                : attributeTrees.map((tree, index) => {
-                    const filteredTree = filterNodes(tree);
-                    return filteredTree ? renderTree(filteredTree, index) : null;
-                  })
+              : attributeTrees.map((tree, index) => {
+                  const filteredTree = filterNodes(tree);
+                  return filteredTree ? renderTree(filteredTree, index) : null;
+                })
             }
           </VStack>
         )}

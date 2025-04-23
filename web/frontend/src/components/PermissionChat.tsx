@@ -348,8 +348,27 @@ const PermissionChat: React.FC = (): JSX.Element => {
     }
   }, [attributeTrees]);
 
+  // Function to create a composite key for node lookup
+  const createNodeKey = (granular_data: string, data_access: string, position: string): string => {
+    // For chained labels, use the complete granular_data as part of the key
+    return `${granular_data}:${data_access.toLowerCase()}:${position.toLowerCase()}`;
+  };
+
   // Function to parse a node label and extract its value
   const parseNodeLabel = (label: string): { baseLabel: string, value: string | null } => {
+    // If it's a chained label, only parse the first part
+    if (label.includes('::')) {
+      const firstPart = label.split('::')[0];
+      const match = firstPart.match(/^(.*?)\((.*?)\)$/);
+      if (match) {
+        return {
+          baseLabel: match[1],
+          value: match[2]
+        };
+      }
+    }
+    
+    // For non-chained labels, parse normally
     const match = label.match(/^(.*?)\((.*?)\)$/);
     if (match) {
       return {
@@ -361,6 +380,39 @@ const PermissionChat: React.FC = (): JSX.Element => {
       baseLabel: label,
       value: null
     };
+  };
+
+  // Function to create a hierarchical tree from a chained label
+  const createTreeFromChainedLabel = (granular_data: string, access: string, position: string): TreeNode => {
+    const parts = parseLabel(granular_data);
+    if (parts.length === 0) {
+      throw new Error('Cannot create tree from empty label');
+    }
+
+    // Create the root node
+    const root: TreeNode = {
+      label: parts[0].baseLabel,
+      value: parts[0].value,
+      access: access,
+      position: position,
+      children: []
+    };
+
+    // Add children for each subsequent part
+    let current = root;
+    for (let i = 1; i < parts.length; i++) {
+      const child: TreeNode = {
+        label: parts[i].baseLabel,
+        value: parts[i].value,
+        access: access,
+        position: position,
+        children: []
+      };
+      current.children.push(child);
+      current = child;
+    }
+
+    return root;
   };
 
   // Function to apply policies to the trees
@@ -390,7 +442,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
     
     const addNodesToMap = (node: TreeNode) => {
       // Create a composite key using all attributes
-      const nodeKey = `${node.label}:${node.value || ''}:${node.position || ''}:${node.access || ''}`;
+      const nodeKey = createNodeKey(node.label, node.access || '', node.position || '');
       
       // Map the composite key to the full node data
       existingNodesMap.set(nodeKey, {
@@ -434,11 +486,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
       processedPolicies.add(policyKey);
       console.log('Applying policy:', policy);
       
-      // Parse the granular_data to separate label and value
-      const { baseLabel, value } = parseNodeLabel(policy.granular_data);
-      
-      // Create composite key for node lookup using all attributes
-      const nodeKey = `${baseLabel}:${value || '*'}:${policy.data_access.toLowerCase()}:${policy.position.toLowerCase()}`;
+      // Create composite key for node lookup
+      const nodeKey = createNodeKey(policy.granular_data, policy.data_access, policy.position);
       
       console.log('Looking for node with key:', nodeKey);
       console.log('Node exists in map:', existingNodesMap.has(nodeKey));
@@ -450,7 +499,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
         console.log('Found existing node with same attributes:', existingNode);
         return; // Node already exists with these exact attributes
       } else {
-        console.log('Node not found with these attributes, creating new node:', baseLabel);
+        console.log('Node not found with these attributes, creating new node:', policy.granular_data);
+        
+        // Parse the granular_data to get the base label
+        const { baseLabel } = parseNodeLabel(policy.granular_data);
         
         // Find the parent node by searching through the existing attribute trees
         let parentNode: TreeNode | undefined;
@@ -498,16 +550,14 @@ const PermissionChat: React.FC = (): JSX.Element => {
           console.log('Found parent node:', parentNode);
           console.log('Parent tree index:', parentTreeIndex);
           
-          // Create the new node
-          const newNode: TreeNode = {
-            label: baseLabel,
-            value: value || '', // Use the value from the policy, or empty string if none
-            children: [],
-            access: policy.data_access.toLowerCase(),
-            position: policy.position.toLowerCase()
-          };
+          // Create the new node tree from the chained label
+          const newNodeTree = createTreeFromChainedLabel(
+            policy.granular_data,
+            policy.data_access.toLowerCase(),
+            policy.position.toLowerCase()
+          );
           
-          // Add the new node to the parent in the updated trees
+          // Add the new node tree to the parent in the updated trees
           if (parentTreeIndex >= 0 && parentTreeIndex < updatedTrees.length) {
             // Find the parent node in the updated trees
             const findParentInUpdatedTree = (tree: TreeNode): TreeNode | undefined => {
@@ -529,140 +579,39 @@ const PermissionChat: React.FC = (): JSX.Element => {
             if (updatedParentNode) {
               console.log('Found parent node in updated trees');
               
-              // Find the original node in the attribute trees to get its children
-              const findOriginalNode = (tree: TreeNode): TreeNode | undefined => {
-                const { baseLabel: nodeBaseLabel } = parseNodeLabel(tree.label);
-                if (nodeBaseLabel === baseLabel) {
-                  return tree;
-                }
+              // Check if the parent already has a child with the same composite key
+              const existingChildIndex = updatedParentNode.children.findIndex(child => {
+                const childKey = createNodeKey(child.label, child.access, child.position);
+                const newKey = createNodeKey(newNodeTree.label, newNodeTree.access, newNodeTree.position);
+                return childKey === newKey;
+              });
+              
+              if (existingChildIndex >= 0) {
+                console.log(`Parent already has a child with the same composite key at index ${existingChildIndex}`);
+                console.log('Replacing existing child with new node tree');
+                updatedParentNode.children[existingChildIndex] = newNodeTree;
+              } else {
+                console.log('Adding new node tree to parent');
+                updatedParentNode.children.push(newNodeTree);
+              }
+              
+              // Add all nodes in the tree to our map
+              const addNodesToNodeMap = (node: TreeNode) => {
+                const nodeKey = createNodeKey(node.label, node.access, node.position);
+                updatedNodeMap.set(nodeKey, node);
                 
-                for (const child of tree.children) {
-                  const found = findOriginalNode(child);
-                  if (found) {
-                    return found;
-                  }
+                if (node.children && node.children.length > 0) {
+                  node.children.forEach(addNodesToNodeMap);
                 }
-                return undefined;
               };
               
-              // Find the original node to get its children
-              let originalNode: TreeNode | undefined;
-              for (const tree of attributeTrees) {
-                originalNode = findOriginalNode(tree);
-                if (originalNode) {
-                  break;
-                }
-              }
+              addNodesToNodeMap(newNodeTree);
               
-              if (originalNode) {
-                console.log('Found original node with children:', originalNode);
-                
-                // Create a function to recursively create a subtree with inherited attributes
-                const createSubtree = (node: TreeNode): TreeNode => {
-                  const { baseLabel: nodeBaseLabel, value: nodeValue } = parseNodeLabel(node.label);
-                  
-                  // Create a composite key for this node
-                  const newNodeKey = `${nodeBaseLabel}:${nodeBaseLabel === baseLabel ? (value || '') : (value ? '*' : '')}:${policy.position.toLowerCase()}:${policy.data_access.toLowerCase()}`;
-                  
-                  console.log(`Creating node with key: ${newNodeKey}`);
-                  console.log(`Node exists in map:`, existingNodesMap.has(newNodeKey));
-                  
-                  // Check if this node already exists
-                  if (existingNodesMap.has(newNodeKey)) {
-                    console.log(`Node with key ${newNodeKey} already exists, skipping`);
-                    return existingNodesMap.get(newNodeKey)!;
-                  }
-                  
-                  const newNode: TreeNode = {
-                    label: nodeBaseLabel,
-                    // If this is the root node of the subtree, use the policy value
-                    // Otherwise, if parent has a specific value, children should have "All Values"
-                    value: nodeBaseLabel === baseLabel ? (value || '') : (value ? '*' : ''),
-                    children: [],
-                    // Always propagate the access and position from the policy to all nodes in the subtree
-                    access: policy.data_access.toLowerCase(),
-                    position: policy.position.toLowerCase()
-                  };
-                  
-                  // Add the new node to our map
-                  existingNodesMap.set(newNodeKey, newNode);
-                  console.log(`Added node with key ${newNodeKey} to existingNodesMap`);
-                  
-                  // Recursively create children with the same access and position
-                  if (node.children && node.children.length > 0) {
-                    newNode.children = node.children.map(child => createSubtree(child));
-                  }
-                  
-                  return newNode;
-                };
-                
-                // Create the complete subtree
-                const newSubtree = createSubtree(originalNode);
-                console.log('Created new subtree:', newSubtree);
-                
-                // Check if the parent already has a child with the same composite key
-                const existingChildIndex = updatedParentNode.children.findIndex(child => {
-                  const childKey = `${child.label}:${child.value}:${child.position}:${child.access}`;
-                  const newKey = `${newSubtree.label}:${newSubtree.value}:${newSubtree.position}:${newSubtree.access}`;
-                  return childKey === newKey;
-                });
-                
-                if (existingChildIndex >= 0) {
-                  console.log(`Parent already has a child with the same composite key at index ${existingChildIndex}`);
-                  console.log('Replacing existing child with new subtree');
-                  updatedParentNode.children[existingChildIndex] = newSubtree;
-                } else {
-                  console.log('Adding new subtree to parent');
-                  updatedParentNode.children.push(newSubtree);
-                }
-                
-                // Add all nodes in the subtree to the node map
-                const addNodesToNodeMap = (node: TreeNode) => {
-                  const nodeKey = `${node.label}:${node.value}:${node.position}:${node.access}`;
-                  updatedNodeMap.set(nodeKey, node);
-                  
-                  if (node.children && node.children.length > 0) {
-                    node.children.forEach(addNodesToNodeMap);
-                  }
-                };
-                
-                addNodesToNodeMap(newSubtree);
-                
-                // Mark that changes were made
-                changesMade = true;
-                
-                console.log('Added new subtree to parent and node map');
-                console.log('New node map size:', updatedNodeMap.size);
-              } else {
-                console.log('Original node not found, adding just the new node');
-                
-                // Check if the parent already has a child with the same composite key
-                const existingChildIndex = updatedParentNode.children.findIndex(child => {
-                  const childKey = `${child.label}:${child.value}:${child.position}:${child.access}`;
-                  const newKey = `${newNode.label}:${newNode.value}:${newNode.position}:${newNode.access}`;
-                  return childKey === newKey;
-                });
-                
-                if (existingChildIndex >= 0) {
-                  console.log(`Parent already has a child with the same composite key at index ${existingChildIndex}`);
-                  console.log('Replacing existing child with new node');
-                  updatedParentNode.children[existingChildIndex] = newNode;
-                } else {
-                  console.log('Adding new node to parent');
-                  updatedParentNode.children.push(newNode);
-                }
-                
-                // Add the new node to our map with composite key
-                const newNodeKey = `${newNode.label}:${newNode.value}:${newNode.position}:${newNode.access}`;
-                updatedNodeMap.set(newNodeKey, newNode);
-                existingNodesMap.set(newNodeKey, newNode);
-                
-                // Mark that changes were made
-                changesMade = true;
-                
-                console.log('Added new node to parent and node map');
-                console.log('New node map size:', updatedNodeMap.size);
-              }
+              // Mark that changes were made
+              changesMade = true;
+              
+              console.log('Added new node tree to parent and node map');
+              console.log('New node map size:', updatedNodeMap.size);
             } else {
               console.error('Could not find parent node in updated trees');
             }
@@ -673,149 +622,46 @@ const PermissionChat: React.FC = (): JSX.Element => {
           console.log(`No suitable parent node found for "${baseLabel}" in the attribute trees`);
           console.log('Creating a new root node for this policy');
           
-          // Find the original node in the attribute trees to get its children
-          const findOriginalNode = (tree: TreeNode): TreeNode | undefined => {
-            const { baseLabel: nodeBaseLabel } = parseNodeLabel(tree.label);
-            if (nodeBaseLabel === baseLabel) {
-              return tree;
-            }
+          // Create a new root node tree from the chained label
+          const newRootNodeTree = createTreeFromChainedLabel(
+            policy.granular_data,
+            policy.data_access.toLowerCase(),
+            policy.position.toLowerCase()
+          );
+          
+          // Check if a root node with the same composite key already exists
+          const existingRootIndex = updatedTrees.findIndex((tree: TreeNode) => {
+            const treeKey = createNodeKey(tree.label, tree.access, tree.position);
+            const newKey = createNodeKey(newRootNodeTree.label, newRootNodeTree.access, newRootNodeTree.position);
+            return treeKey === newKey;
+          });
+          
+          if (existingRootIndex >= 0) {
+            console.log(`Root node with the same composite key already exists at index ${existingRootIndex}`);
+            console.log('Replacing existing root with new node tree');
+            updatedTrees[existingRootIndex] = newRootNodeTree;
+          } else {
+            console.log('Adding new root node tree to trees');
+            updatedTrees.push(newRootNodeTree);
+          }
+          
+          // Add all nodes in the tree to our map
+          const addNodesToNodeMap = (node: TreeNode) => {
+            const nodeKey = createNodeKey(node.label, node.access, node.position);
+            updatedNodeMap.set(nodeKey, node);
             
-            for (const child of tree.children) {
-              const found = findOriginalNode(child);
-              if (found) {
-                return found;
-              }
+            if (node.children && node.children.length > 0) {
+              node.children.forEach(addNodesToNodeMap);
             }
-            return undefined;
           };
           
-          // Find the original node to get its children
-          let originalNode: TreeNode | undefined;
-          for (const tree of attributeTrees) {
-            originalNode = findOriginalNode(tree);
-            if (originalNode) {
-              break;
-            }
-          }
+          addNodesToNodeMap(newRootNodeTree);
           
-          if (originalNode) {
-            console.log('Found original node with children:', originalNode);
-            
-            // Create a function to recursively create a subtree with inherited attributes
-            const createSubtree = (node: TreeNode): TreeNode => {
-              const { baseLabel: nodeBaseLabel, value: nodeValue } = parseNodeLabel(node.label);
-              
-              // Create a composite key for this node
-              const newNodeKey = `${nodeBaseLabel}:${nodeBaseLabel === baseLabel ? (value || '') : (value ? '*' : '')}:${policy.position.toLowerCase()}:${policy.data_access.toLowerCase()}`;
-              
-              console.log(`Creating node with key: ${newNodeKey}`);
-              console.log(`Node exists in map:`, existingNodesMap.has(newNodeKey));
-              
-              // Check if this node already exists
-              if (existingNodesMap.has(newNodeKey)) {
-                console.log(`Node with key ${newNodeKey} already exists, skipping`);
-                return existingNodesMap.get(newNodeKey)!;
-              }
-              
-              const newNode: TreeNode = {
-                label: nodeBaseLabel,
-                // If this is the root node of the subtree, use the policy value
-                // Otherwise, if parent has a specific value, children should have "All Values"
-                value: nodeBaseLabel === baseLabel ? (value || '') : (value ? '*' : ''),
-                children: [],
-                // Always propagate the access and position from the policy to all nodes in the subtree
-                access: policy.data_access.toLowerCase(),
-                position: policy.position.toLowerCase()
-              };
-              
-              // Add the new node to our map
-              existingNodesMap.set(newNodeKey, newNode);
-              console.log(`Added node with key ${newNodeKey} to existingNodesMap`);
-              
-              // Recursively create children with the same access and position
-              if (node.children && node.children.length > 0) {
-                newNode.children = node.children.map(child => createSubtree(child));
-              }
-              
-              return newNode;
-            };
-            
-            // Create the complete subtree
-            const newSubtree = createSubtree(originalNode);
-            console.log('Created new subtree for root:', newSubtree);
-            
-            // Check if a root node with the same composite key already exists
-            const existingRootIndex = updatedTrees.findIndex((tree: TreeNode) => {
-              const treeKey = `${tree.label}:${tree.value}:${tree.position}:${tree.access}`;
-              const newKey = `${newSubtree.label}:${newSubtree.value}:${newSubtree.position}:${newSubtree.access}`;
-              return treeKey === newKey;
-            });
-            
-            if (existingRootIndex >= 0) {
-              console.log(`Root node with the same composite key already exists at index ${existingRootIndex}`);
-              console.log('Replacing existing root with new subtree');
-              updatedTrees[existingRootIndex] = newSubtree;
-            } else {
-              console.log('Adding new subtree as root node');
-              updatedTrees.push(newSubtree);
-            }
-            
-            // Add all nodes in the subtree to the node map
-            const addNodesToNodeMap = (node: TreeNode) => {
-              const nodeKey = `${node.label}:${node.value}:${node.position}:${node.access}`;
-              updatedNodeMap.set(nodeKey, node);
-              
-              if (node.children && node.children.length > 0) {
-                node.children.forEach(addNodesToNodeMap);
-              }
-            };
-            
-            addNodesToNodeMap(newSubtree);
-            
-            // Mark that changes were made
-            changesMade = true;
-            
-            console.log('Added new subtree as root and to node map');
-            console.log('New node map size:', updatedNodeMap.size);
-          } else {
-            console.log('Original node not found, creating a new root node');
-            
-            // Create a new root node
-            const newRootNode: TreeNode = {
-              label: baseLabel,
-              value: value || '', // Use the value from the policy, or empty string if none
-              children: [],
-              access: policy.data_access.toLowerCase(),
-              position: policy.position.toLowerCase()
-            };
-            
-            // Check if a root node with the same composite key already exists
-            const existingRootIndex = updatedTrees.findIndex((tree: TreeNode) => {
-              const treeKey = `${tree.label}:${tree.value}:${tree.position}:${tree.access}`;
-              const newKey = `${newRootNode.label}:${newRootNode.value}:${newRootNode.position}:${newRootNode.access}`;
-              return treeKey === newKey;
-            });
-            
-            if (existingRootIndex >= 0) {
-              console.log(`Root node with the same composite key already exists at index ${existingRootIndex}`);
-              console.log('Replacing existing root with new node');
-              updatedTrees[existingRootIndex] = newRootNode;
-            } else {
-              console.log('Adding new root node to trees');
-              updatedTrees.push(newRootNode);
-            }
-            
-            // Add the new root node to our map with composite key
-            const newNodeKey = `${newRootNode.label}:${newRootNode.value}:${newRootNode.position}:${newRootNode.access}`;
-            updatedNodeMap.set(newNodeKey, newRootNode);
-            existingNodesMap.set(newNodeKey, newRootNode);
-            
-            // Mark that changes were made
-            changesMade = true;
-            
-            console.log('Added new root node to trees and node map');
-            console.log('New node map size:', updatedNodeMap.size);
-          }
+          // Mark that changes were made
+          changesMade = true;
+          
+          console.log('Added new root node tree to trees and node map');
+          console.log('New node map size:', updatedNodeMap.size);
         }
       }
     });
@@ -1052,6 +898,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
       
       // Find all modified nodes from edit view trees
       const modifiedNodes: TreeNode[] = [];
+      const processedNodes = new Set<string>(); // Track nodes we've already processed
       
       const findModifiedNodes = (node: TreeNode) => {
         // If this node has non-default values, add it
@@ -1070,25 +917,67 @@ const PermissionChat: React.FC = (): JSX.Element => {
       
       console.log('Found modified nodes:', modifiedNodes);
       
-      // For each modified node, create a policy
-      const policyPromises = modifiedNodes.map(node => {
-        const policyData = {
-          granular_data: node.label.includes('(') ? node.label : `${node.label}(${node.value || ''})`,
-          data_access: node.access.toLowerCase(),
-          position: node.position.toLowerCase()
-        };
+      // Create policies for modified nodes
+      const policyPromises: Promise<Response>[] = [];
+      
+      modifiedNodes.forEach(node => {
+        // Skip if we've already processed this node as part of a chain
+        if (processedNodes.has(node.label)) return;
         
-        const apiUrl = import.meta.env.PROD 
-          ? 'http://localhost:5000/add_policy' 
-          : 'http://localhost:5000/add_policy';
+        // Find chainable children
+        const chainableChildren = findChainableChildren(node, editViewTrees);
         
-        return fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(policyData),
-        });
+        if (chainableChildren.length > 0) {
+          // Create combined policies for each chainable child
+          chainableChildren.forEach(child => {
+            const policyData = {
+              granular_data: createCombinedLabel(node, child),
+              data_access: node.access.toLowerCase(),
+              position: node.position.toLowerCase()
+            };
+            
+            const apiUrl = import.meta.env.PROD 
+              ? 'http://localhost:5000/add_policy' 
+              : 'http://localhost:5000/add_policy';
+            
+            policyPromises.push(
+              fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(policyData),
+              })
+            );
+            
+            // Mark both nodes as processed
+            processedNodes.add(node.label);
+            processedNodes.add(child.label);
+          });
+        } else {
+          // Create regular policy for non-chainable node
+          const policyData = {
+            granular_data: node.label.includes('(') ? node.label : `${node.label}(${node.value || ''})`,
+            data_access: node.access.toLowerCase(),
+            position: node.position.toLowerCase()
+          };
+          
+          const apiUrl = import.meta.env.PROD 
+            ? 'http://localhost:5000/add_policy' 
+            : 'http://localhost:5000/add_policy';
+          
+          policyPromises.push(
+            fetch(apiUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(policyData),
+            })
+          );
+          
+          processedNodes.add(node.label);
+        }
       });
       
       // Wait for all policies to be added
@@ -1142,9 +1031,21 @@ const PermissionChat: React.FC = (): JSX.Element => {
     try {
       setIsLoading(true);
       
+      // Get the complete chained label from the root node, including values
+      const getCompleteLabel = (node: TreeNode): string => {
+        // Format the current node's label with its value
+        const currentLabel = node.value ? `${node.label}(${node.value})` : node.label;
+        
+        if (node.children && node.children.length > 0) {
+          const childLabels = node.children.map(child => getCompleteLabel(child));
+          return `${currentLabel}::${childLabels.join('::')}`;
+        }
+        return currentLabel;
+      };
+
       // Transform the policy data into the format expected by the backend
       const transformedPolicyData = {
-        granular_data: policyData.label.includes('(') ? policyData.label : `${policyData.label}(${policyData.value || ''})`,
+        granular_data: getCompleteLabel(policyData),
         data_access: policyData.access.toLowerCase(),
         position: policyData.position.toLowerCase()
       };
@@ -1191,6 +1092,25 @@ const PermissionChat: React.FC = (): JSX.Element => {
     }
   };
 
+  // Function to parse any label into its components (treats single labels as chains of length 1)
+  const parseLabel = (label: string): { baseLabel: string, value: string }[] => {
+    // Split by :: to handle both single and chained labels
+    const parts = label.split('::');
+    return parts.map(part => {
+      const match = part.match(/^(.*?)\((.*?)\)$/);
+      if (match) {
+        return {
+          baseLabel: match[1],
+          value: match[2]
+        };
+      }
+      return {
+        baseLabel: part,
+        value: ''
+      };
+    });
+  };
+
   // Function to filter nodes based on the view mode
   const filterNodes = (node: TreeNode): TreeNode | null => {
     // If we're in 'all' view, return the node as is with all its properties
@@ -1215,51 +1135,53 @@ const PermissionChat: React.FC = (): JSX.Element => {
 
     // If we're in 'permitted' view, only show nodes with permissions
     if (viewMode === 'permitted') {
-      // If this node has access or position set, keep it
-      if (node.access || node.position) {
-        // Create a new node with filtered children
-        const filteredNode: TreeNode = {
-          ...node,
-          children: []
-        };
-
-        // Recursively filter children
-        if (node.children && node.children.length > 0) {
-          node.children.forEach(child => {
-            const filteredChild = filterNodes(child);
-            if (filteredChild) {
-              filteredNode.children.push(filteredChild);
-            }
-          });
-        }
-
-        return filteredNode;
+      // Skip nodes without access or position
+      if (!node.access && !node.position) {
+        return null;
       }
 
-      // If this node doesn't have access or position set, but has children that do
+      // Always parse the label, whether it's chained or not
+      const chain = parseLabel(node.label);
+      
+      // Create a proper hierarchical structure
+      const filteredNode = createTreeFromChainedLabel(node.label, node.access, node.position);
+
+      // Handle children
       if (node.children && node.children.length > 0) {
-        const filteredChildren: TreeNode[] = [];
+        const processedChildren: TreeNode[] = [];
         
         node.children.forEach(child => {
-          const filteredChild = filterNodes(child);
-          if (filteredChild) {
-            filteredChildren.push(filteredChild);
+          // Skip children without access or position
+          if (!child.access && !child.position) {
+            return;
+          }
+
+          // If child has same access and position, it's part of the chain
+          if (child.access === node.access && child.position === node.position) {
+            const childChain = parseLabel(child.label);
+            const mergedChain = [...chain, ...childChain];
+            const mergedNode = createTreeFromChainedLabel(mergedChain.join('::'), node.access, node.position);
+            processedChildren.push(mergedNode);
+          } else {
+            // Different access/position means it's a separate branch
+            const filteredChild = filterNodes(child);
+            if (filteredChild) {
+              processedChildren.push(filteredChild);
+            }
           }
         });
 
-        // If any children passed the filter, return them directly
-        if (filteredChildren.length > 0) {
-          // Return all filtered children as separate root nodes
-          return filteredChildren[0];
+        // Add processed children to the filtered node
+        if (processedChildren.length > 0) {
+          filteredNode.children = processedChildren;
         }
       }
 
-      return null;
+      return filteredNode;
     }
 
     // If we're in 'edit' view, show all nodes that are either unmodified or have been modified
     if (viewMode === 'edit') {
-      // Create a new node with filtered children
       const filteredNode: TreeNode = {
         ...node,
         children: []
@@ -1331,6 +1253,40 @@ const PermissionChat: React.FC = (): JSX.Element => {
     trees.forEach(traverse);
     
     return permissionNodes;
+  };
+
+  // Helper function to check if two nodes can form a chain
+  const isChainable = (parent: TreeNode, child: TreeNode): boolean => {
+    return parent.value !== '' && 
+           child.value !== '' && 
+           parent.access === child.access && 
+           parent.position === child.position;
+  };
+
+  // Helper function to create a combined label
+  const createCombinedLabel = (parent: TreeNode, child: TreeNode): string => {
+    const parentLabel = parent.label.includes('(') ? parent.label : `${parent.label}(${parent.value})`;
+    const childLabel = child.label.includes('(') ? child.label : `${child.label}(${child.value})`;
+    return `${parentLabel}::${childLabel}`;
+  };
+
+  // Helper function to find chainable children
+  const findChainableChildren = (node: TreeNode, trees: TreeNode[]): TreeNode[] => {
+    const chainableChildren: TreeNode[] = [];
+    
+    const traverse = (currentNode: TreeNode) => {
+      if (currentNode.children && currentNode.children.length > 0) {
+        currentNode.children.forEach(child => {
+          if (isChainable(node, child)) {
+            chainableChildren.push(child);
+          }
+          traverse(child);
+        });
+      }
+    };
+    
+    trees.forEach(traverse);
+    return chainableChildren;
   };
 
   return (

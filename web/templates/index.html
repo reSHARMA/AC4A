@@ -269,8 +269,13 @@
             isWaitingForInput = true;
             messageInput.placeholder = 'Enter your response...';
             typingIndicator.style.display = 'none';
+            
+            // Always enable input and send button when waiting for input
             sendButton.disabled = false;
             messageInput.disabled = false;
+            
+            // Focus the input field
+            messageInput.focus();
         });
 
         // Handle errors

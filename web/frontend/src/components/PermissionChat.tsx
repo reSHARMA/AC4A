@@ -1525,8 +1525,14 @@ const PermissionChat: React.FC = (): JSX.Element => {
     <div className={styles.chatContainer}>
       <Box className={styles.messagesContainer} overflow="auto">
         <HStack justify="space-between" mb={4}>
-          <Text fontSize="lg" fontWeight="bold">
-            Permission Attribute Trees
+          <Text 
+            fontSize="xl" 
+            fontWeight="bold" 
+            color="blue.600"
+            letterSpacing="wide"
+            textTransform="uppercase"
+          >
+            Permissions Manager
           </Text>
           <HStack spacing={2}>
             {viewMode === 'edit' && (
@@ -1542,36 +1548,71 @@ const PermissionChat: React.FC = (): JSX.Element => {
           </HStack>
         </HStack>
 
-        <HStack mb={4} justify="center" spacing={4}>
-          <Button
-            size="md"
-            colorScheme={viewMode === 'all' ? 'blue' : 'gray'}
-            onClick={() => handleViewModeChange('all')}
-          >
-            All Attributes
-          </Button>
-          <Button
-            size="md"
-            colorScheme={viewMode === 'permitted' ? 'blue' : 'gray'}
-            onClick={() => handleViewModeChange('permitted')}
-          >
-            All Permissions
-          </Button>
-          <Button
-            size="md"
-            colorScheme={viewMode === 'edit' ? 'blue' : 'gray'}
-            onClick={() => handleViewModeChange('edit')}
-          >
-            Edit View
-          </Button>
-        </HStack>
+        <Box mb={4}>
+          <HStack spacing={0} borderBottom="2px solid" borderColor="gray.200">
+            <Button
+              size="md"
+              flex={1}
+              colorScheme={viewMode === 'all' ? 'blue' : 'gray'}
+              variant={viewMode === 'all' ? 'solid' : 'ghost'}
+              onClick={() => handleViewModeChange('all')}
+              borderTopRadius="md"
+              borderBottomRadius="none"
+              borderRight="1px solid"
+              borderColor="gray.200"
+              _hover={{
+                bg: viewMode === 'all' ? 'blue.500' : 'gray.100'
+              }}
+              transition="all 0.2s"
+            >
+              All Attributes
+            </Button>
+            <Button
+              size="md"
+              flex={1}
+              colorScheme={viewMode === 'permitted' ? 'blue' : 'gray'}
+              variant={viewMode === 'permitted' ? 'solid' : 'ghost'}
+              onClick={() => handleViewModeChange('permitted')}
+              borderTopRadius="md"
+              borderBottomRadius="none"
+              borderRight="1px solid"
+              borderLeft="1px solid"
+              borderColor="gray.200"
+              _hover={{
+                bg: viewMode === 'permitted' ? 'blue.500' : 'gray.100'
+              }}
+              transition="all 0.2s"
+            >
+              All Permissions
+            </Button>
+            <Button
+              size="md"
+              flex={1}
+              colorScheme={viewMode === 'edit' ? 'blue' : 'gray'}
+              variant={viewMode === 'edit' ? 'solid' : 'ghost'}
+              onClick={() => handleViewModeChange('edit')}
+              borderTopRadius="md"
+              borderBottomRadius="none"
+              borderLeft="1px solid"
+              borderColor="gray.200"
+              _hover={{
+                bg: viewMode === 'edit' ? 'blue.500' : 'gray.100'
+              }}
+              transition="all 0.2s"
+            >
+              Edit View
+            </Button>
+          </HStack>
+        </Box>
 
         {viewMode === 'permitted' && (
           <Box mb={4}>
-            <HStack spacing={0} borderBottom="2px solid" borderColor="gray.200">
+            <HStack spacing={0} borderBottom="2px solid" borderColor="gray.200" justify="flex-start">
               <Button
-                size="md"
-                leftIcon={<MdAccountTree />}
+                size="sm"
+                height="32px"
+                fontSize="sm"
+                leftIcon={<MdAccountTree size={16} />}
                 colorScheme={displayMode === 'tree' ? 'blue' : 'gray'}
                 variant={displayMode === 'tree' ? 'solid' : 'ghost'}
                 onClick={() => setDisplayMode('tree')}
@@ -1587,8 +1628,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
                 Tree View
               </Button>
               <Button
-                size="md"
-                leftIcon={<MdTextFields />}
+                size="sm"
+                height="32px"
+                fontSize="sm"
+                leftIcon={<MdTextFields size={16} />}
                 colorScheme={displayMode === 'text' ? 'blue' : 'gray'}
                 variant={displayMode === 'text' ? 'solid' : 'ghost'}
                 onClick={() => setDisplayMode('text')}

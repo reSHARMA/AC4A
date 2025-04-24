@@ -41,7 +41,7 @@ function App() {
             minH="600px"
           >
             <Split
-              sizes={[35, 65]}
+              sizes={[50, 50]}
               minSize={300}
               expandToMin={false}
               gutterSize={10}

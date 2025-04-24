@@ -1103,22 +1103,54 @@ const PermissionChat: React.FC = (): JSX.Element => {
       
       // Get the complete chained label from the root node, including values
       const getCompleteLabel = (node: TreeNode): string => {
-        // Format the current node's label with its value
-        const currentLabel = node.value ? `${node.label}(${node.value})` : node.label;
+        let result = '';
+        const nodesWithAllValues: string[] = [];
+        const queue: TreeNode[] = [node];
         
-        if (node.children && node.children.length > 0) {
-          const childLabels = node.children.map(child => getCompleteLabel(child));
-          return `${currentLabel}::${childLabels.join('::')}`;
+        while (queue.length > 0) {
+          const current = queue.shift()!;
+          console.log('Processing node:', current.label, 'with value:', current.value);
+          
+          if (current.value === '') {
+            // Skip empty values
+          } else if (current.value === '*') {
+            // Collect nodes with all values
+            nodesWithAllValues.push(current.label);
+          } else {
+            // If we have collected any all-value nodes, add them first
+            if (nodesWithAllValues.length > 0) {
+              if (result) result += '::';
+              result += nodesWithAllValues.map(label => `${label}(*)`).join('::');
+              nodesWithAllValues.length = 0; // Clear the array
+            }
+            
+            // Add the current node with its value
+            if (result) result += '::';
+            result += `${current.label}(${current.value})`;
+          }
+          
+          // Add children to queue
+          if (current.children && current.children.length > 0) {
+            queue.push(...current.children);
+          }
         }
-        return currentLabel;
+        
+        console.log('Generated label:', result);
+        return result;
       };
+
+      console.log('Starting policy deletion with node:', policyData);
+      const granularData = getCompleteLabel(policyData);
+      console.log('Generated granular_data:', granularData);
 
       // Transform the policy data into the format expected by the backend
       const transformedPolicyData = {
-        granular_data: getCompleteLabel(policyData),
+        granular_data: granularData.toLowerCase(),
         data_access: policyData.access.toLowerCase(),
         position: policyData.position.toLowerCase()
       };
+      
+      console.log('Deleting policy with data:', transformedPolicyData);
       
       // Send delete request to backend
       const apiUrl = import.meta.env.PROD 
@@ -1126,10 +1158,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
         : 'http://localhost:5000/delete_policy';
       
       const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(transformedPolicyData),
       });
 
@@ -1148,15 +1180,15 @@ const PermissionChat: React.FC = (): JSX.Element => {
         fetch(`${baseUrl}/get_policies`).then(res => res.json())
       ]);
 
-        // Update state with new data
-        setAttributeTrees(treesData.attribute_trees || []);
-        setPolicies(policiesData.policies || []);
-        
+      // Update state with new data
+      setAttributeTrees(treesData.attribute_trees || []);
+      setPolicies(policiesData.policies || []);
+      
       // Trigger policy application after state updates
       setShouldApplyPolicies(true);
     } catch (err) {
       console.error('Error deleting policy:', err);
-        setError(err instanceof Error ? err.message : String(err));
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
     }

@@ -61,12 +61,14 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key'  # Required for session management
 CORS(app, resources={
     r"/*": {
-        "origins": ["http://127.0.0.1:5173", "http://localhost:5173"],
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
+        "origins": "*",
+        "methods": ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+        "allow_headers": ["Content-Type", "Authorization", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers"],
+        "supports_credentials": True,
+        "max_age": 3600
     }
 })
-socketio = SocketIO(app, cors_allowed_origins=["http://127.0.0.1:5173", "http://localhost:5173"])
+socketio = SocketIO(app, cors_allowed_origins="*", allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers"])
 
 # Store conversation history
 conversation_history = []
@@ -478,6 +480,28 @@ input_checker_thread.start()
 @app.route('/get_history', methods=['GET'])
 def get_history():
     return jsonify({"history": conversation_history})
+
+@app.route('/convert_to_text', methods=['POST', 'OPTIONS'])
+def convert_to_text():
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'ok'})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+        return response
+        
+    try:
+        data = request.get_json()
+        policy = {
+            'granular_data': data['granular_data'],
+            'data_access': data['data_access'],
+            'position': data['position']
+        }
+        text = agent_manager.policy_system.text(policy=policy, mode="decl")
+        return jsonify({'text': text})
+    except Exception as e:
+        logger.error(f"Error converting policy to text: {str(e)}", exc_info=True)
+        return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':
     # Don't initialize the agent session when the application starts

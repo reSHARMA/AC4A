@@ -37,6 +37,7 @@ interface Message {
 }
 
 type ViewMode = 'permitted' | 'edit' | 'all';
+type DisplayMode = 'tree' | 'text';
 
 const TreeView: React.FC<TreeViewProps> = ({ 
   data, 
@@ -237,14 +238,16 @@ const PermissionChat: React.FC = (): JSX.Element => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [attributeTrees, setAttributeTrees] = useState<TreeNode[]>([]);
-  const [editViewTrees, setEditViewTrees] = useState<TreeNode[]>([]);  // Separate trees for edit view
+  const [editViewTrees, setEditViewTrees] = useState<TreeNode[]>([]);
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('permitted');
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('tree');
+  const [permissionTexts, setPermissionTexts] = useState<string[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [nodeMap, setNodeMap] = useState<Map<string, TreeNode>>(new Map());
-  const [viewMode, setViewMode] = useState<ViewMode>('permitted');
   const [shouldApplyPolicies, setShouldApplyPolicies] = useState(false);
 
   // Function to reset trees for edit view
@@ -1098,50 +1101,49 @@ const PermissionChat: React.FC = (): JSX.Element => {
       />
     </Box>
   );
+  
+  // Get the complete chained label from the root node, including values
+  const getCompleteLabel = (node: TreeNode): string => {
+    let result = '';
+    const nodesWithAllValues: string[] = [];
+    const queue: TreeNode[] = [node];
+    
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      console.log('Processing node:', current.label, 'with value:', current.value);
+      
+      if (current.value === '') {
+        // Skip empty values
+      } else if (current.value === '*') {
+        // Collect nodes with all values
+        nodesWithAllValues.push(current.label);
+      } else {
+        // If we have collected any all-value nodes, add them first
+        if (nodesWithAllValues.length > 0) {
+          if (result) result += '::';
+          result += nodesWithAllValues.map(label => `${label}(*)`).join('::');
+          nodesWithAllValues.length = 0; // Clear the array
+        }
+        
+        // Add the current node with its value
+        if (result) result += '::';
+        result += `${current.label}(${current.value})`;
+      }
+      
+      // Add children to queue
+      if (current.children && current.children.length > 0) {
+        queue.push(...current.children);
+      }
+    }
+    
+    console.log('Generated label:', result);
+    return result;
+  };
 
   // Function to handle policy deletion
   const handleDeletePolicy = async (policyData: any) => {
     try {
       setIsLoading(true);
-      
-      // Get the complete chained label from the root node, including values
-      const getCompleteLabel = (node: TreeNode): string => {
-        let result = '';
-        const nodesWithAllValues: string[] = [];
-        const queue: TreeNode[] = [node];
-        
-        while (queue.length > 0) {
-          const current = queue.shift()!;
-          console.log('Processing node:', current.label, 'with value:', current.value);
-          
-          if (current.value === '') {
-            // Skip empty values
-          } else if (current.value === '*') {
-            // Collect nodes with all values
-            nodesWithAllValues.push(current.label);
-          } else {
-            // If we have collected any all-value nodes, add them first
-            if (nodesWithAllValues.length > 0) {
-              if (result) result += '::';
-              result += nodesWithAllValues.map(label => `${label}(*)`).join('::');
-              nodesWithAllValues.length = 0; // Clear the array
-            }
-            
-            // Add the current node with its value
-            if (result) result += '::';
-            result += `${current.label}(${current.value})`;
-          }
-          
-          // Add children to queue
-          if (current.children && current.children.length > 0) {
-            queue.push(...current.children);
-          }
-        }
-        
-        console.log('Generated label:', result);
-        return result;
-      };
-
       console.log('Starting policy deletion with node:', policyData);
       const granularData = getCompleteLabel(policyData);
       console.log('Generated granular_data:', granularData);
@@ -1463,6 +1465,62 @@ const PermissionChat: React.FC = (): JSX.Element => {
     return chainableChildren;
   };
 
+  // Function to convert a permission to text
+  const convertPermissionToText = async (node: TreeNode): Promise<string> => {
+    try {
+      const granularData = getCompleteLabel(node);
+      const policyData = {
+        granular_data: granularData.toLowerCase(),
+        data_access: node.access.toLowerCase(),
+        position: node.position.toLowerCase()
+      };
+
+      const apiUrl = import.meta.env.PROD 
+        ? 'http://localhost:5000/convert_to_text' 
+        : 'http://localhost:5000/convert_to_text';
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(policyData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to convert policy to text: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.text;
+    } catch (err) {
+      console.error('Error converting policy to text:', err);
+      return `Error converting policy to text: ${err instanceof Error ? err.message : String(err)}`;
+    }
+  };
+
+  // Function to convert all permissions to text
+  const convertAllPermissionsToText = async () => {
+    try {
+      setIsLoading(true);
+      const permissionNodes = getAllPermissionNodes(attributeTrees);
+      const texts = await Promise.all(permissionNodes.map(convertPermissionToText));
+      setPermissionTexts(texts);
+    } catch (err) {
+      console.error('Error converting permissions to text:', err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Update text view when permissions change
+  useEffect(() => {
+    if (displayMode === 'text' && viewMode === 'permitted') {
+      convertAllPermissionsToText();
+    }
+  }, [displayMode, viewMode, attributeTrees]);
+
   return (
     <div className={styles.chatContainer}>
       <Box className={styles.messagesContainer} overflow="auto">
@@ -1472,14 +1530,14 @@ const PermissionChat: React.FC = (): JSX.Element => {
           </Text>
           <HStack spacing={2}>
             {viewMode === 'edit' && (
-            <Button 
-              size="sm" 
-              colorScheme="green" 
+              <Button 
+                size="sm" 
+                colorScheme="green" 
                 onClick={handleSubmitChanges}
                 isLoading={isLoading}
-            >
+              >
                 Submit Changes
-            </Button>
+              </Button>
             )}
           </HStack>
         </HStack>
@@ -1507,11 +1565,30 @@ const PermissionChat: React.FC = (): JSX.Element => {
             Edit View
           </Button>
         </HStack>
+
+        {viewMode === 'permitted' && (
+          <HStack mb={4} justify="center" spacing={4}>
+            <Button
+              size="md"
+              colorScheme={displayMode === 'tree' ? 'blue' : 'gray'}
+              onClick={() => setDisplayMode('tree')}
+            >
+              Tree View
+            </Button>
+            <Button
+              size="md"
+              colorScheme={displayMode === 'text' ? 'blue' : 'gray'}
+              onClick={() => setDisplayMode('text')}
+            >
+              Text View
+            </Button>
+          </HStack>
+        )}
         
         {isLoading && (
           <Box textAlign="center" py={4}>
             <Spinner size="md" />
-            <Text mt={2}>Loading attribute trees...</Text>
+            <Text mt={2}>Loading...</Text>
           </Box>
         )}
         
@@ -1532,18 +1609,27 @@ const PermissionChat: React.FC = (): JSX.Element => {
         
         {!isLoading && !error && attributeTrees.length > 0 && (
           <VStack align="stretch" spacing={2} width="100%">
-            {viewMode === 'permitted' 
-              ? getAllPermissionNodes(attributeTrees).map((tree, index) => renderTree(tree, index))
-              : viewMode === 'edit'
-                ? editViewTrees.map((tree, index) => {
-                    const filteredTree = filterNodes(tree);
-                    return filteredTree ? renderTree(filteredTree, index) : null;
-                  })
-              : attributeTrees.map((tree, index) => {
-                  const filteredTree = filterNodes(tree);
-                  return filteredTree ? renderTree(filteredTree, index) : null;
-                })
-            }
+            {viewMode === 'permitted' && displayMode === 'text' ? (
+              <VStack align="stretch" spacing={4}>
+                {permissionTexts.map((text, index) => (
+                  <Box key={index} p={4} borderRadius="md" bg="white" boxShadow="sm">
+                    <Text>{text}</Text>
+                  </Box>
+                ))}
+              </VStack>
+            ) : viewMode === 'permitted' ? (
+              getAllPermissionNodes(attributeTrees).map((tree, index) => renderTree(tree, index))
+            ) : viewMode === 'edit' ? (
+              editViewTrees.map((tree, index) => {
+                const filteredTree = filterNodes(tree);
+                return filteredTree ? renderTree(filteredTree, index) : null;
+              })
+            ) : (
+              attributeTrees.map((tree, index) => {
+                const filteredTree = filterNodes(tree);
+                return filteredTree ? renderTree(filteredTree, index) : null;
+              })
+            )}
           </VStack>
         )}
       </Box>

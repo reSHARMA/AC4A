@@ -3,9 +3,20 @@ from src.utils.attribute_tree import AttributeTree
 from src.utils.logger import get_logger
 from src.utils.dummy_data import call_openai_api
 from src.prompts import POLICY_TEXT
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 # Set up logger for policy system
 logger = get_logger('policy_system')
+
+app = Flask(__name__)
+CORS(app, resources={
+    r"/get_attribute_trees": {"origins": "*"},
+    r"/get_policies": {"origins": "*"},
+    r"/add_policy": {"origins": "*"},
+    r"/delete_policy": {"origins": "*"},
+    r"/convert_to_text": {"origins": "*"}
+})
 
 class PolicySystem:
     def __init__(self):
@@ -332,3 +343,17 @@ class PolicySystem:
                 
         logger.warning(f"No matching policy found for key: {target_key}")
         return False
+
+@app.route('/convert_to_text', methods=['POST'])
+def convert_to_text():
+    try:
+        data = request.get_json()
+        policy = {
+            'granular_data': data['granular_data'],
+            'data_access': data['data_access'],
+            'position': data['position']
+        }
+        text = policy_system.text(policy=policy, mode="decl")
+        return jsonify({'text': text})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400

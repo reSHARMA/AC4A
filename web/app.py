@@ -76,6 +76,9 @@ conversation_history = []
 # Flag to track if a new session is needed
 new_session_needed = False
 
+# Add cache dictionary at the top level of the file
+text_cache = {}
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -492,12 +495,25 @@ def convert_to_text():
         
     try:
         data = request.get_json()
+        # Create a unique key for the policy
+        cache_key = f"{data['granular_data']}-{data['data_access']}-{data['position']}"
+        
+        # Check if we have a cached result
+        if cache_key in text_cache:
+            logger.info(f"Using cached text for policy: {cache_key}")
+            return jsonify({'text': text_cache[cache_key]})
+            
         policy = {
             'granular_data': data['granular_data'],
             'data_access': data['data_access'],
             'position': data['position']
         }
         text = agent_manager.policy_system.text(policy=policy, mode="decl")
+        
+        # Cache the result
+        text_cache[cache_key] = text
+        logger.info(f"Cached text for policy: {cache_key}")
+        
         return jsonify({'text': text})
     except Exception as e:
         logger.error(f"Error converting policy to text: {str(e)}", exc_info=True)

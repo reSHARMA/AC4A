@@ -184,13 +184,16 @@
             connectionStatus.classList.remove('disconnected');
             connectionStatus.classList.add('connected');
             
-            // If the session was terminated, we can start a new one
-            if (isSessionTerminated) {
-                isSessionTerminated = false;
-                messageInput.placeholder = 'Type your message...';
-                sendButton.disabled = false;
-                messageInput.disabled = false;
-            }
+            // Always enable input and button on connection
+            sendButton.disabled = false;
+            messageInput.disabled = false;
+            messageInput.placeholder = 'Type your message...';
+            
+            // Reset UI state
+            isAgentThinking = false;
+            isWaitingForInput = false;
+            isSessionTerminated = false;
+            typingIndicator.style.display = 'none';
         });
 
         socket.on('disconnect', () => {
@@ -198,6 +201,11 @@
             connectionStatus.textContent = 'Disconnected';
             connectionStatus.classList.remove('connected');
             connectionStatus.classList.add('disconnected');
+            
+            // Disable input and button on disconnect
+            sendButton.disabled = true;
+            messageInput.disabled = true;
+            messageInput.placeholder = 'Disconnected. Please refresh the page.';
         });
 
         // Handle incoming messages

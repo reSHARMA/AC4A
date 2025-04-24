@@ -386,13 +386,20 @@ def handle_message(data):
         new_session_needed = False
         logger.info("Agent session initialized")
     
-    # Check if the agent is waiting for input
-    if is_agent_waiting_for_input():
-        logger.info("Agent is waiting for input, submitting user message")
-        submit_user_input(user_message)
-        set_agent_waiting_for_input(False)
-    else:
-        logger.info("Agent not waiting for input, message will be processed in next cycle")
+    # Only clear input request queue if we're not waiting for input
+    if not is_agent_waiting_for_input():
+        while not input_request_queue.empty():
+            try:
+                input_request_queue.get_nowait()
+            except queue.Empty:
+                break
+    
+    # Submit the user message
+    logger.info("Submitting user message to agent")
+    submit_user_input(user_message)
+    
+    # Set waiting for input to true to ensure proper message flow
+    set_agent_waiting_for_input(True)
 
 # Function to check for input requests from the agent
 def check_for_input_requests():

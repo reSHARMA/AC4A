@@ -248,34 +248,56 @@
         socket.on('input_request', (data) => {
             console.log('Received input request:', data);
             
-            const inputRequestDiv = document.createElement('div');
-            inputRequestDiv.className = 'input-request';
-            
-            const titleDiv = document.createElement('div');
-            titleDiv.className = 'input-request-title';
-            titleDiv.textContent = 'Agent needs your input:';
-            
-            const promptDiv = document.createElement('div');
-            promptDiv.className = 'input-request-prompt';
-            promptDiv.textContent = data.prompt;
-            
-            inputRequestDiv.appendChild(titleDiv);
-            inputRequestDiv.appendChild(promptDiv);
-            
-            chatMessages.appendChild(inputRequestDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            // Only add the input request to chat if it's not already there
+            const existingInputRequest = document.querySelector('.input-request');
+            if (!existingInputRequest) {
+                const inputRequestDiv = document.createElement('div');
+                inputRequestDiv.className = 'input-request';
+                
+                const titleDiv = document.createElement('div');
+                titleDiv.className = 'input-request-title';
+                titleDiv.textContent = 'Agent needs your input:';
+                
+                const promptDiv = document.createElement('div');
+                promptDiv.className = 'input-request-prompt';
+                promptDiv.textContent = data.prompt;
+                
+                inputRequestDiv.appendChild(titleDiv);
+                inputRequestDiv.appendChild(promptDiv);
+                
+                chatMessages.appendChild(inputRequestDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
             
             // Update UI to indicate we're waiting for input
             isWaitingForInput = true;
             messageInput.placeholder = 'Enter your response...';
             typingIndicator.style.display = 'none';
             
-            // Always enable input and send button when waiting for input
+            // Enable input and send button regardless of connection status
             sendButton.disabled = false;
             messageInput.disabled = false;
             
             // Focus the input field
             messageInput.focus();
+            
+            // Add the prompt as a message to the chat
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant-message';
+            
+            const sourceDiv = document.createElement('div');
+            sourceDiv.className = 'message-source';
+            sourceDiv.textContent = 'Assistant';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = data.prompt;
+            
+            messageDiv.appendChild(sourceDiv);
+            messageDiv.appendChild(contentDiv);
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         });
 
         // Handle errors

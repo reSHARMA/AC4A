@@ -342,16 +342,14 @@ def handle_connect():
     # Reset conversation history on new connection
     conversation_history = []
     
-    # Only reset if we need a new session
-    if new_session_needed or not is_agent_session_active():
+    # Only reset if we need a new session AND the current session is not active
+    if new_session_needed and not is_agent_session_active():
         logger.info("Initializing new agent session")
-        # Make sure the agent session is fully reset before initializing a new one
-        if is_agent_session_active():
-            logger.info("Agent session still active, resetting first")
-            reset_agent_session(emit_termination=False)  # Don't emit termination during normal reset
         initialize_agent_session()
         new_session_needed = False
         logger.info("Agent session initialized")
+    elif is_agent_session_active():
+        logger.info("Using existing active session")
     
     # Send a welcome message
     welcome_message = {"role": "System", "content": "Welcome to the Autogen Chat! Type a message to start."}
@@ -378,13 +376,12 @@ def handle_message(data):
     user_message = data.get('content', '')
     logger.info(f"User message: {user_message}")
     
+    # Add user message to conversation history
+    conversation_history.append({"role": "user", "content": user_message})
+    
     # Check if we need to initialize a new session
-    if new_session_needed or not is_agent_session_active():
+    if not is_agent_session_active():
         logger.info("Initializing new agent session")
-        # Make sure the agent session is fully reset before initializing a new one
-        if is_agent_session_active():
-            logger.info("Agent session still active, resetting first")
-            reset_agent_session(emit_termination=False)  # Don't emit termination during normal reset
         initialize_agent_session()
         new_session_needed = False
         logger.info("Agent session initialized")
@@ -394,11 +391,9 @@ def handle_message(data):
         logger.info("Agent is waiting for input, submitting user message")
         submit_user_input(user_message)
         set_agent_waiting_for_input(False)
-    
-    # Add user message to conversation history but don't emit it
-    # The frontend already displays user messages on the right side
-    conversation_history.append({"role": "user", "content": user_message})
-    
+    else:
+        logger.info("Agent not waiting for input, message will be processed in next cycle")
+
 # Function to check for input requests from the agent
 def check_for_input_requests():
     global new_session_needed
@@ -423,13 +418,12 @@ def check_for_input_requests():
                     input_request = get_next_input_request()
                     if input_request:
                         logger.info(f"Received input request from agent: {input_request}")
-                        # Emit both as input request and as a message
+                        # Only emit as input request, not as a regular message
                         socketio.emit('input_request', {
                             "prompt": input_request,
-                            "can_input": True,  # Explicitly tell frontend input is allowed
-                            "input_enabled": True  # Additional flag to ensure input is enabled
+                            "can_input": True,
+                            "input_enabled": True
                         })
-                        socketio.emit('message', {"role": "Assistant", "content": input_request})
                 
                 # Check for agent messages
                 agent_message = get_next_agent_message()

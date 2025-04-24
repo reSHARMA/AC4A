@@ -1,7 +1,8 @@
 /** @jsxImportSource @emotion/react */
 import React, { useState, useEffect, useRef } from 'react'
 import { Box, Text, VStack, Spinner, Select, HStack, Badge, Button, Switch, Input, IconButton } from '@chakra-ui/react'
-import { FaFolder, FaFolderOpen, FaFile, FaTrash } from 'react-icons/fa'
+import { MdAccountTree, MdSubdirectoryArrowRight, MdLabel } from 'react-icons/md'
+import { FaTrash } from 'react-icons/fa'
 import styles from './Chat.module.css'
 import { io, Socket } from 'socket.io-client'
 import { JSX } from 'react/jsx-runtime'
@@ -117,9 +118,9 @@ const TreeView: React.FC<TreeViewProps> = ({
         onClick={() => hasChildren && setIsOpen(!isOpen)}
       >
         {hasChildren ? (
-          isOpen ? <FaFolderOpen color="#F9A826" /> : <FaFolder color="#F9A826" />
+          isOpen ? <MdAccountTree color="#F9A826" size={20} /> : <MdAccountTree color="#F9A826" size={20} />
         ) : (
-          <FaFile color="#718096" />
+          <MdLabel color="#718096" size={20} />
         )}
         <Text ml={2} fontWeight={hasChildren ? "medium" : "normal"}>
           {data.label}
@@ -213,16 +214,18 @@ const TreeView: React.FC<TreeViewProps> = ({
       {isOpen && hasChildren && (
         <Box ml={4} borderLeftWidth="1px" borderLeftColor="gray.200" pl={2}>
           {data.children.map((child, index) => (
-            <TreeView
-              key={index} 
-              data={child}
-              isRoot={false}
-              viewMode={viewMode}
-              onAccessChange={onAccessChange}
-              onPositionChange={onPositionChange}
-              onValueChange={onValueChange}
-              onDelete={onDelete}
-            />
+            <Box key={index} display="flex" alignItems="center">
+              <MdSubdirectoryArrowRight color="#718096" size={16} />
+              <TreeView
+                data={child}
+                isRoot={false}
+                viewMode={viewMode}
+                onAccessChange={onAccessChange}
+                onPositionChange={onPositionChange}
+                onValueChange={onValueChange}
+                onDelete={onDelete}
+              />
+            </Box>
           ))}
         </Box>
       )}

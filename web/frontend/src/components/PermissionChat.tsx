@@ -1742,11 +1742,12 @@ const PermissionChat: React.FC = (): JSX.Element => {
                   return filteredTree ? renderTree(filteredTree, index) : null;
                 })}
                 <Box mt={4}>
+                  <Text fontSize="lg" fontWeight="medium" mb={2}>Create New Permission</Text>
                   <Box width="100%" mb={4}>
                     <textarea
                       value={policyText}
                       onChange={(e) => setPolicyText(e.target.value)}
-                      placeholder="Enter policy text here..."
+                      placeholder="Enter permission text here..."
                       style={{
                         width: '100%',
                         minHeight: '100px',

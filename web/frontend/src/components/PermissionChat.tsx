@@ -1534,18 +1534,6 @@ const PermissionChat: React.FC = (): JSX.Element => {
           >
             Permissions Manager
           </Text>
-          <HStack spacing={2}>
-            {viewMode === 'edit' && (
-              <Button 
-                size="sm" 
-                colorScheme="green" 
-                onClick={handleSubmitChanges}
-                isLoading={isLoading}
-              >
-                Submit Changes
-              </Button>
-            )}
-          </HStack>
         </HStack>
 
         <Box mb={4}>
@@ -1685,10 +1673,22 @@ const PermissionChat: React.FC = (): JSX.Element => {
             ) : viewMode === 'permitted' ? (
               getAllPermissionNodes(attributeTrees).map((tree, index) => renderTree(tree, index))
             ) : viewMode === 'edit' ? (
-              editViewTrees.map((tree, index) => {
-                const filteredTree = filterNodes(tree);
-                return filteredTree ? renderTree(filteredTree, index) : null;
-              })
+              <>
+                {editViewTrees.map((tree, index) => {
+                  const filteredTree = filterNodes(tree);
+                  return filteredTree ? renderTree(filteredTree, index) : null;
+                })}
+                <Box mt={4} textAlign="right">
+                  <Button 
+                    size="md" 
+                    colorScheme="green" 
+                    onClick={handleSubmitChanges}
+                    isLoading={isLoading}
+                  >
+                    Submit Changes
+                  </Button>
+                </Box>
+              </>
             ) : (
               attributeTrees.map((tree, index) => {
                 const filteredTree = filterNodes(tree);

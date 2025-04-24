@@ -1664,14 +1664,26 @@ const PermissionChat: React.FC = (): JSX.Element => {
           <VStack align="stretch" spacing={2} width="100%">
             {viewMode === 'permitted' && displayMode === 'text' ? (
               <VStack align="stretch" spacing={4}>
-                {permissionTexts.map((text, index) => (
-                  <Box key={index} p={4} borderRadius="md" bg="white" boxShadow="sm">
-                    <Text>{text}</Text>
+                {permissionTexts.length > 0 ? (
+                  permissionTexts.map((text, index) => (
+                    <Box key={index} p={4} borderRadius="md" bg="white" boxShadow="sm">
+                      <Text>{text}</Text>
+                    </Box>
+                  ))
+                ) : (
+                  <Box p={8} textAlign="center" bg="gray.50" borderRadius="md">
+                    <Text color="gray.500" fontSize="lg">No active permissions</Text>
                   </Box>
-                ))}
+                )}
               </VStack>
             ) : viewMode === 'permitted' ? (
-              getAllPermissionNodes(attributeTrees).map((tree, index) => renderTree(tree, index))
+              getAllPermissionNodes(attributeTrees).length > 0 ? (
+                getAllPermissionNodes(attributeTrees).map((tree, index) => renderTree(tree, index))
+              ) : (
+                <Box p={8} textAlign="center" bg="gray.50" borderRadius="md">
+                  <Text color="gray.500" fontSize="lg">No active permissions</Text>
+                </Box>
+              )
             ) : viewMode === 'edit' ? (
               <>
                 {editViewTrees.map((tree, index) => {

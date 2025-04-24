@@ -1,7 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import React, { useState, useEffect, useRef } from 'react'
 import { Box, Text, VStack, Spinner, Select, HStack, Badge, Button, Switch, Input, IconButton } from '@chakra-ui/react'
-import { MdAccountTree, MdSubdirectoryArrowRight, MdLabel } from 'react-icons/md'
+import { MdAccountTree, MdSubdirectoryArrowRight, MdLabel, MdTextFields, MdViewList } from 'react-icons/md'
 import { FaTrash } from 'react-icons/fa'
 import styles from './Chat.module.css'
 import { io, Socket } from 'socket.io-client'
@@ -1567,22 +1567,44 @@ const PermissionChat: React.FC = (): JSX.Element => {
         </HStack>
 
         {viewMode === 'permitted' && (
-          <HStack mb={4} justify="center" spacing={4}>
-            <Button
-              size="md"
-              colorScheme={displayMode === 'tree' ? 'blue' : 'gray'}
-              onClick={() => setDisplayMode('tree')}
-            >
-              Tree View
-            </Button>
-            <Button
-              size="md"
-              colorScheme={displayMode === 'text' ? 'blue' : 'gray'}
-              onClick={() => setDisplayMode('text')}
-            >
-              Text View
-            </Button>
-          </HStack>
+          <Box mb={4}>
+            <HStack spacing={0} borderBottom="2px solid" borderColor="gray.200">
+              <Button
+                size="md"
+                leftIcon={<MdAccountTree />}
+                colorScheme={displayMode === 'tree' ? 'blue' : 'gray'}
+                variant={displayMode === 'tree' ? 'solid' : 'ghost'}
+                onClick={() => setDisplayMode('tree')}
+                borderTopRadius="md"
+                borderBottomRadius="none"
+                borderRight="1px solid"
+                borderColor="gray.200"
+                _hover={{
+                  bg: displayMode === 'tree' ? 'blue.500' : 'gray.100'
+                }}
+                transition="all 0.2s"
+              >
+                Tree View
+              </Button>
+              <Button
+                size="md"
+                leftIcon={<MdTextFields />}
+                colorScheme={displayMode === 'text' ? 'blue' : 'gray'}
+                variant={displayMode === 'text' ? 'solid' : 'ghost'}
+                onClick={() => setDisplayMode('text')}
+                borderTopRadius="md"
+                borderBottomRadius="none"
+                borderLeft="1px solid"
+                borderColor="gray.200"
+                _hover={{
+                  bg: displayMode === 'text' ? 'blue.500' : 'gray.100'
+                }}
+                transition="all 0.2s"
+              >
+                Text View
+              </Button>
+            </HStack>
+          </Box>
         )}
         
         {isLoading && (

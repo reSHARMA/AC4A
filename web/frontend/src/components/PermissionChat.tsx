@@ -203,10 +203,15 @@ const TreeView: React.FC<TreeViewProps> = ({
           {isRoot && onDelete && viewMode === 'permitted' && (
             <IconButton
               size="xs"
+              variant="ghost"
               colorScheme="red"
               aria-label="Delete policy"
               icon={<FaTrash />}
               onClick={handleDelete}
+              _hover={{
+                bg: 'red.100'
+              }}
+              color="red.500"
             />
           )}
         </HStack>
@@ -1579,9 +1584,28 @@ const PermissionChat: React.FC = (): JSX.Element => {
           <Text 
             fontSize="xl" 
             fontWeight="bold" 
-            color="blue.600"
-            letterSpacing="wide"
+            color="brand.800"
+            letterSpacing="tight"
             textTransform="uppercase"
+            position="relative"
+            _after={{
+              content: '""',
+              position: 'absolute',
+              bottom: '-2px',
+              left: '0',
+              width: '100%',
+              height: '2px',
+              bg: 'brand.600',
+              transform: 'scaleX(0)',
+              transformOrigin: 'left',
+              transition: 'transform 0.3s ease-in-out',
+              _groupHover: {
+                transform: 'scaleX(1)',
+              },
+            }}
+            _hover={{
+              color: 'brand.700',
+            }}
           >
             Permissions Manager
           </Text>
@@ -1742,7 +1766,35 @@ const PermissionChat: React.FC = (): JSX.Element => {
                   return filteredTree ? renderTree(filteredTree, index) : null;
                 })}
                 <Box mt={4}>
-                  <Text fontSize="lg" fontWeight="medium" mb={2}>Create New Permission</Text>
+                  <Text 
+                    fontSize="lg" 
+                    fontWeight="bold" 
+                    mb={2}
+                    color="brand.800"
+                    letterSpacing="tight"
+                    textTransform="uppercase"
+                    position="relative"
+                    _after={{
+                      content: '""',
+                      position: 'absolute',
+                      bottom: '-2px',
+                      left: '0',
+                      width: '100%',
+                      height: '2px',
+                      bg: 'brand.600',
+                      transform: 'scaleX(0)',
+                      transformOrigin: 'left',
+                      transition: 'transform 0.3s ease-in-out',
+                      _groupHover: {
+                        transform: 'scaleX(1)',
+                      },
+                    }}
+                    _hover={{
+                      color: 'brand.700',
+                    }}
+                  >
+                    Create New Permission
+                  </Text>
                   <Box width="100%" mb={4}>
                     <textarea
                       value={policyText}
@@ -1763,9 +1815,18 @@ const PermissionChat: React.FC = (): JSX.Element => {
                   <Box textAlign="right">
                     <Button 
                       size="md" 
-                      colorScheme="green" 
+                      colorScheme="purple" 
                       onClick={handleSubmitChanges}
                       isLoading={isLoading}
+                      _hover={{
+                        bg: 'purple.600',
+                        transform: 'translateY(-1px)',
+                        boxShadow: 'lg'
+                      }}
+                      _active={{
+                        bg: 'purple.700',
+                        transform: 'translateY(0)'
+                      }}
                     >
                       Submit Changes
                     </Button>

@@ -1604,7 +1604,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
               }}
               transition="all 0.2s"
             >
-              All Attributes
+              Data Schema
             </Button>
             <Button
               size="md"
@@ -1622,7 +1622,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
               }}
               transition="all 0.2s"
             >
-              All Permissions
+              Active Permissions
             </Button>
             <Button
               size="md"
@@ -1639,7 +1639,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
               }}
               transition="all 0.2s"
             >
-              Edit View
+              Create Permissions
             </Button>
           </HStack>
         </Box>

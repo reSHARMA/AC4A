@@ -249,6 +249,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [nodeMap, setNodeMap] = useState<Map<string, TreeNode>>(new Map());
   const [shouldApplyPolicies, setShouldApplyPolicies] = useState(false);
+  const [policyText, setPolicyText] = useState('');
 
   // Function to reset trees for edit view
   const resetEditViewTrees = (trees: TreeNode[]): TreeNode[] => {
@@ -972,6 +973,27 @@ const PermissionChat: React.FC = (): JSX.Element => {
     try {
       setIsLoading(true);
       
+      // If there's text in the policy text box, submit that first
+      if (policyText.trim()) {
+        const apiUrl = import.meta.env.PROD 
+          ? 'http://localhost:5000/add_policy_from_text' 
+          : 'http://localhost:5000/add_policy_from_text';
+        const textResponse = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ policy_text: policyText }),
+        });
+        
+        if (!textResponse.ok) {
+          const error = await textResponse.json();
+          throw new Error(error.error || 'Failed to add policy from text');
+        }
+        
+        setPolicyText(''); // Clear the text input
+      }
+      
       // Find all modified nodes from edit view trees
       const modifiedNodes: TreeNode[] = [];
       const processedNodes = new Set<string>(); // Track nodes we've already processed
@@ -1006,7 +1028,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
         if (chainableChildren.length > 0) {
           // Create combined policies for each chainable child
           chainableChildren.forEach(child => {
-    const policyData = {
+            const policyData = {
               granular_data: createCombinedLabel(node, child),
               data_access: node.access.toLowerCase(),
               position: node.position.toLowerCase()
@@ -1017,13 +1039,13 @@ const PermissionChat: React.FC = (): JSX.Element => {
               : 'http://localhost:5000/add_policy';
             
             policyPromises.push(
-    fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(policyData),
-    })
+              fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(policyData),
+              })
             );
             
             // Mark both nodes as processed
@@ -1038,18 +1060,18 @@ const PermissionChat: React.FC = (): JSX.Element => {
             position: node.position.toLowerCase()
           };
           
-    const apiUrl = import.meta.env.PROD 
-      ? 'http://localhost:5000/add_policy' 
-      : 'http://localhost:5000/add_policy';
-    
+          const apiUrl = import.meta.env.PROD 
+            ? 'http://localhost:5000/add_policy' 
+            : 'http://localhost:5000/add_policy';
+          
           policyPromises.push(
-    fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(policyData),
-    })
+            fetch(apiUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(policyData),
+            })
           );
           
           processedNodes.add(node.label);
@@ -1071,9 +1093,9 @@ const PermissionChat: React.FC = (): JSX.Element => {
       ]);
       
       // Update the main trees with new data from backend
-        setAttributeTrees(treesData.attribute_trees || []);
-        setPolicies(policiesData.policies || []);
-        
+      setAttributeTrees(treesData.attribute_trees || []);
+      setPolicies(policiesData.policies || []);
+      
       // Trigger policy application
       setShouldApplyPolicies(true);
       
@@ -1082,7 +1104,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
       
     } catch (err) {
       console.error('Error submitting changes:', err);
-        setError(err instanceof Error ? err.message : String(err));
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
     }
@@ -1521,6 +1543,35 @@ const PermissionChat: React.FC = (): JSX.Element => {
     }
   }, [displayMode, viewMode, attributeTrees]);
 
+  const handlePolicyTextSubmit = async () => {
+    if (!policyText.trim()) return;
+    
+    try {
+      const apiUrl = import.meta.env.PROD 
+        ? 'http://localhost:5000/add_policy_from_text' 
+        : 'http://localhost:5000/add_policy_from_text';
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ policy_text: policyText }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add policy');
+      }
+      
+      const result = await response.json();
+      setPolicyText(''); // Clear the input on success
+      // The policy update will be handled by the socket.io event
+    } catch (error) {
+      console.error('Error adding policy from text:', error);
+      // Handle error (show notification, etc.)
+    }
+  };
+
   return (
     <div className={styles.chatContainer}>
       <Box className={styles.messagesContainer} overflow="auto">
@@ -1690,15 +1741,34 @@ const PermissionChat: React.FC = (): JSX.Element => {
                   const filteredTree = filterNodes(tree);
                   return filteredTree ? renderTree(filteredTree, index) : null;
                 })}
-                <Box mt={4} textAlign="right">
-                  <Button 
-                    size="md" 
-                    colorScheme="green" 
-                    onClick={handleSubmitChanges}
-                    isLoading={isLoading}
-                  >
-                    Submit Changes
-                  </Button>
+                <Box mt={4}>
+                  <Box width="100%" mb={4}>
+                    <textarea
+                      value={policyText}
+                      onChange={(e) => setPolicyText(e.target.value)}
+                      placeholder="Enter policy text here..."
+                      style={{
+                        width: '100%',
+                        minHeight: '100px',
+                        padding: '12px',
+                        fontSize: '14px',
+                        borderRadius: '6px',
+                        border: '1px solid #E2E8F0',
+                        resize: 'vertical',
+                        fontFamily: 'inherit'
+                      }}
+                    />
+                  </Box>
+                  <Box textAlign="right">
+                    <Button 
+                      size="md" 
+                      colorScheme="green" 
+                      onClick={handleSubmitChanges}
+                      isLoading={isLoading}
+                    >
+                      Submit Changes
+                    </Button>
+                  </Box>
                 </Box>
               </>
             ) : (

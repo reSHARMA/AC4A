@@ -4,7 +4,11 @@ from policy_system.policy_system import PolicySystem
 
 app = Flask(__name__)
 CORS(app, resources={
-    r"/*": {"origins": "*"}  # Allow all origins for all routes
+    r"/*": {
+        "origins": ["http://localhost:5173", "http://localhost:5000"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
 })
 
 policy_system = PolicySystem()

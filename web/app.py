@@ -31,6 +31,8 @@ from web.agent.queues import (
 # Import the agent manager
 from web.agent.agent_manager import agent_manager
 from src.utils.attribute_tree import AttributeTree
+from src.prompts import POLICY_GENERATOR_WILDCARD_V2
+from src.utils.dummy_data import call_openai_api
 
 # Set up logging - change level to INFO to reduce logs
 logging.basicConfig(level=logging.INFO)
@@ -517,6 +519,56 @@ def convert_to_text():
         return jsonify({'text': text})
     except Exception as e:
         logger.error(f"Error converting policy to text: {str(e)}", exc_info=True)
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/add_policy_from_text', methods=['POST', 'OPTIONS'])
+def add_policy_from_text():
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'ok'})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+        return response
+        
+    try:
+        data = request.get_json()
+        policy_text = data.get('policy_text', '')
+        
+        if not policy_text:
+            return jsonify({'error': 'No policy text provided'}), 400
+            
+        # Call OpenAI to generate policy code
+        generated_code = call_openai_api(POLICY_GENERATOR_WILDCARD_V2, policy_text)
+        
+        # Extract code blocks from the response
+        import re
+        def extract_code_blocks(code: str) -> list:
+            pattern = r"```python(.*?)```"
+            code_blocks = re.findall(pattern, code, re.DOTALL)
+            return [block.strip() for block in code_blocks]
+            
+        snippets = extract_code_blocks(generated_code)
+        
+        # Execute each policy snippet
+        success = True
+        for snippet in snippets:
+            try:
+                # Create a dictionary with policy_system for exec
+                exec_globals = {"policy_system": agent_manager.policy_system}
+                exec(snippet, exec_globals)
+            except Exception as e:
+                logger.error(f"Error executing policy: {str(e)}", exc_info=True)
+                success = False
+                
+        if success:
+            # Emit policy update to all connected clients
+            emit_policy_update()
+            return jsonify({'status': 'success', 'message': 'Policies added successfully'})
+        else:
+            return jsonify({'error': 'Some policies failed to execute'}), 400
+            
+    except Exception as e:
+        logger.error(f"Error processing policy text: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':

@@ -352,7 +352,7 @@ def handle_connect():
         logger.info("Using existing active session")
     
     # Send a welcome message
-    welcome_message = {"role": "System", "content": "Welcome to the Autogen Chat! Type a message to start."}
+    welcome_message = {"role": "System", "content": "System is ready. You can start typing your message."}
     socketio.emit('message', welcome_message)
     conversation_history.append(welcome_message)
     

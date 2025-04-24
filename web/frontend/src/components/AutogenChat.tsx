@@ -97,8 +97,8 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
   }
 
   return (
-    <div className={styles.chatContainer}>
-      <div className={styles.messagesContainer}>
+    <div className={styles.chatContainer} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div className={styles.messagesContainer} style={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 200px)' }}>
         {messages.length === 0 ? (
           <div className={styles.message}>
             <div className={styles.messageHeader}>System</div>
@@ -122,7 +122,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
         <div ref={messagesEndRef} />
       </div>
       
-      <div className={styles.inputContainer}>
+      <div className={styles.inputContainer} style={{ position: 'sticky', bottom: 0, background: 'white', padding: '1rem 0' }}>
         {isWaitingForInput && (
           <div className={styles.inputPrompt}>
             {inputPrompt}

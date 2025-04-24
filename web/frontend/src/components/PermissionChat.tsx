@@ -109,24 +109,25 @@ const TreeView: React.FC<TreeViewProps> = ({
   };
 
   return (
-    <Box ml={isRoot ? 0 : 2}>
+    <Box ml={isRoot ? 0 : 2} width="100%">
       <Box 
         display="flex" 
         alignItems="center" 
         cursor={hasChildren ? "pointer" : "default"}
         py={1}
         onClick={() => hasChildren && setIsOpen(!isOpen)}
+        width="100%"
       >
         {hasChildren ? (
           isOpen ? <MdAccountTree color="#F9A826" size={20} /> : <MdAccountTree color="#F9A826" size={20} />
         ) : (
           <MdLabel color="#718096" size={20} />
         )}
-        <Text ml={2} fontWeight={hasChildren ? "medium" : "normal"}>
+        <Text ml={2} fontWeight={hasChildren ? "medium" : "normal"} flex={1}>
           {data.label}
         </Text>
         
-        <HStack ml="auto" spacing={2}>
+        <HStack spacing={2} justify="flex-end" minW="300px">
           {/* Value badge/input */}
           {onValueChange ? (
             isEditingValue ? (
@@ -143,7 +144,6 @@ const TreeView: React.FC<TreeViewProps> = ({
             ) : (
               <Badge 
                 colorScheme="green" 
-                ml={1}
                 cursor="pointer"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -154,54 +154,54 @@ const TreeView: React.FC<TreeViewProps> = ({
               </Badge>
             )
           ) : (
-            <Badge colorScheme="green" ml={1}>
+            <Badge colorScheme="green">
               {getValueBadgeText()}
             </Badge>
           )}
 
           {/* Access badge/select */}
-              {onAccessChange ? (
-                <Select 
-                  size="xs" 
-                  width="80px" 
-                  value={data.access || ""} 
-                  onChange={handleAccessChange}
-                  onClick={(e) => e.stopPropagation()}
-                  placeholder="Access"
-                >
-                  <option value="read">Read</option>
-                  <option value="write">Write</option>
-                </Select>
-              ) : (
-                <Badge colorScheme="blue" ml={1}>
-                  {data.access ? data.access.toUpperCase() : "Access"}
-                </Badge>
-              )}
+          {onAccessChange ? (
+            <Select 
+              size="xs" 
+              width="80px" 
+              value={data.access || ""} 
+              onChange={handleAccessChange}
+              onClick={(e) => e.stopPropagation()}
+              placeholder="Access"
+            >
+              <option value="read">Read</option>
+              <option value="write">Write</option>
+            </Select>
+          ) : (
+            <Badge colorScheme="blue">
+              {data.access ? data.access.toUpperCase() : "Access"}
+            </Badge>
+          )}
               
           {/* Position badge/select */}
-              {onPositionChange ? (
-                <Select 
-                  size="xs" 
-                  width="90px" 
-                  value={data.position || ""} 
-                  onChange={handlePositionChange}
-                  onClick={(e) => e.stopPropagation()}
-                  placeholder="Position"
-                >
-                  <option value="previous">Previous</option>
-                  <option value="current">Current</option>
-                  <option value="next">Next</option>
-                </Select>
-              ) : (
-                <Badge colorScheme="purple" ml={1}>
-                  {data.position ? data.position.toUpperCase() : "Position"}
-                </Badge>
-              )}
+          {onPositionChange ? (
+            <Select 
+              size="xs" 
+              width="90px" 
+              value={data.position || ""} 
+              onChange={handlePositionChange}
+              onClick={(e) => e.stopPropagation()}
+              placeholder="Position"
+            >
+              <option value="previous">Previous</option>
+              <option value="current">Current</option>
+              <option value="next">Next</option>
+            </Select>
+          ) : (
+            <Badge colorScheme="purple">
+              {data.position ? data.position.toUpperCase() : "Position"}
+            </Badge>
+          )}
 
           {/* Delete button - only show in all permission view */}
           {isRoot && onDelete && viewMode === 'permitted' && (
             <IconButton
-                  size="xs"
+              size="xs"
               colorScheme="red"
               aria-label="Delete policy"
               icon={<FaTrash />}

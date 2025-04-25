@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 import sys
 import os
 
@@ -70,7 +73,14 @@ CORS(app, resources={
         "max_age": 3600
     }
 })
-socketio = SocketIO(app, cors_allowed_origins="*", allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers"], transports=['websocket'])
+socketio = SocketIO(app, 
+    cors_allowed_origins="*", 
+    allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers"],
+    transports=['websocket'],
+    async_mode='eventlet',
+    message_queue='redis://localhost:6379/0',
+    channel='socketio'
+)
 
 # Store conversation history
 conversation_history = []
@@ -436,7 +446,7 @@ def check_for_input_requests():
                         # Emit the termination message
                         socketio.emit('message', {"role": "System", "content": agent_message})
                         # Add a small delay to prevent rapid cycling
-                        socketio.sleep(1)
+                        eventlet.sleep(1)
                         continue
                     
                     # Extract the agent name and content from the message
@@ -471,16 +481,14 @@ def check_for_input_requests():
                     socketio.emit('message', {"role": "System", "content": remaining_message})
 
             # Add a small delay to prevent CPU hogging
-            socketio.sleep(1.0)
+            eventlet.sleep(1.0)
         except Exception as e:
             logger.error(f"Error in check_for_input_requests: {str(e)}", exc_info=True)
             # Add a small delay to prevent rapid cycling in case of errors
-            socketio.sleep(1)
+            eventlet.sleep(1)
 
 # Start the input request checker thread
-input_checker_thread = threading.Thread(target=check_for_input_requests)
-input_checker_thread.daemon = True
-input_checker_thread.start()
+input_checker_thread = eventlet.spawn(check_for_input_requests)
 
 @app.route('/get_history', methods=['GET'])
 def get_history():

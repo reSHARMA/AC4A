@@ -70,7 +70,7 @@ CORS(app, resources={
         "max_age": 3600
     }
 })
-socketio = SocketIO(app, cors_allowed_origins="*", allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers"])
+socketio = SocketIO(app, cors_allowed_origins="*", allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers"], transports=['websocket'])
 
 # Store conversation history
 conversation_history = []

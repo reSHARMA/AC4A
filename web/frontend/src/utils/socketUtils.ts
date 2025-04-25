@@ -5,6 +5,8 @@ export const createSocketConnection = (url: string): Socket => {
   console.log(`Connecting to WebSocket server at ${url}`)
   
   const socket = io(url, {
+    transports: ['websocket'],
+    upgrade: false,
     reconnection: true,
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,

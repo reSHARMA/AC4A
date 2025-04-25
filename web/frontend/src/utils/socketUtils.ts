@@ -32,8 +32,14 @@ export const createSocketConnection = (url: string): Socket => {
     reconnectionDelayMax: 5000,
     timeout: 20000,
     autoConnect: true,
-    transports: ['websocket', 'polling'],
-    forceNew: false
+    transports: ['websocket'],
+    upgrade: false,
+    forceNew: false,
+    withCredentials: true,
+    extraHeaders: {
+      'Access-Control-Allow-Origin': 'http://127.0.0.1:5173',
+      'Access-Control-Allow-Credentials': 'true'
+    }
   })
   
   // Add event listeners for debugging

@@ -86,7 +86,8 @@ socketio = SocketIO(
     transports=['websocket'],  # Only use WebSocket
     allow_upgrades=False,  # Disable transport upgrades
     cookie=False,
-    websocket_class='eventlet'  # Use eventlet's WebSocket implementation
+    websocket_class='eventlet',  # Use eventlet's WebSocket implementation
+    cors_credentials=True  # Enable credentials for CORS
 )
 
 # Store conversation history

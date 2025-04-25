@@ -34,9 +34,6 @@ def reset_agent_session(emit_termination: bool = True):
         logger.info("Session already inactive, skipping reset")
         return
     
-    # Set session as inactive first to prevent new messages
-    set_agent_session_active(False)
-    
     # Wait for agent thread to finish if it exists
     if agent_thread and agent_thread.is_alive():
         logger.info("Waiting for agent thread to finish")
@@ -75,6 +72,9 @@ def reset_agent_session(emit_termination: bool = True):
     if emit_termination:
         agent_message_queue.put("TERMINATION: Session reset by user")
     
+    # Set session as inactive after cleanup
+    set_agent_session_active(False)
+    
     logger.info("Agent session reset complete")
 
 def initialize_agent_session():
@@ -110,58 +110,33 @@ def initialize_agent_session():
 
 def run_agent_thread():
     """Run the agent in a separate thread"""
-    global agent_loop, agent_initialized, agent_message_queue, input_request_queue, input_response_queue
+    global agent_thread, agent_loop, agent_initialized
     
     try:
-        # Check if there's a termination message in the queue
-        try:
-            termination_message = agent_message_queue.get_nowait()
-            if "TERMINATION:" in termination_message:
-                logger.info(f"Termination message found in queue: {termination_message}")
-                agent_message_queue.put(termination_message)
-                agent_initialized = False
-                return
-        except queue.Empty:
-            pass
-        
         # Set the agent session as active before running
         set_agent_session_active(True)
-        logger.info("Starting agent session")
+        logger.info("Agent session set to active")
         
-        # Run the agent in the event loop
-        result = agent_loop.run_until_complete(run_agent())
+        # Initialize the agent
+        agent_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(agent_loop)
         
-        # Check if the result is a termination message
-        if "TERMINATION:" in result:
-            logger.info(f"Agent returned termination message: {result}")
-            agent_message_queue.put(result)
+        # Run the agent using the imported run_agent function
+        agent_loop.run_until_complete(run_agent())
+        
     except Exception as e:
-        logger.error(f"Error in agent thread: {str(e)}", exc_info=True)
-        error_message = f"TERMINATION: Error in agent thread: {str(e)}"
-        # Add the error message to the queue
-        agent_message_queue.put(error_message)
+        logger.error(f"Error in agent thread: {str(e)}")
+        # Only set inactive if there was an error
         set_agent_session_active(False)
-        agent_initialized = False
+        logger.info("Agent session set to inactive due to error")
+        
     finally:
-        # Set the agent session as inactive
-        set_agent_session_active(False)
-        agent_initialized = False
-        logger.info("Agent session ended")
-        
-        # Close the event loop to ensure clean shutdown
-        try:
+        # Clean up
+        if agent_loop:
             agent_loop.close()
-        except Exception as e:
-            logger.error(f"Error closing event loop: {str(e)}", exc_info=True)
-        
-        # Clear any remaining messages in the queues
-        try:
-            while not input_request_queue.empty():
-                input_request_queue.get_nowait()
-            while not input_response_queue.empty():
-                input_response_queue.get_nowait()
-        except Exception as e:
-            logger.error(f"Error clearing message queues: {str(e)}", exc_info=True)
+        agent_loop = None
+        agent_thread = None
+        agent_initialized = False
 
 def run_agent_sync() -> str:
     """Synchronous wrapper for running the agent"""

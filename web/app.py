@@ -431,6 +431,7 @@ def check_for_input_requests():
                         logger.info(f"Received input request from agent: {input_request}")
                         set_agent_waiting_for_input(True)
                         # Emit the input request to the web UI
+                        logger.info(f"Emitting input request to web UI: {input_request}")
                         socketio.emit('input_request', {"prompt": input_request})
                 
                 # Check for agent messages
@@ -461,7 +462,7 @@ def check_for_input_requests():
                     
                     # Skip user messages to prevent duplication
                     if agent_name == "User":
-                        logger.info("Skipping user message to prevent duplication")
+                        logger.info(f"[app.py] Skipping user message to prevent duplication: {content}")
                         continue
                     
                     # Skip system messages about awaiting user input

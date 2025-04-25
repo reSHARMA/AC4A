@@ -100,7 +100,7 @@ async def run_agent() -> str:
                 
                 # Skip user messages to prevent duplication
                 if source == "User":
-                    logger.info("Skipping user message to prevent duplication")
+                    logger.info(f"[agent_core.py] Skipping user message to prevent duplication: {content}")
                     continue
                 
                 # Format the message for display

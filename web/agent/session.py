@@ -93,6 +93,15 @@ def initialize_agent_session():
     
     logger.info("Initializing agent session")
     
+    # Reset conversation history
+    from web.app import conversation_history
+    conversation_history = []
+    logger.info("Conversation history reset")
+    
+    # Reset input waiting state
+    set_agent_waiting_for_input(False)
+    logger.info("Input waiting state reset")
+    
     # Create a new event loop for the agent
     agent_loop = asyncio.new_event_loop()
     asyncio.set_event_loop(agent_loop)

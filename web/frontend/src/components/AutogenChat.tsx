@@ -40,7 +40,8 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
       reconnectionDelayMax: 5000,
       timeout: 20000,
       autoConnect: true,
-      transports: ['websocket', 'polling'],
+      transports: ['websocket'],  // Only use WebSocket
+      upgrade: false,  // Disable transport upgrades
       forceNew: false,
       path: '/socket.io/',
       withCredentials: true,

@@ -19,8 +19,9 @@ def web_input_func(prompt: str) -> str:
     
     if prompt == "":
         prompt = "Hi, how can I help you today?"
+    
     # If this is the same prompt as the last one, don't ask again
-    if prompt == last_input_request:
+    if prompt == last_input_request and last_input_request is not None:
         logger.info(f"Duplicate input request detected: {prompt}")
         return "No response received. Please try again."
     
@@ -36,21 +37,20 @@ def web_input_func(prompt: str) -> str:
     input_request_queue.put(prompt)
     logger.info(f"Added prompt to input request queue: {prompt}")
     
-    # Wait for a response from the web UI
+    # Wait indefinitely for a response from the web UI
     try:
-        # Wait for up to 30 seconds for a response
         while True:
             try:
-                response = input_response_queue.get(timeout=2)  # Check every second
-                break
+                response = input_response_queue.get()  # Block until response is received
+                if response:
+                    logger.info(f"Received response from web UI: {response}")
+                    set_agent_waiting_for_input(False)
+                    last_input_request = None  # Reset the last input request
+                    return response
             except queue.Empty:
                 continue  # Keep waiting if no response yet
-        logger.info(f"Received response from web UI: {response}")
+    except Exception as e:
+        logger.error(f"Error in web_input_func: {str(e)}", exc_info=True)
         set_agent_waiting_for_input(False)
         last_input_request = None  # Reset the last input request
-        return response
-    except queue.Empty:
-        logger.warning("Timeout waiting for user input, using default response")
-        set_agent_waiting_for_input(False)
-        last_input_request = None  # Reset the last input request
-        return "No response received. Please try again."
+        return "An error occurred. Please try again."

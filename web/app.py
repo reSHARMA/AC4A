@@ -79,7 +79,13 @@ socketio = SocketIO(
     async_mode='eventlet',  # Explicitly set async mode
     ping_timeout=60,  # Increase ping timeout
     ping_interval=25,  # Set ping interval
-    max_http_buffer_size=1e8  # Increase buffer size for large messages
+    max_http_buffer_size=1e8,  # Increase buffer size for large messages
+    logger=True,  # Enable logging
+    engineio_logger=True,  # Enable engine.io logging
+    path='/socket.io/',  # Explicitly set path
+    transports=['websocket', 'polling'],  # Allow both transports
+    allow_upgrades=True,  # Allow transport upgrades
+    cookie=False  # Disable cookies for better cross-origin support
 )
 
 # Store conversation history
@@ -90,6 +96,9 @@ new_session_needed = False
 
 # Add cache dictionary at the top level of the file
 text_cache = {}
+
+# Add at the top with other global variables
+active_clients = set()
 
 @app.route('/')
 def index():
@@ -346,34 +355,57 @@ def reset_session():
 
 @socketio.on('connect')
 def handle_connect():
-    global new_session_needed, conversation_history
-    logger.info('Client connected')
+    global new_session_needed, conversation_history, active_clients
+    client_id = request.sid  # Get unique client ID
     
-    # Reset conversation history
-    conversation_history = []
+    # Check if client is already connected
+    if client_id in active_clients:
+        logger.info(f'Client {client_id} reconnected')
+        # For reconnections, preserve the existing session and conversation
+        if is_agent_session_active():
+            logger.info("Session is active, preserving state")
+            # Send the current conversation history to the reconnected client
+            for message in conversation_history:
+                socketio.emit('message', message)
+            # Send current policy state
+            emit_policy_update()
+        return  # Allow reconnection without resetting session
+        
+    logger.info(f'Client {client_id} connected')
+    active_clients.add(client_id)
     
-    # Kill any existing session
-    if is_agent_session_active():
-        logger.info("Killing existing session")
-        reset_agent_session()
-    
-    # Initialize a new session
-    logger.info("Initializing new agent session")
-    initialize_agent_session()
-    new_session_needed = False
-    logger.info("Agent session initialized")
-    
-    # Send a welcome message
-    welcome_message = {"role": "System", "content": "System is ready. You can start typing your message."}
-    socketio.emit('message', welcome_message)
-    conversation_history.append(welcome_message)
-    
-    # Send initial policy update
-    emit_policy_update()
+    # Only reset conversation history and initialize new session for truly new clients
+    if not is_agent_session_active():
+        logger.info("No active session, initializing new session")
+        # Reset conversation history
+        conversation_history = []
+        
+        # Initialize a new session
+        initialize_agent_session()
+        new_session_needed = False
+        logger.info("Agent session initialized")
+        
+        # Send initial policy update
+        emit_policy_update()
+    else:
+        logger.info("Session already active, preserving state")
+        # Send the current conversation history to the new client
+        for message in conversation_history:
+            socketio.emit('message', message)
+        # Send current policy state
+        emit_policy_update()
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    logger.info('Client disconnected')
+    global active_clients
+    client_id = request.sid
+    if client_id in active_clients:
+        logger.info(f'Client {client_id} disconnected')
+        active_clients.remove(client_id)
+        # Reset the session when client disconnects
+        if is_agent_session_active():
+            logger.info("Resetting session on client disconnect")
+            reset_agent_session()
 
 @socketio.on('request_policy_update')
 def handle_policy_update_request():
@@ -480,8 +512,8 @@ def check_for_input_requests():
                     # Emit the message to the web UI
                     socketio.emit('message', {"role": agent_name, "content": content})
             else:
-                logger.info("Agent session not active, skipping check for input requests and flushing agent message queue")
                 while remaining_message := get_next_agent_message():
+                    logger.info("Agent session not active, skipping check for input requests and flushing agent message queue")
                     logger.info(f"Flushing remaining message from agent message queue: {remaining_message}")
                     socketio.emit('message', {"role": "System", "content": remaining_message})
 

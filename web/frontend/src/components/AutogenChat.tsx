@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
-import { Socket } from 'socket.io-client'
+import React, { useState, useEffect, useRef } from 'react'
+import { Socket, io } from 'socket.io-client'
 import styles from './Chat.module.css'
-import { createSocketConnection, emitMessage, listenForMessages } from '../utils/socketUtils'
+import { emitMessage } from '../utils/socketUtils'
 
 interface Message {
   role: string
@@ -18,102 +18,130 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
   const [isConnected, setIsConnected] = useState(false)
   const [isWaitingForInput, setIsWaitingForInput] = useState(false)
   const [inputPrompt, setInputPrompt] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
   const socketRef = useRef<Socket | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    // Create socket connection with debugging
-    socketRef.current = createSocketConnection('http://localhost:5000')
+    // Use direct socket connection with minimal configuration
+    const baseUrl = import.meta.env.PROD 
+      ? 'http://localhost:5000' 
+      : 'http://localhost:5000';
+    
+    console.log('Initializing socket connection to:', baseUrl);
+    setIsLoading(true);
+    
+    socketRef.current = io(baseUrl, {
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
+      autoConnect: true,
+      transports: ['websocket', 'polling'],
+      forceNew: false,
+      path: '/socket.io/',
+      withCredentials: true,
+      extraHeaders: {
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
     
     // Set up connection status
     socketRef.current.on('connect', () => {
-      setIsConnected(true)
-    })
+      console.log('Socket connected');
+      setIsConnected(true);
+      setIsLoading(false);
+    });
     
-    socketRef.current.on('disconnect', () => {
-      setIsConnected(false)
-    })
+    socketRef.current.on('disconnect', (reason) => {
+      console.log('Socket disconnected:', reason);
+      setIsConnected(false);
+      setIsLoading(true);
+    });
+    
+    socketRef.current.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
+      setIsConnected(false);
+      setIsLoading(true);
+    });
     
     // Listen for input requests from the agent
-    socketRef.current.on('input_request', (data: { prompt: string }) => {
-      console.log('Received input request:', data)
-      setIsWaitingForInput(true)
-      setInputPrompt(data.prompt)
+    socketRef.current.on('input_request', (data: { prompt: string, can_input: boolean, input_enabled: boolean }) => {
+      console.log('Received input request:', data);
+      setIsWaitingForInput(true);
+      setInputPrompt(data.prompt);
+      setIsLoading(false);
       
       // Add the prompt as a system message
-      setMessages(prev => [...prev, { role: 'System', content: data.prompt }])
+      setMessages(prev => [...prev, { role: 'System', content: data.prompt }]);
       
       // Focus the input field
       if (inputRef.current) {
-        inputRef.current.focus()
+        inputRef.current.focus();
       }
-    })
+    });
     
-    // Listen for different message types
-    listenForMessages(socketRef.current, 'agent_message', (message: Message) => {
-      setMessages(prev => [...prev, message])
-    })
-    
-    listenForMessages(socketRef.current, 'user_message', (message: Message) => {
-      setMessages(prev => [...prev, message])
-    })
-    
-    listenForMessages(socketRef.current, 'system_message', (message: Message) => {
-      setMessages(prev => [...prev, message])
-    })
-    
-    // Fallback for any message
-    listenForMessages(socketRef.current, 'message', (message: Message) => {
-      setMessages(prev => [...prev, message])
-    })
+    // Listen for messages from the server
+    socketRef.current.on('message', (data: Message) => {
+      console.log('Received message:', data);
+      setMessages(prev => [...prev, data]);
+      setIsLoading(false);
+    });
 
     return () => {
       if (socketRef.current) {
-        socketRef.current.disconnect()
+        console.log('Cleaning up socket connection');
+        socketRef.current.disconnect();
       }
-    }
-  }, [setMessages])
+    };
+  }, [setMessages]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSend = () => {
-    if (!input.trim() || !socketRef.current) return
+    if (!input.trim() || !socketRef.current) return;
 
     const message: Message = {
       role: 'user',
       content: input
-    }
+    };
 
     // Emit the message using our utility function
-    emitMessage(socketRef.current, 'user_message', message)
+    emitMessage(socketRef.current, 'user_message', message);
     
     // Also add it to the local state
-    setMessages(prev => [...prev, message])
-    setInput('')
-    setIsWaitingForInput(false)
-  }
+    setMessages(prev => [...prev, message]);
+    setInput('');
+    setIsWaitingForInput(false);
+    setIsLoading(true);
+  };
 
   return (
     <div className={styles.chatContainer} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div className={styles.messagesContainer} style={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 200px)' }}>
-        {messages.length === 0 ? (
-          <div className={styles.message}>
-            <div className={styles.messageHeader}>System</div>
-            <div>Welcome to the Autogen Chat! Type a message to start.</div>
+        {isLoading ? (
+          <div className={styles.loadingContainer}>
+            <div className={styles.loadingSpinner}></div>
+            <div className={styles.loadingText}>
+              {!isConnected ? 'Connecting to server...' : 'Waiting for response...'}
+            </div>
           </div>
         ) : (
           messages.map((message, index) => (
             <div
               key={index}
               className={`${styles.message} ${
-                message.role === 'user' ? styles.userMessage : styles.assistantMessage
+                message.role === 'user' ? styles.userMessage : 
+                message.role === 'System' ? styles.systemMessage : 
+                styles.assistantMessage
               }`}
             >
               <div className={styles.messageHeader}>
-                {message.role === 'user' ? 'You' : 'Assistant'}
+                {message.role === 'user' ? 'You' : message.role}
               </div>
               <div>{message.content}</div>
             </div>
@@ -135,18 +163,18 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-          disabled={!isConnected}
+          disabled={!isConnected || isLoading}
         />
         <button
           className={styles.button}
           onClick={handleSend}
-          disabled={!isConnected}
+          disabled={!isConnected || isLoading}
         >
           Send
         </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AutogenChat 
+export default AutogenChat; 

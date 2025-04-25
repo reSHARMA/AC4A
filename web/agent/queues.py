@@ -54,7 +54,7 @@ def get_next_agent_message():
 def is_agent_waiting_for_input():
     """Check if the agent is waiting for input"""
     global agent_waiting_for_input_flag
-    logger.info(f"Agent waiting for input: {agent_waiting_for_input_flag}")
+    # logger.info(f"Agent waiting for input: {agent_waiting_for_input_flag}")
     return agent_waiting_for_input_flag
 
 def set_agent_waiting_for_input(waiting: bool):
@@ -65,7 +65,7 @@ def set_agent_waiting_for_input(waiting: bool):
 
 def is_agent_session_active():
     """Check if the agent session is active"""
-    logger.info(f"Agent session active: {agent_session_active}")
+    # logger.info(f"Agent session active: {agent_session_active}")
     return agent_session_active
 
 def set_agent_session_active(active: bool):

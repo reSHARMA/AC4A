@@ -94,9 +94,21 @@ async def run_agent() -> str:
                     logger.info("Skipping concatenated TaskResult message")
                     continue
                 
+                # Don't skip the initial message from the agent
+                if source == "User" and isinstance(content, str) and "web_input_func" in content:
+                    logger.info("Processing initial agent message")
+                    continue
+                
                 if type(content) == str and ("terminate" in content.lower() or "perm_err" in content.lower() or "error" in content.lower()):
                     logger.info(f"Termination detected: {content}")
                     return "TERMINATION: " + content
+                
+                # Handle function calls
+                if hasattr(message, 'function_call'):
+                    logger.info(f"Processing function call: {message.function_call}")
+                    # Put the function call in the queue for the web UI to handle
+                    agent_message_queue.put(f"{source}: {message.function_call}")
+                    continue
                 
                 # Skip user messages to prevent duplication
                 if source == "User":
@@ -104,55 +116,7 @@ async def run_agent() -> str:
                     continue
                 
                 # Format the message for display
-                formatted_message = ""
-                
-                if source == "Planner":
-                    # Clean up markdown formatting
-                    content = re.sub(r'\*\*|\*|__|\[|\]|\(|\)|`|#', '', content)
-                    
-                    # Extract the task description
-                    task_match = re.search(r'Task:\s*([^\n]+)', content)
-                    if task_match:
-                        task = task_match.group(1).strip()
-                        formatted_message = f"{source}: {task}"
-                    else:
-                        # Look for Description: pattern
-                        desc_match = re.search(r'Description:\s*([^\n]+)', content)
-                        if desc_match:
-                            desc = desc_match.group(1).strip()
-                            formatted_message = f"{source}: {desc}"
-                        else:
-                            formatted_message = f"{source}: {content}"
-                elif source == "User":
-                    # Skip user messages to prevent duplication
-                    continue
-                elif source == "Agent":
-                    # Handle messages from the Agent source
-                    # Clean up markdown formatting
-                    content = re.sub(r'\*\*|\*|__|\[|\]|\(|\)|`|#', '', content)
-                    
-                    # Extract the task description if available
-                    task_match = re.search(r'Task:\s*([^\n]+)', content)
-                    if task_match:
-                        task = task_match.group(1).strip()
-                        formatted_message = f"Agent: {task}"
-                    else:
-                        # Look for Description: pattern
-                        desc_match = re.search(r'Description:\s*([^\n]+)', content)
-                        if desc_match:
-                            desc = desc_match.group(1).strip()
-                            formatted_message = f"Agent: {desc}"
-                        else:
-                            formatted_message = f"Agent: {content}"
-                else:
-                    # Handle messages from other sources
-                    # Clean up markdown formatting
-                    if isinstance(content, str):
-                        content = re.sub(r'\*\*|\*|__|\[|\]|\(|\)|`|#', '', content)
-                        formatted_message = f"{source}: {content}"
-                    else:
-                        # If content is not a string, convert it to string representation
-                        formatted_message = f"{source}: {str(content)}"
+                formatted_message = f"{source}: {content}"
                 
                 # Add the formatted message to the responses
                 if formatted_message:

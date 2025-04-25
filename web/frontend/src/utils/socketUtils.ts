@@ -1,10 +1,31 @@
 import { io, Socket } from 'socket.io-client'
 
+let socketInstance: Socket | null = null
+
+interface SocketError {
+  message: string;
+  code?: string;
+}
+
+interface SocketRequest {
+  method: string;
+  url: string;
+}
+
+interface SocketResponse {
+  statusCode: number;
+}
+
 // Create a socket connection with debugging
 export const createSocketConnection = (url: string): Socket => {
-  console.log(`Connecting to WebSocket server at ${url}`)
+  if (socketInstance) {
+    console.log('Reusing existing socket connection')
+    return socketInstance
+  }
+
+  console.log(`Creating new WebSocket connection to ${url}`)
   
-  const socket = io(url, {
+  socketInstance = io(url, {
     reconnection: true,
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,
@@ -12,47 +33,49 @@ export const createSocketConnection = (url: string): Socket => {
     timeout: 20000,
     autoConnect: true,
     transports: ['websocket', 'polling'],
-    forceNew: true
+    forceNew: false
   })
   
   // Add event listeners for debugging
-  socket.on('connect', () => {
+  socketInstance.on('connect', () => {
     console.log('Socket connected')
   })
   
-  socket.on('disconnect', (reason) => {
+  socketInstance.on('disconnect', (reason) => {
     console.log(`Socket disconnected: ${reason}`)
     if (reason === 'io server disconnect') {
       // Server initiated disconnect, try to reconnect
-      socket.connect()
+      setTimeout(() => {
+        socketInstance?.connect()
+      }, 1000)
     }
   })
   
-  socket.on('connect_error', (error) => {
+  socketInstance.on('connect_error', (error) => {
     console.error('Socket connection error:', error)
   })
   
-  socket.on('error', (error) => {
+  socketInstance.on('error', (error) => {
     console.error('Socket error:', error)
   })
   
-  socket.on('reconnect_attempt', (attemptNumber) => {
+  socketInstance.on('reconnect_attempt', (attemptNumber) => {
     console.log(`Reconnection attempt ${attemptNumber}`)
   })
   
-  socket.on('reconnect', (attemptNumber) => {
+  socketInstance.on('reconnect', (attemptNumber) => {
     console.log(`Reconnected after ${attemptNumber} attempts`)
   })
   
-  socket.on('reconnect_error', (error) => {
+  socketInstance.on('reconnect_error', (error) => {
     console.error('Reconnection error:', error)
   })
   
-  socket.on('reconnect_failed', () => {
+  socketInstance.on('reconnect_failed', () => {
     console.error('Failed to reconnect')
   })
   
-  return socket
+  return socketInstance
 }
 
 // Helper function to emit a message with debugging

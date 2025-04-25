@@ -60,17 +60,27 @@ if not policy_logger.handlers:
     policy_logger.propagate = False  # Avoid duplicate logs
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key'  # Required for session management
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'your-secret-key')  # Use environment variable for secret key
 CORS(app, resources={
     r"/*": {
-        "origins": "*",
+        "origins": ["http://127.0.0.1:5173", "http://localhost:5000"],  # Allow both Vite dev server and Flask server
         "methods": ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
         "allow_headers": ["Content-Type", "Authorization", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers"],
         "supports_credentials": True,
         "max_age": 3600
     }
 })
-socketio = SocketIO(app, cors_allowed_origins="*", allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers"])
+
+# Configure SocketIO with more robust settings
+socketio = SocketIO(
+    app,
+    cors_allowed_origins=["http://127.0.0.1:5173", "http://localhost:5000"],  # Allow both Vite dev server and Flask server
+    allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers"],
+    async_mode='eventlet',  # Explicitly set async mode
+    ping_timeout=60,  # Increase ping timeout
+    ping_interval=25,  # Set ping interval
+    max_http_buffer_size=1e8  # Increase buffer size for large messages
+)
 
 # Store conversation history
 conversation_history = []
@@ -339,17 +349,19 @@ def handle_connect():
     global new_session_needed, conversation_history
     logger.info('Client connected')
     
-    # Reset conversation history on new connection
+    # Reset conversation history
     conversation_history = []
     
-    # Only reset if we need a new session AND the current session is not active
-    if new_session_needed and not is_agent_session_active():
-        logger.info("Initializing new agent session")
-        initialize_agent_session()
-        new_session_needed = False
-        logger.info("Agent session initialized")
-    elif is_agent_session_active():
-        logger.info("Using existing active session")
+    # Kill any existing session
+    if is_agent_session_active():
+        logger.info("Killing existing session")
+        reset_agent_session()
+    
+    # Initialize a new session
+    logger.info("Initializing new agent session")
+    initialize_agent_session()
+    new_session_needed = False
+    logger.info("Agent session initialized")
     
     # Send a welcome message
     welcome_message = {"role": "System", "content": "System is ready. You can start typing your message."}

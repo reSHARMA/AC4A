@@ -445,6 +445,20 @@ def handle_message(data):
     # Set waiting for input to true to ensure proper message flow
     set_agent_waiting_for_input(True)
 
+@socketio.on('function_response')
+def handle_function_response(data):
+    """Handle function call responses from the client"""
+    global input_response_queue
+    logger.info(f"Received function response: {data}")
+    response = data.get('response', '')
+    
+    # Put the response in the input response queue
+    input_response_queue.put(response)
+    logger.info(f"Added function response to queue: {response}")
+    
+    # Set waiting for input to false since we got a response
+    set_agent_waiting_for_input(False)
+
 # Function to check for input requests from the agent
 def check_for_input_requests():
     global new_session_needed

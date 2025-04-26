@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 import sys
 import os
 
@@ -70,7 +73,14 @@ CORS(app, resources={
         "max_age": 3600
     }
 })
-socketio = SocketIO(app, cors_allowed_origins="*", allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers"])
+socketio = SocketIO(app, 
+    cors_allowed_origins="*", 
+    allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers"],
+    transports=['websocket'],
+    async_mode='eventlet',
+    message_queue='redis://localhost:6379/0',
+    channel='socketio'
+)
 
 # Store conversation history
 conversation_history = []
@@ -331,6 +341,7 @@ def reset_session():
     logger.info("Initializing new session after reset")
     initialize_agent_session()
     new_session_needed = False
+    logger.info("New session initialized after reset")
     
     return jsonify({"status": "success", "message": "Session reset"})
 
@@ -341,22 +352,15 @@ def handle_connect():
     
     # Reset the conversation history and session on new connection
     conversation_history = []
-    reset_agent_session()
-    
-    # Initialize a new session
-    logger.info("Initializing new agent session")
-    initialize_agent_session()
-    new_session_needed = False
-    logger.info("Agent session initialized")
-    
-    # Send a welcome message
-    welcome_message = {"role": "System", "content": "Welcome to the Autogen Chat! Type a message to start."}
-    socketio.emit('message', welcome_message)
-    conversation_history.append(welcome_message)
-    
-    # Send initial policy update
-    emit_policy_update()
 
+    if not is_agent_session_active():
+        logger.info("Agent session not active, resetting")
+        reset_agent_session()
+        initialize_agent_session()
+        emit_policy_update()
+    else:
+        logger.info("Agent session is active, not resetting")
+    
 @socketio.on('disconnect')
 def handle_disconnect():
     logger.info('Client disconnected')
@@ -376,14 +380,12 @@ def handle_message(data):
     
     # Check if we need to initialize a new session
     if new_session_needed or not is_agent_session_active():
-        logger.info("Initializing new agent session")
+        logger.info("Initializing new agent session because we received a user message but the agent session is not active")
         # Make sure the agent session is fully reset before initializing a new one
         if is_agent_session_active():
-            logger.info("Agent session still active, resetting first")
-            reset_agent_session(emit_termination=False)  # Don't emit termination during normal reset
+            logger.info("Agent session is active, but a reset was requested")
+            reset_agent_session()
         initialize_agent_session()
-        new_session_needed = False
-        logger.info("Agent session initialized")
     
     # Check if the agent is waiting for input
     if is_agent_waiting_for_input():
@@ -421,6 +423,7 @@ def check_for_input_requests():
                         logger.info(f"Received input request from agent: {input_request}")
                         set_agent_waiting_for_input(True)
                         # Emit the input request to the web UI
+                        logger.info(f"Emitting input request to web UI: {input_request}")
                         socketio.emit('input_request', {"prompt": input_request})
                 
                 # Check for agent messages
@@ -429,14 +432,14 @@ def check_for_input_requests():
                     logger.info(f"Received agent message: {agent_message}")
                     
                     # Check for termination messages
-                    if "Termination reason:" in agent_message:
+                    if "termination" in agent_message.lower():
                         logger.info(f"Agent terminated: {agent_message}")
                         # Set the new session flag
                         new_session_needed = True
                         # Emit the termination message
                         socketio.emit('message', {"role": "System", "content": agent_message})
                         # Add a small delay to prevent rapid cycling
-                        socketio.sleep(1)
+                        eventlet.sleep(1)
                         continue
                     
                     # Extract the agent name and content from the message
@@ -451,7 +454,7 @@ def check_for_input_requests():
                     
                     # Skip user messages to prevent duplication
                     if agent_name == "User":
-                        logger.info("Skipping user message to prevent duplication")
+                        logger.info(f"[app.py] Skipping user message to prevent duplication: {content}")
                         continue
                     
                     # Skip system messages about awaiting user input
@@ -471,16 +474,14 @@ def check_for_input_requests():
                     socketio.emit('message', {"role": "System", "content": remaining_message})
 
             # Add a small delay to prevent CPU hogging
-            socketio.sleep(1.0)
+            eventlet.sleep(1.0)
         except Exception as e:
             logger.error(f"Error in check_for_input_requests: {str(e)}", exc_info=True)
             # Add a small delay to prevent rapid cycling in case of errors
-            socketio.sleep(1)
+            eventlet.sleep(1)
 
 # Start the input request checker thread
-input_checker_thread = threading.Thread(target=check_for_input_requests)
-input_checker_thread.daemon = True
-input_checker_thread.start()
+input_checker_thread = eventlet.spawn(check_for_input_requests)
 
 @app.route('/get_history', methods=['GET'])
 def get_history():

@@ -102,7 +102,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
         {messages.length === 0 ? (
           <div className={styles.message}>
             <div className={styles.messageHeader}>System</div>
-            <div>Welcome to the Autogen Chat! Type a message to start.</div>
+            <div>System is ready to start.</div>
           </div>
         ) : (
           messages.map((message, index) => (

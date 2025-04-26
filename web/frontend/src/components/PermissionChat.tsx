@@ -285,7 +285,14 @@ const PermissionChat: React.FC = (): JSX.Element => {
       : 'http://localhost:5000';
     
     console.log('Initializing socket connection to:', baseUrl);
-    const newSocket = io(baseUrl);
+    const newSocket = io(baseUrl, {
+      transports: ['websocket'],
+      upgrade: false,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 20000
+    });
     
     // Set up event listeners
     newSocket.on('connect', () => {

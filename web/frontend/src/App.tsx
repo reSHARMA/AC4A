@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Split from 'react-split'
-import { Box, Container, useToast } from '@chakra-ui/react'
+import { Box, Container, Flex, useToast } from '@chakra-ui/react'
 import PermissionChat from './components/PermissionChat'
 import AutogenChat from './components/AutogenChat'
 import Navbar from './components/Navbar'

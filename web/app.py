@@ -385,6 +385,7 @@ def handle_message(data):
         if is_agent_session_active():
             logger.info("Agent session is active, but a reset was requested")
             reset_agent_session()
+        initialize_agent_session()
     
     # Check if the agent is waiting for input
     if is_agent_waiting_for_input():
@@ -431,7 +432,7 @@ def check_for_input_requests():
                     logger.info(f"Received agent message: {agent_message}")
                     
                     # Check for termination messages
-                    if "Termination reason:" in agent_message:
+                    if "termination" in agent_message.lower():
                         logger.info(f"Agent terminated: {agent_message}")
                         # Set the new session flag
                         new_session_needed = True

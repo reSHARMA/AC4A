@@ -131,12 +131,20 @@ def run_agent_thread():
         logger.info("Agent session set to inactive due to error")
         
     finally:
+        logger.info("Agent thread finally block")
         # Clean up
         if agent_loop:
+            agent_loop.run_until_complete(agent_loop.shutdown_asyncgens())
+            tasks = asyncio.all_tasks(loop=agent_loop)
+            for task in tasks:
+                task.cancel()
+            agent_loop.run_until_complete(asyncio.gather(*tasks, return_exceptions=True))
             agent_loop.close()
+        
         agent_loop = None
         agent_thread = None
         agent_initialized = False
+        reset_agent_session(emit_termination=True)
 
 def run_agent_sync() -> str:
     """Synchronous wrapper for running the agent"""

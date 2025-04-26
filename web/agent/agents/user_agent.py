@@ -30,6 +30,8 @@ class UserAgent(BaseAgent):
 
         Based on what the AI assistant has asked, you can send a message to the user using the `get_user_message` tool.
         If there is nothing to ask or you are not sure, just say, "Hi! What can I do for you today?" using the `get_user_message` tool.
+
+        Always use the `get_user_message` tool to send a message to the user.
         """
         
         tools = [web_input_func]

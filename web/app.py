@@ -74,19 +74,18 @@ CORS(app, resources={
 # Configure SocketIO with more robust settings
 socketio = SocketIO(
     app,
-    cors_allowed_origins=["http://127.0.0.1:5173", "http://localhost:5000"],
+    cors_allowed_origins=["http://127.0.0.1:5173", "http://localhost:5000"],  # Allow both Vite dev server and Flask server
     allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers"],
-    async_mode='eventlet',
-    ping_timeout=60,
-    ping_interval=25,
-    max_http_buffer_size=1e8,
-    logger=True,
-    engineio_logger=True,
-    path='/socket.io/',
-    transports=['websocket'],  # Only use WebSocket
-    allow_upgrades=False,  # Disable transport upgrades
-    cookie=False,
-    websocket_class='eventlet'  # Use eventlet's WebSocket implementation
+    async_mode='eventlet',  # Explicitly set async mode
+    ping_timeout=60,  # Increase ping timeout
+    ping_interval=25,  # Set ping interval
+    max_http_buffer_size=1e8,  # Increase buffer size for large messages
+    logger=True,  # Enable logging
+    engineio_logger=True,  # Enable engine.io logging
+    path='/socket.io/',  # Explicitly set path
+    transports=['websocket', 'polling'],  # Allow both transports
+    allow_upgrades=True,  # Allow transport upgrades
+    cookie=False  # Disable cookies for better cross-origin support
 )
 
 # Store conversation history
@@ -359,32 +358,42 @@ def handle_connect():
     global new_session_needed, conversation_history, active_clients
     client_id = request.sid  # Get unique client ID
     
+    # Check if client is already connected
+    if client_id in active_clients:
+        logger.info(f'Client {client_id} reconnected')
+        # For reconnections, preserve the existing session and conversation
+        if is_agent_session_active():
+            logger.info("Session is active, preserving state")
+            # Send the current conversation history to the reconnected client
+            for message in conversation_history:
+                socketio.emit('message', message)
+            # Send current policy state
+            emit_policy_update()
+        return  # Allow reconnection without resetting session
+        
     logger.info(f'Client {client_id} connected')
     active_clients.add(client_id)
     
-    # Always reset conversation history and initialize new session
-    logger.info("Resetting session and history for new connection")
-    # Reset conversation history
-    conversation_history = []
-    
-    # Reset any existing session
-    if is_agent_session_active():
-        logger.info("Resetting existing session")
-        reset_agent_session()
-    
-    # Initialize a new session
-    initialize_agent_session()
-    new_session_needed = False
-    logger.info("New agent session initialized")
-    
-    # Send initial policy update
-    emit_policy_update()
-    
-    # Send initial message indicating ready for input
-    socketio.emit('message', {
-        "role": "System",
-        "content": "New session started. Please enter your request."
-    })
+    # Only reset conversation history and initialize new session for truly new clients
+    if not is_agent_session_active():
+        logger.info("No active session, initializing new session")
+        # Reset conversation history
+        conversation_history = []
+        
+        # Initialize a new session
+        initialize_agent_session()
+        new_session_needed = False
+        logger.info("Agent session initialized")
+        
+        # Send initial policy update
+        emit_policy_update()
+    else:
+        logger.info("Session already active, preserving state")
+        # Send the current conversation history to the new client
+        for message in conversation_history:
+            socketio.emit('message', message)
+        # Send current policy state
+        emit_policy_update()
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -414,9 +423,6 @@ def handle_message(data):
     # Add user message to conversation history
     conversation_history.append({"role": "user", "content": user_message})
     
-    # Emit the user message back to the client
-    socketio.emit('message', {"role": "user", "content": user_message})
-    
     # Check if we need to initialize a new session
     if not is_agent_session_active():
         logger.info("Initializing new agent session")
@@ -444,32 +450,14 @@ def handle_function_response(data):
     """Handle function call responses from the client"""
     global input_response_queue
     logger.info(f"Received function response: {data}")
+    response = data.get('response', '')
     
-    try:
-        # Extract the response and tool call ID
-        response = str(data.get('response', ''))  # Ensure response is a string
-        tool_call_id = data.get('tool_call_id', '')
-        
-        # Create a proper tool response message
-        tool_response = {
-            "role": "tool",
-            "content": response,
-            "tool_call_id": tool_call_id
-        }
-        
-        # Add the tool response to the conversation history
-        conversation_history.append(tool_response)
-        
-        # Put the tool response in the input response queue
-        input_response_queue.put(tool_response)
-        logger.info(f"Added tool response to queue: {tool_response}")
-        
-        # Set waiting for input to false since we got a response
-        set_agent_waiting_for_input(False)
-    except Exception as e:
-        logger.error(f"Error handling function response: {str(e)}", exc_info=True)
-        # Send error back to client
-        socketio.emit('error', {"message": f"Error handling function response: {str(e)}"})
+    # Put the response in the input response queue
+    input_response_queue.put(response)
+    logger.info(f"Added function response to queue: {response}")
+    
+    # Set waiting for input to false since we got a response
+    set_agent_waiting_for_input(False)
 
 # Function to check for input requests from the agent
 def check_for_input_requests():

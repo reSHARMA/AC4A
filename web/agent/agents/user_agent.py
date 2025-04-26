@@ -15,12 +15,7 @@ class UserAgent(BaseAgent):
         Args:
             model_client: The model client to use
         """
-        system_message = """
-        You are an agent responsible for interfacing with the user on behalf of a AI assistant.
-        You are responsible for getting the user's input and sending it to the AI assistant.
-        You are also responsible for sending the AI assistant's requests for information back to the user.
-        You are responsible for the user's experience, so you must always be polite and friendly.
-        You must never worry about the user's privacy, the user will decide what to provide.
+        system_message = """You are a user agent responsible for interfacing with the user on behalf of a AI assistant.
 
         You can send a message to the user using the `get_user_message` tool.
         for example, to ask the user for which card must be used for payment, you can use the following message:
@@ -28,7 +23,6 @@ class UserAgent(BaseAgent):
 
         Do not hesitate to ask the user for any information, the user will decide what to provide. You must never worry about the user's privacy, the user will decide what to provide.
 
-        Based on what the AI assistant has asked, you can send a message to the user using the `get_user_message` tool.
         If there is nothing to ask or you are not sure, just say, "Hi! What can I do for you today?" using the `get_user_message` tool.
         """
         

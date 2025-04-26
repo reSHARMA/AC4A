@@ -46,12 +46,6 @@ export default defineConfig({
             console.log('WebSocket connection closed');
           });
         },
-        headers: {
-          'Access-Control-Allow-Origin': 'http://127.0.0.1:5173',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-          'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization',
-          'Access-Control-Allow-Credentials': 'true'
-        }
       },
       '/reset_session': {
         target: 'http://localhost:5000',

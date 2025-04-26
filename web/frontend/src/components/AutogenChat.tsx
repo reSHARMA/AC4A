@@ -22,7 +22,6 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
   const socketRef = useRef<Socket | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const lastMessageRef = useRef<string>('')
 
   useEffect(() => {
     // Use direct socket connection with minimal configuration
@@ -91,25 +90,6 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
       setIsLoading(false);
     });
 
-    // Listen for function calls from the agent
-    socketRef.current.on('function_call', (data: { function_call: any }) => {
-      console.log('Received function call:', data);
-      setIsWaitingForInput(true);
-      setInputPrompt(data.function_call.arguments || '');
-      setIsLoading(false);
-      
-      // Add the function call as a system message
-      setMessages(prev => [...prev, { 
-        role: 'System', 
-        content: `Function call: ${JSON.stringify(data.function_call)}` 
-      }]);
-      
-      // Focus the input field
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
-    });
-
     return () => {
       if (socketRef.current) {
         console.log('Cleaning up socket connection');
@@ -130,17 +110,10 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
       content: input
     };
 
-    // If we're waiting for input (function call response), send it as a function response
-    if (isWaitingForInput) {
-      emitMessage(socketRef.current, 'function_response', {
-        response: input
-      });
-    } else {
-      // Otherwise send it as a regular message
-      emitMessage(socketRef.current, 'user_message', message);
-    }
+    // Emit the message using our utility function
+    emitMessage(socketRef.current, 'user_message', message);
     
-    // Add it to the local state
+    // Also add it to the local state
     setMessages(prev => [...prev, message]);
     setInput('');
     setIsWaitingForInput(false);

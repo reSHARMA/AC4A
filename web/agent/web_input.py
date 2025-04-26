@@ -17,6 +17,9 @@ def web_input_func(prompt: str) -> str:
     """Function to handle web input"""
     global last_input_request, input_request_queue, input_response_queue, agent_initialized
     
+    if prompt == "":
+        prompt = "Hi, how can I help you today?"
+    
     # If this is the same prompt as the last one, don't ask again
     if prompt == last_input_request and last_input_request is not None:
         logger.info(f"Duplicate input request detected: {prompt}")

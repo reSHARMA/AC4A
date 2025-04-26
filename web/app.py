@@ -341,6 +341,7 @@ def reset_session():
     logger.info("Initializing new session after reset")
     initialize_agent_session()
     new_session_needed = False
+    logger.info("New session initialized after reset")
     
     return jsonify({"status": "success", "message": "Session reset"})
 
@@ -351,22 +352,15 @@ def handle_connect():
     
     # Reset the conversation history and session on new connection
     conversation_history = []
-    reset_agent_session()
-    
-    # Initialize a new session
-    logger.info("Initializing new agent session")
-    initialize_agent_session()
-    new_session_needed = False
-    logger.info("Agent session initialized")
-    
-    # Send a welcome message
-    welcome_message = {"role": "System", "content": "Welcome to the Autogen Chat! Type a message to start."}
-    socketio.emit('message', welcome_message)
-    conversation_history.append(welcome_message)
-    
-    # Send initial policy update
-    emit_policy_update()
 
+    if not is_agent_session_active():
+        logger.info("Agent session not active, resetting")
+        reset_agent_session()
+        initialize_agent_session()
+        emit_policy_update()
+    else:
+        logger.info("Agent session is active, not resetting")
+    
 @socketio.on('disconnect')
 def handle_disconnect():
     logger.info('Client disconnected')
@@ -386,14 +380,11 @@ def handle_message(data):
     
     # Check if we need to initialize a new session
     if new_session_needed or not is_agent_session_active():
-        logger.info("Initializing new agent session")
+        logger.info("Initializing new agent session because we received a user message but the agent session is not active")
         # Make sure the agent session is fully reset before initializing a new one
         if is_agent_session_active():
-            logger.info("Agent session still active, resetting first")
-            reset_agent_session(emit_termination=False)  # Don't emit termination during normal reset
-        initialize_agent_session()
-        new_session_needed = False
-        logger.info("Agent session initialized")
+            logger.info("Agent session is active, but a reset was requested")
+            reset_agent_session()
     
     # Check if the agent is waiting for input
     if is_agent_waiting_for_input():

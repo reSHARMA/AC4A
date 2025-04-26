@@ -339,19 +339,15 @@ def handle_connect():
     global new_session_needed, conversation_history
     logger.info('Client connected')
     
-    # Reset conversation history on new connection
+    # Reset the conversation history and session on new connection
     conversation_history = []
+    reset_agent_session()
     
-    # Only reset if we need a new session
-    if new_session_needed or not is_agent_session_active():
-        logger.info("Initializing new agent session")
-        # Make sure the agent session is fully reset before initializing a new one
-        if is_agent_session_active():
-            logger.info("Agent session still active, resetting first")
-            reset_agent_session(emit_termination=False)  # Don't emit termination during normal reset
-        initialize_agent_session()
-        new_session_needed = False
-        logger.info("Agent session initialized")
+    # Initialize a new session
+    logger.info("Initializing new agent session")
+    initialize_agent_session()
+    new_session_needed = False
+    logger.info("Agent session initialized")
     
     # Send a welcome message
     welcome_message = {"role": "System", "content": "Welcome to the Autogen Chat! Type a message to start."}
@@ -407,6 +403,7 @@ def check_for_input_requests():
             # Check if we need to initialize a new session
             if new_session_needed:
                 logger.info("New session needed, initializing")
+                # Make sure the agent session is fully reset before initializing a new one
                 if is_agent_session_active():
                     logger.info("Agent session still active, resetting first")
                     reset_agent_session()
@@ -417,19 +414,14 @@ def check_for_input_requests():
             # Only check for input requests if the agent session is active
             if is_agent_session_active():
                 logger.info("Agent session is active, checking for input requests and messages")
-                
                 # Check if agent is waiting for input
                 if is_agent_waiting_for_input():
                     input_request = get_next_input_request()
                     if input_request:
                         logger.info(f"Received input request from agent: {input_request}")
-                        # Emit both as input request and as a message
-                        socketio.emit('input_request', {
-                            "prompt": input_request,
-                            "can_input": True,  # Explicitly tell frontend input is allowed
-                            "input_enabled": True  # Additional flag to ensure input is enabled
-                        })
-                        socketio.emit('message', {"role": "Assistant", "content": input_request})
+                        set_agent_waiting_for_input(True)
+                        # Emit the input request to the web UI
+                        socketio.emit('input_request', {"prompt": input_request})
                 
                 # Check for agent messages
                 agent_message = get_next_agent_message()
@@ -439,8 +431,11 @@ def check_for_input_requests():
                     # Check for termination messages
                     if "Termination reason:" in agent_message:
                         logger.info(f"Agent terminated: {agent_message}")
+                        # Set the new session flag
                         new_session_needed = True
+                        # Emit the termination message
                         socketio.emit('message', {"role": "System", "content": agent_message})
+                        # Add a small delay to prevent rapid cycling
                         socketio.sleep(1)
                         continue
                     
@@ -448,15 +443,18 @@ def check_for_input_requests():
                     agent_name = "Assistant"  # Default role
                     content = agent_message
                     
+                    # Check if the message starts with an agent name followed by a colon
                     if ": " in agent_message:
                         parts = agent_message.split(": ", 1)
                         agent_name = parts[0]
                         content = parts[1]
                     
+                    # Skip user messages to prevent duplication
                     if agent_name == "User":
                         logger.info("Skipping user message to prevent duplication")
                         continue
                     
+                    # Skip system messages about awaiting user input
                     if agent_name == "System" and "Awaiting user input" in content:
                         logger.info("Skipping system message about awaiting user input")
                         continue
@@ -472,15 +470,17 @@ def check_for_input_requests():
                     logger.info(f"Flushing remaining message from agent message queue: {remaining_message}")
                     socketio.emit('message', {"role": "System", "content": remaining_message})
 
-            # Use eventlet's sleep instead of time.sleep
-            socketio.sleep(0.1)  # Reduced sleep time for more responsive updates
+            # Add a small delay to prevent CPU hogging
+            socketio.sleep(1.0)
         except Exception as e:
             logger.error(f"Error in check_for_input_requests: {str(e)}", exc_info=True)
+            # Add a small delay to prevent rapid cycling in case of errors
             socketio.sleep(1)
 
-# Start the input checker using eventlet's spawn
-import eventlet
-eventlet.spawn(check_for_input_requests)
+# Start the input request checker thread
+input_checker_thread = threading.Thread(target=check_for_input_requests)
+input_checker_thread.daemon = True
+input_checker_thread.start()
 
 @app.route('/get_history', methods=['GET'])
 def get_history():

@@ -76,14 +76,46 @@ class ExpediaAPIAnnotation(APIAnnotationBase):
 
     def generate_attributes(self, kwargs, endpoint_name, wildcard):
         if 'search_flights' in endpoint_name or 'book_flight' in endpoint_name:
-            start_time = kwargs.get('departure_date', datetime.now())
-            end_time = kwargs.get('return_date', start_time + timedelta(days=1))
+            departure_date = kwargs.get('departure_date')
+            return_date = kwargs.get('return_date')
+            
+            if not departure_date:
+                start_time = datetime.now()
+            else:
+                start_time = datetime.strptime(departure_date, '%Y-%m-%d')
+                
+            if not return_date:
+                end_time = start_time + timedelta(days=1)
+            else:
+                end_time = datetime.strptime(return_date, '%Y-%m-%d')
+                
         elif 'search_hotels' in endpoint_name or 'book_hotel' in endpoint_name:
-            start_time = kwargs.get('check_in_date', datetime.now())
-            end_time = kwargs.get('check_out_date', start_time + timedelta(days=1))
+            check_in_date = kwargs.get('check_in_date')
+            check_out_date = kwargs.get('check_out_date')
+            
+            if not check_in_date:
+                start_time = datetime.now()
+            else:
+                start_time = datetime.strptime(check_in_date, '%Y-%m-%d')
+                
+            if not check_out_date:
+                end_time = start_time + timedelta(days=1)
+            else:
+                end_time = datetime.strptime(check_out_date, '%Y-%m-%d')
+                
         elif 'rent_car' in endpoint_name:
-            start_time = kwargs.get('pickup_date', datetime.now())
-            end_time = kwargs.get('return_date', start_time + timedelta(days=1))
+            pickup_date = kwargs.get('pickup_date')
+            return_date = kwargs.get('return_date')
+            
+            if not pickup_date:
+                start_time = datetime.now()
+            else:
+                start_time = datetime.strptime(pickup_date, '%Y-%m-%d')
+                
+            if not return_date:
+                end_time = start_time + timedelta(days=1)
+            else:
+                end_time = datetime.strptime(return_date, '%Y-%m-%d')
         else:
             start_time = datetime.now()
             end_time = start_time + timedelta(days=1)

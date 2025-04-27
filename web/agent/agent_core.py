@@ -184,6 +184,7 @@ async def run_agent() -> str:
             if stream:
                 await stream.aclose()
         
+        await agent_group_chat.reset()
         logger.info(f"Chat completed with {len(responses)} responses")
         
         return chat_result

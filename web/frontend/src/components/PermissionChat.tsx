@@ -13,6 +13,7 @@ interface TreeNode {
   value: string;
   access: string;
   position: string;
+  positionValue?: number;
   children: TreeNode[];
 }
 
@@ -27,7 +28,7 @@ interface TreeViewProps {
   isRoot: boolean;
   viewMode: ViewMode;
   onAccessChange?: (node: TreeNode, newAccess: string) => void;
-  onPositionChange?: (node: TreeNode, newPosition: string) => void;
+  onPositionChange?: (node: TreeNode, newPosition: string, newPositionValue?: number) => void;
   onValueChange?: (node: TreeNode, newValue: string) => void;
   onDelete?: (node: TreeNode) => void;
 }
@@ -52,6 +53,8 @@ const TreeView: React.FC<TreeViewProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isEditingValue, setIsEditingValue] = useState(false);
   const [editedValue, setEditedValue] = useState(data.value);
+  const [isEditingPositionValue, setIsEditingPositionValue] = useState(false);
+  const [editedPositionValue, setEditedPositionValue] = useState(data.positionValue || 0);
   const hasChildren = data.children && data.children.length > 0;
 
   const handleAccessChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -62,7 +65,35 @@ const TreeView: React.FC<TreeViewProps> = ({
 
   const handlePositionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (onPositionChange) {
-      onPositionChange(data, e.target.value);
+      const newPosition = e.target.value;
+      if (newPosition === "Current") {
+        onPositionChange(data, newPosition, 0);
+      } else {
+        onPositionChange(data, newPosition, data.positionValue || 0);
+      }
+    }
+  };
+
+  const handlePositionValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value >= 0) {
+      setEditedPositionValue(value);
+    }
+  };
+
+  const handlePositionValueSubmit = () => {
+    if (onPositionChange && data.position !== "Current") {
+      onPositionChange(data, data.position, editedPositionValue);
+    }
+    setIsEditingPositionValue(false);
+  };
+
+  const handlePositionValueKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handlePositionValueSubmit();
+    } else if (e.key === 'Escape') {
+      setIsEditingPositionValue(false);
+      setEditedPositionValue(data.positionValue || 0);
     }
   };
 
@@ -180,23 +211,52 @@ const TreeView: React.FC<TreeViewProps> = ({
             </Badge>
           )}
               
-          {/* Position badge/select */}
+          {/* Position badge/select and value input */}
           {onPositionChange ? (
-            <Select 
-              size="xs" 
-              width="90px" 
-              value={data.position || ""} 
-              onChange={handlePositionChange}
-              onClick={(e) => e.stopPropagation()}
-              placeholder="Position"
-            >
-              <option value="Previous">Previous</option>
-              <option value="Current">Current</option>
-              <option value="Next">Next</option>
-            </Select>
+            <HStack spacing={1}>
+              <Select 
+                size="xs" 
+                width="90px" 
+                value={data.position || ""} 
+                onChange={handlePositionChange}
+                onClick={(e) => e.stopPropagation()}
+                placeholder="Position"
+              >
+                <option value="Previous">Previous</option>
+                <option value="Current">Current</option>
+                <option value="Next">Next</option>
+              </Select>
+              {data.position && data.position !== "Current" && (
+                isEditingPositionValue ? (
+                  <Input
+                    size="xs"
+                    width="50px"
+                    type="number"
+                    min="0"
+                    value={editedPositionValue}
+                    onChange={handlePositionValueChange}
+                    onKeyDown={handlePositionValueKeyPress}
+                    onBlur={handlePositionValueSubmit}
+                    autoFocus
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : (
+                  <Badge 
+                    colorScheme="purple" 
+                    cursor="pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditingPositionValue(true);
+                    }}
+                  >
+                    {data.positionValue || 0}
+                  </Badge>
+                )
+              )}
+            </HStack>
           ) : (
             <Badge colorScheme="purple">
-              {data.position ? data.position.toUpperCase() : "Position"}
+              {data.position ? `${data.position}${data.position !== "Current" ? `::${data.positionValue || 0}` : ''}` : "Position"}
             </Badge>
           )}
 
@@ -907,7 +967,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
     console.log('Access updated:', node.label, value);
   };
   
-  const handlePositionChange = (node: TreeNode, value: string) => {
+  const handlePositionChange = (node: TreeNode, value: string, positionValue?: number) => {
     // Create a deep copy of the appropriate trees based on view mode
     const treesToUpdate = viewMode === 'edit' ? editViewTrees : attributeTrees;
     const updatedTrees = JSON.parse(JSON.stringify(treesToUpdate));
@@ -916,7 +976,11 @@ const PermissionChat: React.FC = (): JSX.Element => {
     const updateNode = (trees: TreeNode[]): boolean => {
       for (let i = 0; i < trees.length; i++) {
         if (trees[i].label === node.label) {
-          trees[i].position = value;
+          trees[i] = {
+            ...trees[i],
+            position: value,
+            positionValue: positionValue || 0
+          };
           return true;
         }
         
@@ -938,7 +1002,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
     setAttributeTrees(updatedTrees);
     }
     
-    console.log('Position updated:', node.label, value);
+    console.log('Position updated:', node.label, value, positionValue);
   };
 
   const handleValueChange = (node: TreeNode, value: string) => {
@@ -1044,7 +1108,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
             const policyData = {
               granular_data: createCombinedLabel(node, child),
               data_access: node.access,
-              position: node.position
+              position: node.position === "Current" ? "Current" : `${node.position}::${node.positionValue || 0}`
             };
             
             const apiUrl = import.meta.env.PROD 
@@ -1070,7 +1134,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
           const policyData = {
             granular_data: node.label.includes('(') ? node.label : `${node.label}(${node.value || ''})`,
             data_access: node.access,
-            position: node.position
+            position: node.position === "Current" ? "Current" : `${node.position}::${node.positionValue || 0}`
           };
           
           const apiUrl = import.meta.env.PROD 
@@ -1191,7 +1255,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
       const transformedPolicyData = {
         granular_data: granularData.toLowerCase(),
         data_access: policyData.access.toLowerCase(),
-        position: policyData.position.toLowerCase()
+        position: policyData.position === "Current" ? "Current" : `${policyData.position}::${policyData.positionValue || 0}`
       };
       
       console.log('Deleting policy with data:', transformedPolicyData);
@@ -1408,7 +1472,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
         label: firstNode.label,
         value: parts[0].value,
         access: policy.data_access,
-        position: policy.position,
+        position: policy.position.split('::')[0],
+        positionValue: policy.position.includes('::') ? parseInt(policy.position.split('::')[1]) : 0,
         children: []
       };
 
@@ -1430,7 +1495,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
             label: pathNode.label,
             value: pathNode === nextNode ? parts[i].value : '',
             access: policy.data_access,
-            position: policy.position,
+            position: policy.position.split('::')[0],
+            positionValue: policy.position.includes('::') ? parseInt(policy.position.split('::')[1]) : 0,
             children: []
           };
 
@@ -1458,7 +1524,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
             label: child.label,
             value: '*',
             access: policy.data_access,
-            position: policy.position,
+            position: policy.position.split('::')[0],
+            positionValue: policy.position.includes('::') ? parseInt(policy.position.split('::')[1]) : 0,
             children: []
           });
         });

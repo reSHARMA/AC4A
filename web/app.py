@@ -45,14 +45,14 @@ logger = logging.getLogger(__name__)
 logging.getLogger('engineio').setLevel(logging.ERROR)
 logging.getLogger('socketio').setLevel(logging.ERROR)
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
-logging.getLogger('autogen').setLevel(logging.INFO)
-logging.getLogger('autogen_core').setLevel(logging.INFO)
-logging.getLogger('autogen_agentchat').setLevel(logging.INFO)
-logging.getLogger('autogen_runtime').setLevel(logging.INFO)
+logging.getLogger('autogen').setLevel(logging.ERROR)
+logging.getLogger('autogen_core').setLevel(logging.ERROR)
+logging.getLogger('autogen_agentchat').setLevel(logging.ERROR)
+logging.getLogger('autogen_runtime').setLevel(logging.ERROR)
 
 # Enable full debug for policy_system
 policy_logger = logging.getLogger('policy_system')
-policy_logger.setLevel(logging.DEBUG)
+policy_logger.setLevel(logging.INFO)
 
 # Make sure policy logger has handlers
 if not policy_logger.handlers:
@@ -119,7 +119,7 @@ def get_attribute_trees():
         def process_tree(tree):
             if not isinstance(tree, AttributeTree):
                 logger.warning(f"Found non-AttributeTree object: {type(tree)}")
-                return {"label": str(tree), "value": str(tree), "children": [], "access": "", "position": ""}
+                return {"label": str(tree), "value": str(tree), "children": [], "access": "", "position": "", "positionValue": 0}
             
             key, value = list(tree.value.items())[0]
             node = {
@@ -127,7 +127,8 @@ def get_attribute_trees():
                 "value": value, 
                 "children": [],
                 "access": getattr(tree, 'access', ''),
-                "position": getattr(tree, 'position', '')
+                "position": getattr(tree, 'position', ''),
+                "positionValue": getattr(tree, 'positionValue', 0)
             }
             
             for child in tree.children:
@@ -207,7 +208,7 @@ def emit_policy_update():
         def process_tree(tree):
             if not isinstance(tree, AttributeTree):
                 logger.warning(f"Found non-AttributeTree object: {type(tree)}")
-                return {"label": str(tree), "value": str(tree), "children": [], "access": "", "position": ""}
+                return {"label": str(tree), "value": str(tree), "children": [], "access": "", "position": "", "positionValue": 0}
             
             key, value = list(tree.value.items())[0]
             node = {
@@ -215,7 +216,8 @@ def emit_policy_update():
                 "value": value, 
                 "children": [],
                 "access": getattr(tree, 'access', ''),
-                "position": getattr(tree, 'position', '')
+                "position": getattr(tree, 'position', ''),
+                "positionValue": getattr(tree, 'positionValue', 0)
             }
             
             for child in tree.children:

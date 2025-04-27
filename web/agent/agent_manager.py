@@ -41,9 +41,6 @@ class AgentManager:
 
     def initialize_agents(self) -> Dict[str, Any]:
         """Initialize all agents with the model client"""
-        if self.initialized:
-            logger.info("Agents already initialized, returning existing instances")
-            return self.agents
             
         logger.info("Initializing agents")
         
@@ -70,9 +67,7 @@ class AgentManager:
     
     def get_agents_list(self) -> List[Any]:
         """Get a list of all agent instances for group chat"""
-        if not self.initialized:
-            self.initialize_agents()
-        
+        self.initialize_agents()
         return list(self.agents.values())
     
     def get_agent(self, agent_name: str) -> Optional[Any]:

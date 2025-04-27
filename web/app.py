@@ -45,10 +45,10 @@ logger = logging.getLogger(__name__)
 logging.getLogger('engineio').setLevel(logging.ERROR)
 logging.getLogger('socketio').setLevel(logging.ERROR)
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
-logging.getLogger('autogen').setLevel(logging.ERROR)
-logging.getLogger('autogen_core').setLevel(logging.ERROR)
-logging.getLogger('autogen_agentchat').setLevel(logging.ERROR)
-logging.getLogger('autogen_runtime').setLevel(logging.ERROR)
+logging.getLogger('autogen').setLevel(logging.INFO)
+logging.getLogger('autogen_core').setLevel(logging.INFO)
+logging.getLogger('autogen_agentchat').setLevel(logging.INFO)
+logging.getLogger('autogen_runtime').setLevel(logging.INFO)
 
 # Enable full debug for policy_system
 policy_logger = logging.getLogger('policy_system')
@@ -574,6 +574,14 @@ def add_policy_from_text():
     except Exception as e:
         logger.error(f"Error processing policy text: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 400
+
+@app.route('/set_permission_mode', methods=['POST'])
+def set_permission_mode():
+    data = request.get_json()
+    mode = data.get('mode', 'ask').lower()
+    logger.info(f"Setting permission mode to: {mode}")
+    os.environ['PERMISSION_MANAGEMENT_MODE'] = mode
+    return jsonify({'status': 'ok', 'mode': mode})
 
 if __name__ == '__main__':
     # Don't initialize the agent session when the application starts

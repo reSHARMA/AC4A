@@ -6,6 +6,7 @@ import { FaTrash } from 'react-icons/fa'
 import styles from './Chat.module.css'
 import { io, Socket } from 'socket.io-client'
 import { JSX } from 'react/jsx-runtime'
+import PermissionModeSelector from './ui/PermissionModeSelector'
 
 interface TreeNode {
   label: string;
@@ -1590,38 +1591,51 @@ const PermissionChat: React.FC = (): JSX.Element => {
     }
   };
 
+  // Handler to send mode to backend
+  const handleModeChange = (mode: string) => {
+    console.log("Setting mode in backend:", mode);
+    fetch('http://localhost:5000/set_permission_mode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode }),
+    });
+  };
+
   return (
     <div className={styles.chatContainer}>
       <Box className={styles.messagesContainer} overflow="auto">
         <HStack justify="space-between" mb={4}>
-          <Text 
-            fontSize="xl" 
-            fontWeight="bold" 
-            color="brand.800"
-            letterSpacing="tight"
-            textTransform="uppercase"
-            position="relative"
-            _after={{
-              content: '""',
-              position: 'absolute',
-              bottom: '-2px',
-              left: '0',
-              width: '100%',
-              height: '2px',
-              bg: 'brand.600',
-              transform: 'scaleX(0)',
-              transformOrigin: 'left',
-              transition: 'transform 0.3s ease-in-out',
-              _groupHover: {
-                transform: 'scaleX(1)',
-              },
-            }}
-            _hover={{
-              color: 'brand.700',
-            }}
-          >
-            Permissions Manager
-          </Text>
+          <HStack justify="space-between" align="center" width="100%">
+            <Text 
+              fontSize="xl" 
+              fontWeight="bold" 
+              color="brand.800"
+              letterSpacing="tight"
+              textTransform="uppercase"
+              position="relative"
+              _after={{
+                content: '""',
+                position: 'absolute',
+                bottom: '-2px',
+                left: '0',
+                width: '100%',
+                height: '2px',
+                bg: 'brand.600',
+                transform: 'scaleX(0)',
+                transformOrigin: 'left',
+                transition: 'transform 0.3s ease-in-out',
+                _groupHover: {
+                  transform: 'scaleX(1)',
+                },
+              }}
+              _hover={{
+                color: 'brand.700',
+              }}
+            >
+              Permissions Manager
+            </Text>
+            <Box flexShrink={0}><PermissionModeSelector compact label="Mode:" onModeChange={handleModeChange} /></Box>
+          </HStack>
         </HStack>
 
         <Box mb={4}>

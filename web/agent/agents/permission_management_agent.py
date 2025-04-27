@@ -1,20 +1,33 @@
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 class PermissionManagementAgent:
     ALLOWED_MODES = {"ask", "skip", "infer", "yolo"}
     DEFAULT_PROMPTS = {
-        "ask": "ask the user to please set the necessary permissions to continue.",
-        "skip": "ask the user to please suggest how shall I proceed.",
-        "infer": "ask the user to please allow the required permissions.",
-        "yolo": "tell the user that I am automatically approving the required permissions."
+        "ask": "ask the user to please set the necessary permissions to continue. ",
+        "skip": "ask the user to please suggest how shall I proceed. ",
+        "infer": "ask the user to please allow the required permissions. ",
+        "yolo": "tell the user that I am automatically approving the required permissions. "
     }
 
-    def __init__(self, mode="ask", prompt=None):
+    def __init__(self, mode=None, prompt=None):
         self._mode = None
         self._custom_prompts = {}
+        # Backend cannot access browser localStorage directly.
+        # As a bridge, check for an environment variable set by the frontend or deployment.
+        # If not set, default to 'ask'.
+        mode = os.environ.get("PERMISSION_MANAGEMENT_MODE", "ask").lower()
+        logger.info(f"PERMISSION_MANAGEMENT_MODE: {os.environ.get('PERMISSION_MANAGEMENT_MODE')}")
+        logger.info(f"Permission Management Mode: {mode}")
         self.set_mode(mode)
         if prompt is not None:
             self.set_prompt(prompt)
 
     def set_mode(self, mode):
+        mode = mode.lower()
         if mode not in self.ALLOWED_MODES:
             raise ValueError(f"Invalid mode: {mode}. Allowed modes are: {self.ALLOWED_MODES}")
         self._mode = mode

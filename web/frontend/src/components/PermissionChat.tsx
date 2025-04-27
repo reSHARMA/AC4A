@@ -170,8 +170,8 @@ const TreeView: React.FC<TreeViewProps> = ({
               onClick={(e) => e.stopPropagation()}
               placeholder="Access"
             >
-              <option value="read">Read</option>
-              <option value="write">Write</option>
+              <option value="Read">Read</option>
+              <option value="Write">Write</option>
             </Select>
           ) : (
             <Badge colorScheme="blue">
@@ -189,9 +189,9 @@ const TreeView: React.FC<TreeViewProps> = ({
               onClick={(e) => e.stopPropagation()}
               placeholder="Position"
             >
-              <option value="previous">Previous</option>
-              <option value="current">Current</option>
-              <option value="next">Next</option>
+              <option value="Previous">Previous</option>
+              <option value="Current">Current</option>
+              <option value="Next">Next</option>
             </Select>
           ) : (
             <Badge colorScheme="purple">
@@ -1042,8 +1042,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
           chainableChildren.forEach(child => {
             const policyData = {
               granular_data: createCombinedLabel(node, child),
-              data_access: node.access.toLowerCase(),
-              position: node.position.toLowerCase()
+              data_access: node.access,
+              position: node.position
             };
             
             const apiUrl = import.meta.env.PROD 
@@ -1068,8 +1068,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
           // Create regular policy for non-chainable node
           const policyData = {
             granular_data: node.label.includes('(') ? node.label : `${node.label}(${node.value || ''})`,
-            data_access: node.access.toLowerCase(),
-            position: node.position.toLowerCase()
+            data_access: node.access,
+            position: node.position
           };
           
           const apiUrl = import.meta.env.PROD 

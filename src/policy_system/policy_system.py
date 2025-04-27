@@ -177,15 +177,15 @@ class PolicySystem:
         logger.debug(f"For attributes: {attributes}")
 
         for attr in rule:
+            logger.debug(f"Checking attribute: {attr}")
             rule_value = rule[attr]
+            logger.debug(f"Rule value: {rule_value}")
 
             if attr == 'expiry':
                 # Compare datetime values directly
                 if datetime.now() >= rule_value:
                     return False
                 continue  
-
-            logger.debug(f"Parsing rule value: {rule_value}")
 
             if rule_value == '*':
                 continue

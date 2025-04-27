@@ -7,8 +7,8 @@ logger.setLevel(logging.INFO)
 class PermissionManagementAgent:
     ALLOWED_MODES = {"ask", "skip", "infer", "yolo"}
     DEFAULT_PROMPTS = {
-        "ask": "ask the user to please set the necessary permissions to continue. ",
-        "skip": "ask the user to please suggest how shall I proceed. ",
+        "ask": "ask the user to please set the necessary permissions to continue. If available, share the error with the user so that they can set the appropriate permissions.",
+        "skip": "suggest a work around which will not require using the resource you are not able to access or ask the user to please suggest how to proceed. ",
         "infer": "ask the user to please allow the required permissions. ",
         "yolo": "tell the user that I am automatically approving the required permissions. "
     }

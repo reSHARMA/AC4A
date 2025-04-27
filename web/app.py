@@ -353,6 +353,9 @@ def handle_connect():
     # Reset the conversation history and session on new connection
     conversation_history = []
 
+    # Emit system_ready event to the client
+    emit('system_ready')
+
     if not is_agent_session_active():
         logger.info("Agent session not active, resetting")
         reset_agent_session()

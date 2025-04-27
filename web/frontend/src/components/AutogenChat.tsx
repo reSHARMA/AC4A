@@ -50,6 +50,11 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
       }
     })
     
+    // Listen for system_ready event from backend
+    socketRef.current.on('system_ready', () => {
+      setMessages(prev => [...prev, { role: 'System', content: 'System is ready' }])
+    })
+    
     // Listen for different message types
     listenForMessages(socketRef.current, 'agent_message', (message: Message) => {
       setMessages(prev => [...prev, message])
@@ -102,7 +107,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
         {messages.length === 0 ? (
           <div className={styles.message}>
             <div className={styles.messageHeader}>System</div>
-            <div>System is ready to start.</div>
+            <div>System is initializing...</div>
           </div>
         ) : (
           messages.map((message, index) => (

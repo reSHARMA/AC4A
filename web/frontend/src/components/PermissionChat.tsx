@@ -54,7 +54,7 @@ const TreeView: React.FC<TreeViewProps> = ({
   const [isEditingValue, setIsEditingValue] = useState(false);
   const [editedValue, setEditedValue] = useState(data.value);
   const [isEditingPositionValue, setIsEditingPositionValue] = useState(false);
-  const [editedPositionValue, setEditedPositionValue] = useState(data.positionValue || 0);
+  const [editedPositionValue, setEditedPositionValue] = useState(data.positionValue || 1);
   const hasChildren = data.children && data.children.length > 0;
 
   const handleAccessChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -69,7 +69,7 @@ const TreeView: React.FC<TreeViewProps> = ({
       if (newPosition === "Current") {
         onPositionChange(data, newPosition, 0);
       } else {
-        onPositionChange(data, newPosition, data.positionValue || 0);
+        onPositionChange(data, newPosition, data.positionValue || 1);
       }
     }
   };
@@ -93,7 +93,7 @@ const TreeView: React.FC<TreeViewProps> = ({
       handlePositionValueSubmit();
     } else if (e.key === 'Escape') {
       setIsEditingPositionValue(false);
-      setEditedPositionValue(data.positionValue || 0);
+      setEditedPositionValue(data.positionValue || 1);
     }
   };
 
@@ -249,14 +249,14 @@ const TreeView: React.FC<TreeViewProps> = ({
                       setIsEditingPositionValue(true);
                     }}
                   >
-                    {data.positionValue || 0}
+                    {data.positionValue || 1}
                   </Badge>
                 )
               )}
             </HStack>
           ) : (
             <Badge colorScheme="purple">
-              {data.position ? `${data.position}${data.position !== "Current" ? `::${data.positionValue || 0}` : ''}` : "Position"}
+              {data.position ? `${data.position}${data.position !== "Current" ? `::${data.positionValue || 1}` : ''}` : "Position"}
             </Badge>
           )}
 
@@ -979,7 +979,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
           trees[i] = {
             ...trees[i],
             position: value,
-            positionValue: positionValue || 0
+            positionValue: positionValue || 1
           };
           return true;
         }
@@ -1108,7 +1108,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
             const policyData = {
               granular_data: createCombinedLabel(node, child),
               data_access: node.access,
-              position: node.position === "Current" ? "Current" : `${node.position}::${node.positionValue || 0}`
+              position: node.position === "Current" ? "Current" : `${node.position}::${node.positionValue || 1}`
             };
             
             const apiUrl = import.meta.env.PROD 
@@ -1134,7 +1134,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
           const policyData = {
             granular_data: node.label.includes('(') ? node.label : `${node.label}(${node.value || ''})`,
             data_access: node.access,
-            position: node.position === "Current" ? "Current" : `${node.position}::${node.positionValue || 0}`
+            position: node.position === "Current" ? "Current" : `${node.position}::${node.positionValue || 1}`
           };
           
           const apiUrl = import.meta.env.PROD 
@@ -1255,7 +1255,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
       const transformedPolicyData = {
         granular_data: granularData.toLowerCase(),
         data_access: policyData.access.toLowerCase(),
-        position: policyData.position === "Current" ? "Current" : `${policyData.position}::${policyData.positionValue || 0}`
+        position: policyData.position === "Current" ? "Current" : `${policyData.position}::${policyData.positionValue || 1}`
       };
       
       console.log('Deleting policy with data:', transformedPolicyData);
@@ -1473,7 +1473,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
         value: parts[0].value,
         access: policy.data_access,
         position: policy.position.split('::')[0],
-        positionValue: policy.position.includes('::') ? parseInt(policy.position.split('::')[1]) : 0,
+        positionValue: policy.position.includes('::') ? parseInt(policy.position.split('::')[1]) : 1,
         children: []
       };
 
@@ -1496,7 +1496,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
             value: pathNode === nextNode ? parts[i].value : '',
             access: policy.data_access,
             position: policy.position.split('::')[0],
-            positionValue: policy.position.includes('::') ? parseInt(policy.position.split('::')[1]) : 0,
+            positionValue: policy.position.includes('::') ? parseInt(policy.position.split('::')[1]) : 1,
             children: []
           };
 
@@ -1525,7 +1525,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
             value: '*',
             access: policy.data_access,
             position: policy.position.split('::')[0],
-            positionValue: policy.position.includes('::') ? parseInt(policy.position.split('::')[1]) : 0,
+            positionValue: policy.position.includes('::') ? parseInt(policy.position.split('::')[1]) : 1,
             children: []
           });
         });

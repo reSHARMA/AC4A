@@ -1,5 +1,6 @@
 import logging
 from autogen_agentchat.agents import AssistantAgent
+from .permission_management_agent import PermissionManagementAgent
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -22,6 +23,8 @@ class BaseAgent():
         self.tools = tools
         self.model_client = model_client
         self.agent = None
+        self.permission_management_agent = PermissionManagementAgent(mode="ask")
+        self.system_message += f"\n\n{self.permission_management_agent.get_prompt()}"
         
     def create_agent(self):
         """

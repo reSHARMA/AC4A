@@ -1170,6 +1170,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
       }
     }
     
+    if (result === '') {
+      result = nodesWithAllValues[0] + '(*)';
+    }
+
     console.log('Generated label:', result);
     return result;
   };
@@ -1488,7 +1492,9 @@ const PermissionChat: React.FC = (): JSX.Element => {
       if (currentNode.children && currentNode.children.length > 0) {
         currentNode.children.forEach(child => {
           if (isChainable(node, child)) {
-            chainableChildren.push(child);
+            if (node.label !== child.label) {
+              chainableChildren.push(child);
+            }
           }
           traverse(child);
         });

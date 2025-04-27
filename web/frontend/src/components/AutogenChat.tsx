@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Socket } from 'socket.io-client'
 import styles from './Chat.module.css'
 import { createSocketConnection, emitMessage, listenForMessages } from '../utils/socketUtils'
+import ReactMarkdown from 'react-markdown'
 
 interface Message {
   role: string
@@ -120,7 +121,11 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
               <div className={styles.messageHeader}>
                 {message.role === 'user' ? 'You' : 'Assistant'}
               </div>
-              <div>{message.content}</div>
+              {message.role === 'user' ? (
+                <div>{message.content}</div>
+              ) : (
+                <ReactMarkdown>{message.content}</ReactMarkdown>
+              )}
             </div>
           ))
         )}

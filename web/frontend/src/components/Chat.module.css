@@ -78,4 +78,41 @@
 
 .button:hover:not(:disabled) {
   background-color: #2563eb;
+}
+
+.typingIndicator {
+  display: flex;
+  align-items: center;
+  color: #64748b;
+  font-size: 1rem;
+  margin: 0.5rem 0 0.5rem 0.5rem;
+  min-height: 24px;
+}
+
+.typingDot {
+  height: 8px;
+  width: 8px;
+  margin: 0 2px;
+  background-color: #64748b;
+  border-radius: 50%;
+  display: inline-block;
+  animation: typing-bounce 1.4s infinite both;
+}
+
+.typingDot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.typingDot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing-bounce {
+  0%, 80%, 100% {
+    transform: scale(0.7);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
 } 

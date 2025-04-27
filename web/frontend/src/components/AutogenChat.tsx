@@ -22,6 +22,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
   const socketRef = useRef<Socket | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const [isAssistantTyping, setIsAssistantTyping] = useState(false)
 
   useEffect(() => {
     // Create socket connection with debugging
@@ -41,6 +42,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
       console.log('Received input request:', data)
       setIsWaitingForInput(true)
       setInputPrompt(data.prompt)
+      setIsAssistantTyping(false)
       
       // Add the prompt as a system message
       setMessages(prev => [...prev, { role: 'System', content: data.prompt }])
@@ -59,6 +61,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
     // Listen for different message types
     listenForMessages(socketRef.current, 'agent_message', (message: Message) => {
       setMessages(prev => [...prev, message])
+      setIsAssistantTyping(false)
     })
     
     listenForMessages(socketRef.current, 'user_message', (message: Message) => {
@@ -100,6 +103,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
     setMessages(prev => [...prev, message])
     setInput('')
     setIsWaitingForInput(false)
+    setIsAssistantTyping(true)
   }
 
   return (
@@ -128,6 +132,14 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
               )}
             </div>
           ))
+        )}
+        {isAssistantTyping && (
+          <div className={styles.typingIndicator}>
+            Assistant is typing
+            <span className={styles.typingDot}></span>
+            <span className={styles.typingDot}></span>
+            <span className={styles.typingDot}></span>
+          </div>
         )}
         <div ref={messagesEndRef} />
       </div>

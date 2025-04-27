@@ -2,7 +2,6 @@ import os
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 class PermissionManagementAgent:
     ALLOWED_MODES = {"ask", "skip", "infer", "yolo"}

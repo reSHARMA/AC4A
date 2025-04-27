@@ -37,11 +37,17 @@ from src.utils.attribute_tree import AttributeTree
 from src.prompts import POLICY_GENERATOR_WILDCARD_V2
 from src.utils.dummy_data import call_openai_api
 
-# Set up logging - change level to INFO to reduce logs
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Configure logging
+logging.basicConfig(
+    level=logging.ERROR,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('debug.log')
+    ]
+)
 
-# Disable Flask-SocketIO and autogen debug logs
+# Set log levels for specific modules
 logging.getLogger('engineio').setLevel(logging.ERROR)
 logging.getLogger('socketio').setLevel(logging.ERROR)
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
@@ -50,17 +56,9 @@ logging.getLogger('autogen_core').setLevel(logging.ERROR)
 logging.getLogger('autogen_agentchat').setLevel(logging.ERROR)
 logging.getLogger('autogen_runtime').setLevel(logging.ERROR)
 
-# Enable full debug for policy_system
-policy_logger = logging.getLogger('policy_system')
-policy_logger.setLevel(logging.INFO)
-
-# Make sure policy logger has handlers
-if not policy_logger.handlers:
-    # Create console handler with formatting
-    console = logging.StreamHandler()
-    console.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
-    policy_logger.addHandler(console)
-    policy_logger.propagate = False  # Avoid duplicate logs
+# Get logger for this module
+logger = logging.getLogger(__name__)
+policy_logger = logging.getLogger('web.policy_system')
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key'  # Required for session management

@@ -98,7 +98,10 @@ policy_system.add_policy({
    - Represent hierarchical or multi-level data requests by appropriately nesting keys in `granular_data`. For instance:
      - `Calendar:Month(July)::Calendar:Week(1)` represents week 1 of July within the calendar hierarchy.
 
-4. **Output Structure:**
+4. **Data Without Value:**
+   - If the data does not have a value, then the value should be *, example Calendar:Month(*)
+  
+5. **Output Structure:**
    - First, provide a brief **reasoning** for each generated policy, summarizing how it satisfies the request.
    - Then, output the policy in a **formatted Python code block**.
 """
@@ -510,46 +513,37 @@ You are an expert in analyzing tasks assigned to different applications and infe
 
 For every task, follow these steps to determine access needs:
 
-1. **Identify Specific Data Required**: From the set of all available data <ALL DATA>, determine the precise data required to complete the task. For example, if the task refers to checking availability in December, the relevant data would specifically be "Calendar::Month" with c=value as December."
+1. **Identify Specific Data Required**: From the set of all available data `<ALL DATA>`, determine the precise type of data required to complete the task. When direct linkage between task details and a specific data node is unclear, infer the highest-level relevant data type that encompasses the task details.
 
 2. **Determine Type of Access**: Decide whether the task requires "Read" or "Write" access to the identified data. For instance:
-   - If a task involves only checking or retrieving data, it would require **Read-Only Access**.
-   - If a task involves modifying or creating data, it would require **Write Access**.
+   - If a task involves checking or retrieving data, it requires **Read-Only Access**.
+   - If a task involves modification or creation of data, it requires **Write Access**.
 
-3. **Define the Data Range**: Determine if the required access is limited to a specific range (e.g., a month, day, or year). Ensure that the range is explicitly defined. For example:
-   - If the task specifies December, the access should be scoped to data for December only.
-   - If the task doesn't explicitly limit the range but logically implies continuity, consider adjoining periods (e.g., previous or next months) *only if necessary*.
+3. **Define the Data Range**: When determining the access scope:
+   - If a task lacks precise data or if the identified data does not allow for filtering at finer granularity, grant access to the broader data type or category instead.
+   - Do not assume specific values unless they are explicitly stated or directly implied in the task.
 
-4. **Output Permission Requests**: Generate explicit permission requests for each identified data-access need in the following format:
-   - Clearly specify the data type.
+4. **Output Permission Requests**: Generate access permission requests in the following format:
+   - Clearly specify the data type and value (if applicable).
    - State whether it's "Read-Only" or "Write" access.
-   - Include the range of data that should be accessible, if applicable.
+   - Include any accessible range, but default to the entire node if specific details do not allow scoping further.
 
-**Important Constraints**:
-- Do not make assumptions beyond the given task instructions. Only infer based on explicitly stated or directly implied information.
-- Do not create a permission speculatively, only create a permission if the task explicitly mentions it.
-- For tasks involving multiple data sources, access types, or ranges, output a new permission statement for each.
-- Each permission request must appear on a separate line, and the statements should not include any extra commentary or explanation.
-- <ALL DATA> has data hierarchy for all the data types. If you have created a permission for a node then it is automatically granted for the sub-tree and need not be granted again.
-- If there is no specific task, just questions or anything else, do not create a permission.
-- Ouptut empty string "", if you do not find any permission required.
+### Important Constraints:
+1. If there is ambiguity in the data value, grant access to the relevant high-level data.
+2. Avoid generating redundant permissions — permissions apply to sub-nodes automatically.
+3. Do not create permissions for tasks that are non-data-related or do not require explicit access.
+4. If no permissions need to be generated for a task, return an empty string `""`.
 
-### Example
-Input Task:  
-"Calendar: Check the user's availability in December to plan a vacation to Seattle."
-"Calendar: Check availability in mid-July on the calendar to identify available dates for the cruise to Alaska."
-"Wallet: Use the Alaska Airline credit card to pay $2399.99 for the confirmed booking of the cruise 'Voyager of the Glaciers'."
-"Expedia: Proceed to book the Northern Marvels cruise departing from Seward, Alaska, on July 10, 2025, with a Suite cabin."
-"Calendar: Add the 'Glacier Explorer' cruise trip to the calendar from July 10 to July 20, 2025, as a confirmed booking."
-"Calendar: Check availability in mid-July on the calendar to identify available dates for the cruise to Alaska."
+### Examples:
+Input: "Calendar: Check the user's availability in December to plan a vacation to Seattle."
+Output: "Grant read-only access to Calendar Month data for December only."
 
-Output:
-Grant read-only access to Calendar Month data for December only.
-Grant read-only access to Calendar Month data for July only.
-Grant read-only access to Wallet Credit Card data for Alaska Airline credit card only.
-Grant write access to Expedia Cruise data for Northern Marvels cruise.
-Grant write access to Calendar Month data for July only.
-Grant read-only access to Calendar Month data for July only.
+Input: "Expedia: Proceed to book a Northern Marvels cruise departing from Seward, Alaska, on July 10, 2025, with a Suite cabin."
+Output: "Grant write access to Expedia Cruise data for Northern Marvels cruise."
 
-Now, generate permission requests strictly following these guidelines.
+Input: "Expedia: Search for flights departing from Salt Lake City (SLC) to Seattle (SEA) on January 14."
+Output: "Grant read-only access to all Expedia Flight data."
+
+Input: "Wallet: Use the Alaska Airline credit card to pay $2399.99 for the confirmed booking."
+Output: "Grant write access to Wallet Credit Card data for Alaska Airline credit card only."
 """

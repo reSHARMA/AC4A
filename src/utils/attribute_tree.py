@@ -2,8 +2,7 @@ import logging
 from src.utils.logger import get_logger
 
 # Set up logger
-logger = get_logger('attribute_tree')
-logger.setLevel(logging.DEBUG)
+logger = get_logger('__name__')
 
 # AttributeTree class to represent hierarchical attribute definitions
 

@@ -4,6 +4,8 @@ import uuid
 import queue
 from datetime import datetime, timedelta
 from contextlib import aclosing
+import asyncio
+import os
 
 from autogen_agentchat.agents import AssistantAgent, UserProxyAgent
 from autogen_agentchat.teams import SelectorGroupChat
@@ -15,6 +17,9 @@ from .web_input import web_input_func
 from .selector import selector_exp
 from .queues import agent_message_queue, set_agent_session_active
 from .agent_manager import agent_manager
+from src.prompts import PERMISSION_REQUIRED
+from src.utils.dummy_data import call_openai_api
+from web.utils.events import emit_policy_update
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -121,6 +126,25 @@ async def run_agent() -> str:
                         formatted_message = ""
                         
                         if source == "Planner":
+                            # Get the current mode
+                            mode = os.environ.get('PERMISSION_MANAGEMENT_MODE', 'ask').lower()
+                            
+                            if mode in ['infer', 'yolo']:
+                                all_data = "<ALL DATA>\n"
+                                # Get and print attribute trees
+                                attribute_trees = agent_manager.get_attribute_trees()
+                                for i, tree in enumerate(attribute_trees):
+                                    all_data += f"{tree.get_tree_string()}\n"
+                                all_data += "</ALL DATA>"
+                                logger.info(f"[agent_core.py] All data: {all_data}")
+                                permission_required = call_openai_api(PERMISSION_REQUIRED + all_data, content)
+                                logger.info(f"[agent_core.py] Permission required: {permission_required}")
+                                for permission in permission_required.split("\n"):
+                                    success = agent_manager.policy_system.add_policies_from_text(permission)
+                                    if not success:
+                                        logger.info(f"[agent_core.py] Failed to add permission: {permission}")
+                                emit_policy_update()
+
                             # Clean up markdown formatting
                             content = re.sub(r'\*\*|\*|__|\[|\]|\(|\)|`|#', '', content)
                             
@@ -137,6 +161,9 @@ async def run_agent() -> str:
                                     formatted_message = f"{source}: {desc}"
                                 else:
                                     formatted_message = f"{source}: {content}"
+                            
+                            # Emit policy update after processing planner message
+                            emit_policy_update()
                         elif source == "User":
                             # Skip user messages to prevent duplication
                             continue

@@ -3,6 +3,8 @@ eventlet.monkey_patch()
 
 import sys
 import os
+import json
+from datetime import datetime
 
 # Add the root directory to the Python path
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -36,6 +38,9 @@ from web.agent.agent_manager import agent_manager
 from src.utils.attribute_tree import AttributeTree
 from src.prompts import POLICY_GENERATOR_WILDCARD_V2
 from src.utils.dummy_data import call_openai_api
+
+from web.utils.events import socketio, emit_policy_update
+from web.utils.socket_io import init_socketio
 
 # Configure logging
 logging.basicConfig(
@@ -71,14 +76,7 @@ CORS(app, resources={
         "max_age": 3600
     }
 })
-socketio = SocketIO(app, 
-    cors_allowed_origins="*", 
-    allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers"],
-    transports=['websocket'],
-    async_mode='eventlet',
-    message_queue='redis://localhost:6379/0',
-    channel='socketio'
-)
+socketio = init_socketio(app)
 
 # Store conversation history
 conversation_history = []
@@ -193,66 +191,6 @@ def add_policy():
     except Exception as e:
         logger.error(f"Error in add_policy: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
-
-def emit_policy_update():
-    """Emit policy update to all connected clients"""
-    try:
-        logger.info("Emitting policy update to all connected clients")
-        
-        # Get attribute trees
-        attribute_trees = agent_manager.get_attribute_trees()
-        
-        # Process trees into a format suitable for UI display
-        def process_tree(tree):
-            if not isinstance(tree, AttributeTree):
-                logger.warning(f"Found non-AttributeTree object: {type(tree)}")
-                return {"label": str(tree), "value": str(tree), "children": [], "access": "", "position": "", "positionValue": 0}
-            
-            key, value = list(tree.value.items())[0]
-            node = {
-                "label": key, 
-                "value": value, 
-                "children": [],
-                "access": getattr(tree, 'access', ''),
-                "position": getattr(tree, 'position', ''),
-                "positionValue": getattr(tree, 'positionValue', 0)
-            }
-            
-            for child in tree.children:
-                node["children"].append(process_tree(child))
-            
-            return node
-        
-        # Process each tree in granular_data
-        processed_trees = []
-        seen_keys = set()
-        
-        for tree in attribute_trees:
-            if isinstance(tree, AttributeTree):
-                key, _ = list(tree.value.items())[0]
-                if key not in seen_keys:
-                    seen_keys.add(key)
-                    processed_tree = process_tree(tree)
-                    processed_trees.append(processed_tree)
-                    logger.info(f"Added unique processed tree: {key}")
-                else:
-                    logger.info(f"Skipping duplicate processed tree: {key}")
-            else:
-                processed_tree = process_tree(tree)
-                processed_trees.append(processed_tree)
-        
-        # Get policies
-        policies = agent_manager.policy_system.policy_rules
-        
-        # Emit the update
-        socketio.emit('policy_update', {
-            "attribute_trees": processed_trees,
-            "policies": policies
-        })
-        
-        logger.info("Policy update emitted successfully")
-    except Exception as e:
-        logger.error(f"Error emitting policy update: {str(e)}", exc_info=True)
 
 @app.route('/get_policies', methods=['GET'])
 def get_policies():
@@ -541,35 +479,15 @@ def add_policy_from_text():
         if not policy_text:
             return jsonify({'error': 'No policy text provided'}), 400
             
-        # Call OpenAI to generate policy code
-        generated_code = call_openai_api(POLICY_GENERATOR_WILDCARD_V2, policy_text)
+        # Generate and add policies
+        success = agent_manager.policy_system.add_policies_from_text(policy_text)
         
-        # Extract code blocks from the response
-        import re
-        def extract_code_blocks(code: str) -> list:
-            pattern = r"```python(.*?)```"
-            code_blocks = re.findall(pattern, code, re.DOTALL)
-            return [block.strip() for block in code_blocks]
-            
-        snippets = extract_code_blocks(generated_code)
-        
-        # Execute each policy snippet
-        success = True
-        for snippet in snippets:
-            try:
-                # Create a dictionary with policy_system for exec
-                exec_globals = {"policy_system": agent_manager.policy_system}
-                exec(snippet, exec_globals)
-            except Exception as e:
-                logger.error(f"Error executing policy: {str(e)}", exc_info=True)
-                success = False
-                
         if success:
-            # Emit policy update to all connected clients
-            emit_policy_update()
-            return jsonify({'status': 'success', 'message': 'Policies added successfully'})
+            logger.info("Successfully added all policies")
+            return jsonify({"status": "success", "message": "Policies added successfully"})
         else:
-            return jsonify({'error': 'Some policies failed to execute'}), 400
+            logger.error("Failed to add some policies")
+            return jsonify({"status": "error", "message": "Failed to add some policies"}), 500
             
     except Exception as e:
         logger.error(f"Error processing policy text: {str(e)}", exc_info=True)

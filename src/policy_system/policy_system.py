@@ -2,12 +2,12 @@ from datetime import datetime
 from src.utils.attribute_tree import AttributeTree
 from src.utils.logger import get_logger
 from src.utils.dummy_data import call_openai_api
-from src.prompts import POLICY_TEXT
+from src.prompts import POLICY_TEXT, POLICY_GENERATOR_WILDCARD_V2
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 # Set up logger for policy system
-logger = get_logger('policy_system')
+logger = get_logger(__name__)
 
 app = Flask(__name__)
 CORS(app, resources={
@@ -15,7 +15,9 @@ CORS(app, resources={
     r"/get_policies": {"origins": "*"},
     r"/add_policy": {"origins": "*"},
     r"/delete_policy": {"origins": "*"},
-    r"/convert_to_text": {"origins": "*"}
+    r"/convert_to_text": {"origins": "*"},
+    r"/generate_policies_from_text": {"origins": "*"},
+    r"/add_policies_from_text": {"origins": "*"}
 })
 
 class PolicySystem:
@@ -344,16 +346,59 @@ class PolicySystem:
         logger.warning(f"No matching policy found for key: {target_key}")
         return False
 
-@app.route('/convert_to_text', methods=['POST'])
-def convert_to_text():
-    try:
-        data = request.get_json()
-        policy = {
-            'granular_data': data['granular_data'],
-            'data_access': data['data_access'],
-            'position': data['position']
-        }
-        text = policy_system.text(policy=policy, mode="decl")
-        return jsonify({'text': text})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+    def add_policies_from_text(self, policy_text: str) -> bool:
+        """
+        Generate and add policies from text input.
+        
+        Args:
+            policy_text (str): Text describing the policies to generate and add
+            
+        Returns:
+            bool: True if all policies were added successfully, False otherwise
+        """
+        logger.info("Generating and adding policies from text")
+        
+        if policy_text == "":
+            logger.info("[policy_system.py] Empty policy text")
+            return True
+        # Generate policy code
+        generated_code = call_openai_api(POLICY_GENERATOR_WILDCARD_V2, policy_text)
+        logger.info(f"[policy_system.py] Generated code: {generated_code}")
+        # Extract code blocks from the response
+        import re
+        def extract_code_blocks(code: str) -> list:
+            pattern = r"```python(.*?)```"
+            code_blocks = re.findall(pattern, code, re.DOTALL)
+            return [block.strip() for block in code_blocks]
+            
+        snippets = extract_code_blocks(generated_code)
+        
+        # Execute each policy snippet
+        success = True
+        for snippet in snippets:
+            try:
+                # Create a dictionary with policy_system for exec
+                exec_globals = {"policy_system": self}
+                exec(snippet, exec_globals)
+            except Exception as e:
+                logger.error(f"Error executing policy: {str(e)}", exc_info=True)
+                success = False
+                
+        return success
+
+    def generate_policies_from_text(self, policy_text: str) -> str:
+        """
+        Generate policy code from text input using OpenAI.
+        
+        Args:
+            policy_text (str): Text describing the policies to generate
+            
+        Returns:
+            str: Generated policy code
+        """
+        logger.info("Generating policies from text")
+        from src.prompts import POLICY_GENERATOR_WILDCARD_V2
+        from src.utils.dummy_data import call_openai_api
+        
+        generated_code = call_openai_api(POLICY_GENERATOR_WILDCARD_V2, policy_text)
+        return generated_code

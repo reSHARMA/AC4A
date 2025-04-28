@@ -140,7 +140,7 @@ async def run_agent() -> str:
                                 permission_required = call_openai_api(PERMISSION_REQUIRED + all_data, content)
                                 logger.info(f"[agent_core.py] Permission required: {permission_required}")
                                 for permission in permission_required.split("\n"):
-                                    success = agent_manager.policy_system.add_policies_from_text(permission)
+                                    success = agent_manager.policy_system.add_policies_from_text(permission, agent_manager)
                                     if not success:
                                         logger.info(f"[agent_core.py] Failed to add permission: {permission}")
                                 emit_policy_update()

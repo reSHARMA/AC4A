@@ -356,9 +356,10 @@ class ExpediaAgent(BaseAgent):
         - guest_phone: The guest phone
         - guest_address: The guest address (optional)
 
-        use `get_user_input` tool to ask the user for user input, like confirmation of the booking details, etc.
+        use `web_input_func` tool to ask the user for user input, like confirmation of the booking details, etc.
         it takes a single parameter which is the question to ask the user.
 
+        
         Return "done" when your work is completed.
         """
         

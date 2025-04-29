@@ -8,4 +8,7 @@
 
 # Wallet
 ## get credit card pin of my amex gold card
-## 
+## which of my credit card ends with 9005
+
+# Expedia
+## search flights between sea to slc for 16th June 2025

@@ -117,7 +117,7 @@ class WalletAgent(BaseAgent):
 
         wallet_get_credit_card_info tool takes card_name as input and returns all the credit card information, always including the card type, card number, card expiry date, card pin and the billing zip code for the given card name.
 
-        If the card information is requested but card name is not provided, ask the user for the card name using `web_input` tool that only takes a single input as a string which is the message to the user.
+        If the card information is requested but card name is not provided, ask the user for the card name using `web_input_func` tool that only takes a single input as a string which is the message to the user.
 
         Use the tool `wallet_get_credit_card_info` to get the credit card information. The tool takes the following parameters:
         - card_name: The name of the card to get the information for, example "Venture X".

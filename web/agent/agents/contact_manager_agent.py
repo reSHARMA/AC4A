@@ -132,7 +132,7 @@ class ContactManagerAgent(BaseAgent):
 
         `contact_get_contact_info` tool takes name as input and returns all the contact information, including phone, address, email, relation, birthday, and notes for the given name.
 
-        use `get_user_input` tool to ask the user for user input.
+        use `web_input_func` tool to ask the user for user input.
 
         Return "done" when your work is completed.
         """

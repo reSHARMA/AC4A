@@ -168,7 +168,7 @@ class CalendarAgent(BaseAgent):
         Asume offset-naive datetime for simplicity.
         Use the tools available to you to fulfill the request.
 
-        use `get_user_input` tool to ask the user for user input, like confirmation of the booking details, etc.
+        use `web_input_func` tool to ask the user for user input, like confirmation of the booking details, etc.
         it takes a single parameter which is the question to ask the user.
         
         Output "done" when the task given to you is completed. Do not suggest any other actions to the user.

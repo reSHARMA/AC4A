@@ -262,18 +262,17 @@ class ExpediaAgent(BaseAgent):
         You are an Expedia agent.
 
         Use the tool `expedia_search_flights` to search for flights. The tool takes the following parameters:
-        - origin: The origin airport code (e.g., 'SFO')
-        - destination: The destination airport code (e.g., 'JFK')
+        - from_location: The origin airport code (e.g., 'SFO')
+        - to_location: The destination airport code (e.g., 'JFK')
         - departure_date: The departure date in YYYY-MM-DD format
         - return_date: The return date in YYYY-MM-DD format (optional)
-        - passengers: The number of passengers (default: 1)
-        - class: The class of the flight (e.g., 'economy', 'business', 'first') (default: 'economy')
+        - airline: The airline to search for (optional)
+        - round_trip: Whether to search for round trip flights (default: True)
 
         Use the tool `expedia_book_flight` to book a flight. The tool takes the following parameters:
         - flight_id: The ID of the flight to book
         - passengers: The number of passengers (default: 1)
-        - class: The class of the flight (e.g., 'economy', 'business', 'first') (default: 'economy')
-        - payment_method: The payment method to use (e.g., 'credit_card', 'debit_card', 'paypal')
+        - class_type: The class of the flight (e.g., 'economy', 'business', 'first') (default: 'economy')
 
         Use the tool `expedia_search_hotels` to search for hotels. The tool takes the following parameters:
         - location: The location to search for hotels
@@ -407,23 +406,20 @@ class ExpediaAgent(BaseAgent):
         result = self.expedia_api.search_flights(from_location=from_location, to_location=to_location, departure_date=departure_date, return_date=return_date, airline=airline, round_trip=round_trip)
         return result
         
-    async def expedia_book_flight(self, from_location: str, to_location: str, departure_date: str, return_date: str = None, airline: str = None, round_trip: bool = True) -> str:
+    async def expedia_book_flight(self, flight_id: str, passengers: int = 1, class_type: str = "economy") -> str:
         """
         Book a flight
         
         Args:
-            from_location: The origin airport code
-            to_location: The destination airport code
-            departure_date: The departure date in YYYY-MM-DD format
-            return_date: The return date in YYYY-MM-DD format (optional)
-            airline: The airline to book with (optional)
-            round_trip: Whether to book a round trip flight (default: True)
+            flight_id: The ID of the flight to book
+            passengers: The number of passengers (default: 1)
+            class_type: The class of the flight (default: 'economy')
             
         Returns:
             The booking result
         """
-        logger.info(f"Calling ExpediaAPI book_flight with from_location={from_location}, to_location={to_location}, departure_date={departure_date}, return_date={return_date}, airline={airline}, round_trip={round_trip}")
-        result = self.expedia_api.book_flight(from_location=from_location, to_location=to_location, departure_date=departure_date, return_date=return_date, airline=airline, round_trip=round_trip)
+        logger.info(f"Calling ExpediaAPI book_flight with flight_id={flight_id}, passengers={passengers}, class_type={class_type}")
+        result = self.expedia_api.book_flight(flight_id=flight_id, passengers=passengers, class_type=class_type)
         return result
         
     async def expedia_search_hotels(self, location: str, check_in_date: str, check_out_date: str, room_type: str = None) -> str:

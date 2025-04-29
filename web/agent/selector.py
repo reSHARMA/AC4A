@@ -61,7 +61,8 @@ def selector_exp(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
             agent = "Planner"
         else:
             logger.error(f"Using message source as agent: {messages[-1].source}")
-            agent = messages[-1].source
+            agent = "Planner"
+            # agent = messages[-1].source
     
     logger.error(f"Returning agent: {agent}")
     

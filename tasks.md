@@ -12,3 +12,6 @@
 
 # Expedia
 ## search flights between sea to slc for 16th June 2025
+
+# Combinations
+## Book the cheapest flight ticket for the first week of January 2026 from Sea to Slc based on the constraint on my calendar. Pay using my amex gold card and add the trip to my calendar.

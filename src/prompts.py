@@ -20,12 +20,15 @@ Your role is to translate a user's request for data access into well-defined emb
    - Policies must be added to the `policy_system` using the `add_policy` method.
    - Each policy is represented as a Python dictionary with three mandatory keys:
      - **`granular_data`**: Identifies the specific data type and any corresponding value or temporal range and must only be from <ALL DATA>
+     -- The labels must always be from <ALL DATA> and must never be made up no matter how much data is provided.
      - **`data_access`**: Specifies the level of access: either `Read` or `Write`.
      - **`position`**: Specifies the temporal position (e.g., `Previous`, `Current`, or `Next`), or defaults to `Current` if no range is specified.
 
-4. **Data Type:**
-   - The data type must be from <ALL DATA>.
-   - The value for the data type must be a single atomic values which can be passed to a function, for example, avoid 10th instead use 10.
+4. **Data Type and Value:**
+   - The data type must always be from <ALL DATA>.
+   - The value for the data type must be a single atomic value which can be passed to a function, for example, avoid 10th instead use 10, instead of Amex Gold Card use Amex Gold.
+   - Do not make composite values or values which are descriptive in nature.
+   - These values will be passed as API parameters and you must be mindful about it.
    - Do not try to make up any data value or use arbitrary values.
 
 ### Format of Policies
@@ -92,14 +95,14 @@ policy_system.add_policy({
 #### Example 5:
 **Request:** Grant read-only access to Calendar Day data from 10th July 2025 to 16th July 2025.
 
-**Reasoning:** The request seeks `Read` access for data scoped to July 2025 within the "Calendar Year and Month" hierarchy with Calendar Day ranging from 10th to 16th. Granular data must be Calendar::Day with range start value, 10th along with the month and year as it is specified in the request. The position must be Next(6) as the request is for a range of 6 days starting from 10th July 2025. If it was for a single day, the position would have been Current. If it was for two days, the position would have been Next(2) and so on.
+**Reasoning:** The request seeks `Read` access for data scoped to July 2025 within the "Calendar Year and Month" hierarchy with Calendar Day ranging from 10th to 16th. Granular data must be Calendar::Day with range start value, 10th along with the month and year as it is specified in the request. The position must be Next(7) as the request is for a range of 7 days starting from 10th July 2025. If it was for a single day, the position would have been Current. If it was for two days, the position would have been Next(2) as the start and end days are also included in the range and so on.
 
 **Generated Policy:**
 ```python
 policy_system.add_policy({
     "granular_data": "Calendar:Year(2025)::Calendar:Month(July)::Calendar:Day(10)",
     "data_access": "Read",
-    "position": "Next(6)"
+    "position": "Next(7)"
 })
 ```
 ### Additional Guidelines
@@ -108,7 +111,7 @@ policy_system.add_policy({
    - Respect the data hierarchy when generating policies. For example:
      - If `Read` access is already granted for `Calendar:Month`, avoid redundant policies for subsumed data like `Calendar:Day` or `Calendar:Hour`.
    - Similarly, if access is required for multiple sub-levels (e.g., `Wallet:CreditCardNumber` and `Wallet:CreditCardPin`), grant access to their parent level (e.g., `Wallet:CreditCard`).
-   - Only rely on <ALL DATA> for granular_data and do not make up any data and to understand the data hierarchy.
+   - Only rely on <ALL DATA> for granular_data and for understanding the data hierarchy.
 
 2. **Handling Existing Policies:**
    - If descriptions of existing policies are provided, do not generate overlapping or redundant policies for the same `data_access` and `position`.
@@ -565,5 +568,5 @@ Input: "Expedia: Search for flights departing from Salt Lake City (SLC) to Seatt
 Output: "Grant read-only access to all Expedia Flight data."
 
 Input: "Wallet: Use the Alaska Airline credit card to pay $2399.99 for the confirmed booking."
-Output: "Grant write access to Wallet Credit Card data for Alaska Airline credit card only."
+Output: "Grant read access to Wallet Credit Card data for Alaska Airline credit card only."
 """

@@ -114,4 +114,4 @@ Keep the summary concise and informative."""
 
     print(f"\033[1;35;40m{summary}\033[0m")
     # Use json.loads to safely parse the JSON string
-    return dummy_data
+    return summary

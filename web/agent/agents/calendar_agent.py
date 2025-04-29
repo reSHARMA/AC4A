@@ -16,11 +16,9 @@ class CalendarAPIAnnotation(APIAnnotationBase):
         super().__init__("Calendar", {
             'granular_data': [AttributeTree(f'Calendar:Year', [
                 AttributeTree(f'Calendar:Month', [
-                    AttributeTree(f'Calendar:Week', [
                         AttributeTree(f'Calendar:Day', [
                             AttributeTree(f'Calendar:Hour')
                         ])
-                    ])
                 ])
             ])],
             'data_access': [
@@ -56,24 +54,18 @@ class CalendarAPIAnnotation(APIAnnotationBase):
             (0, 'Hour', end_time.hour)
         ]
 
-        # Find the first differing node
-        composite_data = None
+        # Find the first differing node and build complete path
+        composite_data = []
         for (days, label, start_value), (_, _, end_value) in zip(start_hierarchy, end_hierarchy):
-            if start_value != end_value:
-                # Found first difference, return up to this point
-                if use_wildcard:
-                    composite_data = f'{self.namespace}:{label}(*)'
-                else:
-                    composite_data = f'{self.namespace}:{label}({start_value})'
-                break
+            if use_wildcard:
+                composite_data.append(f'{self.namespace}:{label}(*)')
             else:
-                # Values are same, add to composite data
-                if use_wildcard:
-                    composite_data = f'{self.namespace}:{label}(*)'
-                else:
-                    composite_data = f'{self.namespace}:{label}({start_value})'
+                composite_data.append(f'{self.namespace}:{label}({start_value})')
+            
+            if start_value != end_value:
+                break
 
-        return composite_data
+        return '::'.join(composite_data)
 
     def get_access_level(self, endpoint_name):
         return 'Write' if 'reserve' in endpoint_name else 'Read'

@@ -29,6 +29,7 @@ def selector_exp(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
     if len(messages) == 0:
         logger.error("No messages, waiting for user input")
         agent = "User"
+        default_agent = ["Planner"]
     
     elif messages[-1].source == "User":
         logger.error(f"Last message from User, returning {default_agent[-1]}")

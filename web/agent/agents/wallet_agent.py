@@ -1,5 +1,5 @@
 import logging
-import datetime
+from datetime import datetime
 from .base_agent import BaseAgent
 from ..web_input import web_input_func
 from src.policy_system.api_annotation import APIAnnotationBase
@@ -76,7 +76,7 @@ class WalletAPI:
     @WalletAPIAnnotation.annotate
     def add_credit_card(self, *args, **kwargs):
         return generate_dummy_data(
-            api_endpoint="add_credit_card: add a new credit card with the given card name, card type, card number, and card pin",
+            api_endpoint="add_credit_card: add a new credit card with the given card name, card type, card number, card expiry date, card pin and the billing zip code",
             **kwargs
         )
 
@@ -90,14 +90,14 @@ class WalletAPI:
     @WalletAPIAnnotation.annotate
     def update_credit_card(self, *args, **kwargs):
         return generate_dummy_data(
-            api_endpoint="update_credit_card: update the credit card information, including the card type, card number, and card pin",
+            api_endpoint="update_credit_card: update the credit card information, including the card type, card number, card expiry date, card pin and the billing zip code",
             **kwargs
         )
 
     @WalletAPIAnnotation.annotate
     def get_credit_card_info(self, *args, **kwargs):
         return generate_dummy_data(
-            api_endpoint="get_credit_card_info: get all the credit card information, including the card type, card number, and card pin",
+            api_endpoint="get_credit_card_info: get all the credit card information, including the card type, card number, card expiry date, card pin and the billing zip code",
             **kwargs
         )
 
@@ -115,9 +115,32 @@ class WalletAgent(BaseAgent):
         system_message = """
         You are a wallet agent.
 
-        wallet_get_credit_card_info tool takes card_name as input and returns all the credit card information, always including the card type, card number, and card pin or CVV and the billing and anything else necessary for making a payment for the given card name.
+        wallet_get_credit_card_info tool takes card_name as input and returns all the credit card information, always including the card type, card number, card expiry date, card pin and the billing zip code for the given card name.
 
-        If the card information is requested but card name is not provided, ask the user for the card name using `get_user_input` tool.
+        If the card information is requested but card name is not provided, ask the user for the card name using `web_input` tool that only takes a single input as a string which is the message to the user.
+
+        Use the tool `wallet_get_credit_card_info` to get the credit card information. The tool takes the following parameters:
+        - card_name: The name of the card to get the information for, example "Venture X".
+        and returns the card type, card number, card expiry date, card pin, card type and the billing zip code for the given card name. 
+
+        Use the tool `wallet_add_credit_card` to add a credit card to the wallet. The tool takes the following parameters:
+        - card_name: The name of the card to add, example "Venture X".
+        - card_type: The type of the card, example "Visa".
+        - card_number: The card number, example "1234567890123456".
+        - card_expiry: The card expiry date as MM/YY, example "01/26".
+        - card_pin: The card pin, example "123".
+        - billing_zip_code: The billing zip code, example "12345".
+
+        Use the tool `wallet_remove_credit_card` to remove a credit card from the wallet. The tool takes the following parameters:
+        - card_name: The name of the card to remove, example "Venture X".
+
+        Use the tool `wallet_update_credit_card` to update a credit card in the wallet. The tool takes the following parameters:
+        - card_name: The name of the card to update, example "Venture X".
+        - card_type: The type of the card, example "Visa".
+        - card_number: The card number, example "1234567890123456".
+        - card_expiry: The card expiry date as MM/YY, example "01/26".
+        - card_pin: The card pin, example "123".
+        - billing_zip_code: The billing zip code, example "12345".
 
         Return "done" when you have completed your work.
         """

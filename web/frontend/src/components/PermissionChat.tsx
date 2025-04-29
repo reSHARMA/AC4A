@@ -226,7 +226,7 @@ const TreeView: React.FC<TreeViewProps> = ({
                 <option value="Current">Current</option>
                 <option value="Next">Next</option>
               </Select>
-              {data.position && data.position !== "Current" && (
+              {data.position && data.position !== "Current" && !data.position.includes('(') && (
                 isEditingPositionValue ? (
                   <Input
                     size="xs"
@@ -256,7 +256,7 @@ const TreeView: React.FC<TreeViewProps> = ({
             </HStack>
           ) : (
             <Badge colorScheme="purple">
-              {data.position ? `${data.position}${data.position !== "Current" ? `::${data.positionValue || 1}` : ''}` : "Position"}
+              {data.position ? `${data.position}${data.position !== "Current" && !data.position.includes('(') ? `::${data.positionValue || 1}` : ''}` : "Position"}
             </Badge>
           )}
 
@@ -1255,7 +1255,9 @@ const PermissionChat: React.FC = (): JSX.Element => {
       const transformedPolicyData = {
         granular_data: granularData.toLowerCase(),
         data_access: policyData.access.toLowerCase(),
-        position: policyData.position === "Current" ? "Current" : `${policyData.position}::${policyData.positionValue || 1}`
+        position: policyData.position === "Current" ? "Current" : 
+                 policyData.position.includes('(') ? policyData.position : 
+                 `${policyData.position}::${policyData.positionValue || 1}`
       };
       
       console.log('Deleting policy with data:', transformedPolicyData);

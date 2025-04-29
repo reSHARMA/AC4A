@@ -37,17 +37,46 @@ class CalendarAPIAnnotation(APIAnnotationBase):
     def get_hierarchy(self, start_time, duration, use_wildcard):
         end_time = start_time + duration
         
+        # Define month and day names
+        month_names = ['January', 'February', 'March', 'April', 'May', 'June', 
+                      'July', 'August', 'September', 'October', 'November', 'December']
+        day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 
+                    'Friday', 'Saturday', 'Sunday']
+        
         time_hierarchy = [
             (365, 'Year', start_time.year),
-            (30, 'Month', start_time.month),
+            (30, 'Month', month_names[start_time.month - 1]),
             (7, 'Week', start_time.isocalendar()[1]),
-            (1, 'Day', start_time.day),
+            (1, 'Day', day_names[start_time.weekday()]),
             (0, 'Hour', start_time.hour)
         ]
 
         composite_data = None
         for days, label, value in time_hierarchy:
             if (end_time - start_time).days >= days:
+                # Handle value ranges and promote to next level if needed
+                if label == 'Day' and value > 7:
+                    # If day > 7, promote to week
+                    if use_wildcard:
+                        composite_data = f'{self.namespace}:Week(*)'
+                    else:
+                        composite_data = f'{self.namespace}:Week({start_time.isocalendar()[1]})'
+                    break
+                elif label == 'Week' and value > 4:
+                    # If week > 4, promote to month
+                    if use_wildcard:
+                        composite_data = f'{self.namespace}:Month(*)'
+                    else:
+                        composite_data = f'{self.namespace}:Month({month_names[start_time.month - 1]})'
+                    break
+                elif label == 'Month' and value > 12:
+                    # If month > 12, promote to year
+                    if use_wildcard:
+                        composite_data = f'{self.namespace}:Year(*)'
+                    else:
+                        composite_data = f'{self.namespace}:Year({start_time.year})'
+                    break
+                
                 if use_wildcard:
                     composite_data = f'{self.namespace}:{label}(*)'
                 else:
@@ -65,34 +94,61 @@ class CalendarAPIAnnotation(APIAnnotationBase):
 
         if start_time < current_time < end_time:
             return "Current"
+
+        # First get the hierarchy for start time
+        start_hierarchy = self.get_hierarchy(start_time, duration, False)
+        if not start_hierarchy:
+            return "Current"
+
+        # Extract the label and value from start hierarchy
+        label = start_hierarchy.split('(')[0].split(':')[-1]
+        start_value = start_hierarchy.split('(')[1].rstrip(')')
+
+        # Get the corresponding value for end time
+        month_names = ['January', 'February', 'March', 'April', 'May', 'June', 
+                      'July', 'August', 'September', 'October', 'November', 'December']
+        day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 
+                    'Friday', 'Saturday', 'Sunday']
         
         time_hierarchy = [
-            (365, 'Year', end_time.year - start_time.year),
-            (30, 'Month', (end_time.year - start_time.year) * 12 + end_time.month - start_time.month),
-            (7, 'Week', (end_time - start_time).days // 7),
-            (1, 'Day', (end_time - start_time).days),
-            (0, 'Hour', (end_time - start_time).seconds // 3600)
+            (365, 'Year', end_time.year),
+            (30, 'Month', month_names[end_time.month - 1]),
+            (7, 'Week', end_time.isocalendar()[1]),
+            (1, 'Day', day_names[end_time.weekday()]),
+            (0, 'Hour', end_time.hour)
         ]
 
-        composite_data = None
-        for days, label, value in time_hierarchy:
-            if (end_time - start_time).days >= days:
-                if start_time < current_time and current_time < end_time:
-                    composite_data = "Current"
-                elif current_time < start_time:
-                    if use_wildcard:
-                        composite_data = f"Next(*)"
-                    else:
-                        composite_data = f"Next({value})"
-                else:
-                    if use_wildcard:
-                        composite_data = f"Previous(*)"
-                    else:
-                        composite_data = f"Previous({value})"
+        end_value = None
+        for days, h_label, value in time_hierarchy:
+            if h_label == label:
+                end_value = value
                 break
 
-        result = composite_data if composite_data else "Current"
-        return result
+        if end_value is None:
+            return "Current"
+
+        # Calculate the difference
+        if label == 'Year':
+            diff = int(end_value) - int(start_value)
+        elif label == 'Month':
+            diff = month_names.index(end_value) - month_names.index(start_value)
+        elif label == 'Week':
+            diff = int(end_value) - int(start_value)
+        elif label == 'Day':
+            diff = day_names.index(end_value) - day_names.index(start_value)
+        else:
+            diff = 0
+
+        if diff == 0:
+            return "Current"
+        elif current_time < start_time:
+            if use_wildcard:
+                return "Next(*)"
+            return f"Next({abs(diff)})"
+        else:
+            if use_wildcard:
+                return "Previous(*)"
+            return f"Previous({abs(diff)})"
 
     def generate_attributes(self, kwargs, endpoint_name, wildcard):
         start_time = kwargs['start_time']

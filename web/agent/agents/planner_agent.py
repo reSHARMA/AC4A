@@ -26,9 +26,8 @@ class PlannerAgent(BaseAgent):
         First output the name of the application and then the description in the format, application: description. The description must contains all the required information for the application, do not make up data, if you need data invoke the User application to get the required data first before calling the application.
 
         When all the tasks are completed return terminate.
-        If there is a permission error while doing the task return perm_err
         for any other reason of failure return error
-        Always give reason for termination, perm_err or error.
+        Always give reason for termination or error.
         """
         
         tools = []

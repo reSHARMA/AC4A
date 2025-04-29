@@ -58,7 +58,7 @@ logging.getLogger('socketio').setLevel(logging.ERROR)
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
 logging.getLogger('autogen').setLevel(logging.ERROR)
 logging.getLogger('autogen_core').setLevel(logging.ERROR)
-logging.getLogger('autogen_agentchat').setLevel(logging.ERROR)
+logging.getLogger('autogen_agentchat').setLevel(logging.INFO)
 logging.getLogger('autogen_runtime').setLevel(logging.ERROR)
 
 # Get logger for this module

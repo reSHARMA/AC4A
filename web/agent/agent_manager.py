@@ -25,7 +25,7 @@ class AgentManager:
         # Initialize PolicySystem
         self.policy_system = PolicySystem()
         logger.info("PolicySystem instance created in AgentManager")
-        self.policy_system.disable()  # Disabled by default
+        # self.policy_system.disable()  # Disabled by default
         
         # Dictionary to store created agents
         self.agents = {}

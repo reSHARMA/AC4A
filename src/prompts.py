@@ -518,6 +518,7 @@ For every task, follow these steps to determine access needs:
 2. **Determine Type of Access**: Decide whether the task requires "Read" or "Write" access to the identified data. For instance:
    - If a task involves checking or retrieving data, it requires **Read-Only Access**.
    - If a task involves modification or creation of data, it requires **Write Access**.
+   -- example, if the task is to book a flight, it requires write access to the flight data.
 
 3. **Define the Data Range**: When determining the access scope:
    - If a task lacks precise data or if the identified data does not allow for filtering at finer granularity, grant access to the broader data type or category instead.

@@ -170,7 +170,7 @@ class PolicySystem:
                     logger.info(f"✅ POLICY ALLOWED - Action is allowed by rule: {rule}")
                 return True
         if print_policy:
-            logger.warning(f"❌ POLICY DENIED - Action not allowed for attributes: {attributes}")
+            logger.error(f"❌ POLICY DENIED - Action not allowed for attributes: {attributes}")
         return False
 
     def check_subsumption(self, rule, attributes):
@@ -372,7 +372,7 @@ class PolicySystem:
 
         # Generate policy code
         generated_code = call_openai_api(POLICY_TRANSLATION + all_data, policy_text)
-        logger.info(f"[policy_system.py] Generated code: {generated_code}")
+        logger.error(f"[policy_system.py] Generated code: {generated_code}")
         # Extract code blocks from the response
         import re
         def extract_code_blocks(code: str) -> list:

@@ -55,6 +55,10 @@ class ExpediaAPIAnnotation(APIAnnotationBase):
         if "cruise" in endpoint_name.lower():
             label, detail = ('Cruise', kwargs.get('cruise_id', '*'))
         
+        # Convert None to '*'
+        if detail is None:
+            detail = '*'
+        
         if use_wildcard:
             return f"{self.namespace}:{label}(*)"
         else:
@@ -64,15 +68,6 @@ class ExpediaAPIAnnotation(APIAnnotationBase):
         if endpoint_name == 'pay_for_itenary':
             return 'Write'
         return 'Read' if 'search' in endpoint_name or 'get' in endpoint_name else 'Write'
-
-    def get_time_period(self, start_time, end_time, use_wildcard):
-        current_time = datetime.now()
-        if start_time < current_time < end_time:
-            return 'Current'
-        elif current_time < start_time:
-            return 'Next'
-        else:
-            return 'Previous'
 
     def generate_attributes(self, kwargs, endpoint_name, wildcard):
         if 'search_flights' in endpoint_name or 'book_flight' in endpoint_name:
@@ -122,8 +117,9 @@ class ExpediaAPIAnnotation(APIAnnotationBase):
         
         granular_data = self.get_hierarchy(endpoint_name, kwargs, wildcard)
         data_access = self.get_access_level(endpoint_name)
-        position = self.get_time_period(start_time, end_time, wildcard)
+        position = "Current"
         
+        logger.error(f"[expedia_agent.py] Generated attributes: {granular_data}, {data_access}, {position}")
         return {
             'granular_data': granular_data,
             'data_access': data_access,
@@ -360,7 +356,8 @@ class ExpediaAgent(BaseAgent):
         - guest_phone: The guest phone
         - guest_address: The guest address (optional)
 
-        use `get_user_input` tool to ask the user for user input.
+        use `get_user_input` tool to ask the user for user input, like confirmation of the booking details, etc.
+        it takes a single parameter which is the question to ask the user.
 
         Return "done" when your work is completed.
         """

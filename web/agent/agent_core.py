@@ -118,7 +118,7 @@ async def run_agent() -> str:
                             logger.info(f"[agent_core.py] Skipping user message to prevent duplication: {content}")
                             continue
                         
-                        if message.type == "ToolCallExecutionEvent" or message.type == "ToolCallRequestEvent" or message.type == "ToolCallSummaryMessage":
+                        if message.type == "ToolCallExecutionEvent" or message.type == "ToolCallRequestEvent":
                             logger.info(f"[agent_core.py] Skipping tool call message to prevent duplication: {content}")
                             continue
 

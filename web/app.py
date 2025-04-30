@@ -509,4 +509,5 @@ def set_permission_mode():
 if __name__ == '__main__':
     # Don't initialize the agent session when the application starts
     # socketio.run(app, debug=True, port=5000, use_reloader=False)
-    socketio.run(app, debug=True, port=5000, use_reloader=False)
+    port = int(os.environ.get('PORT', 5000))
+    socketio.run(app, debug=True, port=port, use_reloader=False)

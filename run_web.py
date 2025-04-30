@@ -65,4 +65,6 @@ policy_logger.critical("POLICY SYSTEM LOGGER TEST - THIS SHOULD APPEAR IN CONSOL
 
 if __name__ == '__main__':
     print("Policy system logger configured at DEBUG level - logs will appear in console and policy_debug.log")
-    socketio.run(app, debug=True, port=5000, use_reloader=False) 
+    # Get port from environment variable or use default
+    port = int(os.environ.get('PORT', 5000))
+    socketio.run(app, debug=True, port=port, use_reloader=False) 

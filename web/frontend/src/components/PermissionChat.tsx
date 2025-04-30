@@ -373,9 +373,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
   // Initialize socket connection
   useEffect(() => {
     // Use the full URL if we're in production, otherwise use the relative path
+    const port = import.meta.env.PORT || 5000;
     const baseUrl = import.meta.env.PROD 
-      ? 'http://localhost:5000' 
-      : 'http://localhost:5000';
+      ? `http://localhost:${port}` 
+      : `http://localhost:${port}`;
     
     console.log('Initializing socket connection to:', baseUrl);
     const newSocket = io(baseUrl, {
@@ -920,9 +921,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
         setIsLoading(true);
         
         // Use the full URL if we're in production, otherwise use the relative path
+        const port = import.meta.env.PORT || 5000;
         const baseUrl = import.meta.env.PROD 
-          ? 'http://localhost:5000' 
-          : 'http://localhost:5000';
+          ? `http://localhost:${port}` 
+          : `http://localhost:${port}`;
         
         // Fetch attribute trees
         console.log('Fetching attribute trees from:', `${baseUrl}/get_attribute_trees`);
@@ -1122,9 +1124,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
       
       // If there's text in the policy text box, submit that first
       if (policyText.trim()) {
+        const port = import.meta.env.PORT || 5000;
         const apiUrl = import.meta.env.PROD 
-          ? 'http://localhost:5000/add_policy_from_text' 
-          : 'http://localhost:5000/add_policy_from_text';
+          ? `http://localhost:${port}/add_policy_from_text` 
+          : `http://localhost:${port}/add_policy_from_text`;
         const textResponse = await fetch(apiUrl, {
           method: 'POST',
           headers: {
@@ -1182,8 +1185,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
             };
             
             const apiUrl = import.meta.env.PROD 
-              ? 'http://localhost:5000/add_policy' 
-              : 'http://localhost:5000/add_policy';
+              ? `http://localhost:${port}/add_policy` 
+              : `http://localhost:${port}/add_policy`;
             
             policyPromises.push(
               fetch(apiUrl, {
@@ -1208,8 +1211,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
           };
           
           const apiUrl = import.meta.env.PROD 
-            ? 'http://localhost:5000/add_policy' 
-            : 'http://localhost:5000/add_policy';
+            ? `http://localhost:${port}/add_policy` 
+            : `http://localhost:${port}/add_policy`;
           
           policyPromises.push(
             fetch(apiUrl, {
@@ -1230,8 +1233,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
       
       // After all policies are added, fetch updated data
       const baseUrl = import.meta.env.PROD 
-        ? 'http://localhost:5000' 
-        : 'http://localhost:5000';
+        ? `http://localhost:${port}` 
+        : `http://localhost:${port}`;
       
       // Fetch updated attribute trees and policies
       const [treesData, policiesData] = await Promise.all([
@@ -1334,9 +1337,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
       console.log('Deleting policy with data:', transformedPolicyData);
       
       // Send delete request to backend
+      const port = import.meta.env.PORT || 5000;
       const apiUrl = import.meta.env.PROD 
-        ? 'http://localhost:5000/delete_policy' 
-        : 'http://localhost:5000/delete_policy';
+        ? `http://localhost:${port}/delete_policy` 
+        : `http://localhost:${port}/delete_policy`;
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -1352,8 +1356,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
 
       // After successful deletion, fetch updated data
       const baseUrl = import.meta.env.PROD 
-        ? 'http://localhost:5000' 
-        : 'http://localhost:5000';
+        ? `http://localhost:${port}` 
+        : `http://localhost:${port}`;
       
       // Fetch both attribute trees and policies in parallel
       const [treesData, policiesData] = await Promise.all([
@@ -1656,9 +1660,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
         position: node.position.toLowerCase()
       };
 
+      const port = import.meta.env.PORT || 5000;
       const apiUrl = import.meta.env.PROD 
-        ? 'http://localhost:5000/convert_to_text' 
-        : 'http://localhost:5000/convert_to_text';
+        ? `http://localhost:${port}/convert_to_text` 
+        : `http://localhost:${port}/convert_to_text`;
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -1706,9 +1711,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
     if (!policyText.trim()) return;
     
     try {
+      const port = import.meta.env.PORT || 5000;
       const apiUrl = import.meta.env.PROD 
-        ? 'http://localhost:5000/add_policy_from_text' 
-        : 'http://localhost:5000/add_policy_from_text';
+        ? `http://localhost:${port}/add_policy_from_text` 
+        : `http://localhost:${port}/add_policy_from_text`;
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -1734,7 +1740,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
   // Handler to send mode to backend
   const handleModeChange = (mode: string) => {
     console.log("Setting mode in backend:", mode);
-    fetch('http://localhost:5000/set_permission_mode', {
+    const port = import.meta.env.PORT || 5000;
+    fetch(`http://localhost:${port}/set_permission_mode`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mode }),

@@ -32,7 +32,7 @@ def call_openai_api(system: str, prompt: str) -> str:
             messages.append({"role": "user", "content": prompt})
             completion = client.chat.completions.create(
                 messages=messages,
-                model="gpt-4o",
+                model="gpt-4o-2024-11-20",
                 temperature=1,
             )
             return completion.choices[0].message.content

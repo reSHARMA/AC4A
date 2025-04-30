@@ -3,7 +3,8 @@ import re
 import logging
 from dotenv import load_dotenv
 from autogen_core.models import ChatCompletionClient
-from autogen_ext.models.openai import AzureOpenAIChatCompletionClient, OpenAIChatCompletionClient
+from autogen_ext.models.openai import OpenAIChatCompletionClient
+from autogen_ext.models.openai import AzureOpenAIChatCompletionClient
 from azure.identity import DefaultAzureCredential, ChainedTokenCredential, AzureCliCredential, get_bearer_token_provider
 
 # Set up logging
@@ -19,7 +20,7 @@ def setup_model_client():
     if openai_api_key:
         logger.info("Using OpenAI configuration")
         return OpenAIChatCompletionClient(
-            model="gpt-4",
+            model="gpt-4o-2024-11-20",
             api_key=openai_api_key
         )
     else:

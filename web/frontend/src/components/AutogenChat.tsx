@@ -26,7 +26,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
 
   useEffect(() => {
     // Create socket connection with debugging
-    const port = import.meta.env.PORT || 5000;
+    const port = import.meta.env.VITE_PORT || 5000;
     socketRef.current = createSocketConnection(`http://localhost:${port}`)
     
     // Set up connection status

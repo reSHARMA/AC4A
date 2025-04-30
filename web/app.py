@@ -184,6 +184,11 @@ def add_policy():
         agent_manager.policy_system.add_policy(policy_data)
         logger.info(f"Added policy: {policy_data}")
         
+        # Construct policy key for highlighting
+        policy_key = f"{policy_data['granular_data']}-{policy_data['data_access']}-{policy_data['position']}"
+        logger.info(f"Emitting highlight for policy: {policy_key}")
+        socketio.emit('highlight_policy', policy_key)
+        
         # Emit policy update to all connected clients
         emit_policy_update()
         

@@ -1,9 +1,9 @@
 /** @jsxImportSource @emotion/react */
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { Box, Text, VStack, Spinner, Select, HStack, Badge, Button, Switch, Input, IconButton } from '@chakra-ui/react'
 import { MdAccountTree, MdSubdirectoryArrowRight, MdLabel, MdTextFields, MdViewList } from 'react-icons/md'
 import { FaTrash } from 'react-icons/fa'
-import styles from './Chat.module.css'
+import styles from './PermissionChat.module.css'
 import { io, Socket } from 'socket.io-client'
 import { JSX } from 'react/jsx-runtime'
 import PermissionModeSelector from './ui/PermissionModeSelector'
@@ -21,6 +21,7 @@ interface Policy {
   granular_data: string;
   data_access: string;
   position: string;
+  positionValue?: number;
 }
 
 interface TreeViewProps {
@@ -31,6 +32,7 @@ interface TreeViewProps {
   onPositionChange?: (node: TreeNode, newPosition: string, newPositionValue?: number) => void;
   onValueChange?: (node: TreeNode, newValue: string) => void;
   onDelete?: (node: TreeNode) => void;
+  highlightedPolicy?: string | null;
 }
 
 interface Message {
@@ -48,7 +50,8 @@ const TreeView: React.FC<TreeViewProps> = ({
   onAccessChange, 
   onPositionChange, 
   onValueChange,
-  onDelete
+  onDelete,
+  highlightedPolicy = null
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditingValue, setIsEditingValue] = useState(false);
@@ -56,6 +59,22 @@ const TreeView: React.FC<TreeViewProps> = ({
   const [isEditingPositionValue, setIsEditingPositionValue] = useState(false);
   const [editedPositionValue, setEditedPositionValue] = useState(data.positionValue || 1);
   const hasChildren = data.children && data.children.length > 0;
+
+  // Check if this node should be highlighted
+  const isHighlighted = useMemo(() => {
+    if (!data.access || !data.position) return false;
+    const policyKey = `${data.label}(${data.value || ''})-${data.access}-${data.position}${data.position !== "Current" && !data.position.includes('(') ? `::${data.positionValue || 1}` : ''}`;
+    console.log('Checking highlight for node:', {
+      nodeLabel: data.label,
+      nodeValue: data.value,
+      nodeAccess: data.access,
+      nodePosition: data.position,
+      constructedKey: policyKey,
+      highlightedPolicy,
+      isMatch: highlightedPolicy === policyKey
+    });
+    return highlightedPolicy === policyKey;
+  }, [data, highlightedPolicy]);
 
   const handleAccessChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (onAccessChange) {
@@ -142,7 +161,18 @@ const TreeView: React.FC<TreeViewProps> = ({
   };
 
   return (
-    <Box ml={isRoot ? 0 : 2} width="100%">
+    <Box 
+      className={`${styles.treeNode} ${isHighlighted ? styles.newPermission : ''}`}
+      ml={isRoot ? 0 : 2} 
+      width="100%"
+      borderRadius="md"
+      bg="transparent"
+      boxShadow="none"
+      minH="auto"
+      _hover={{
+        bg: isHighlighted ? 'yellow.100' : 'gray.50'
+      }}
+    >
       <Box 
         display="flex" 
         alignItems="center" 
@@ -291,6 +321,7 @@ const TreeView: React.FC<TreeViewProps> = ({
                 onPositionChange={onPositionChange}
                 onValueChange={onValueChange}
                 onDelete={onDelete}
+                highlightedPolicy={highlightedPolicy}
               />
             </Box>
           ))}
@@ -316,6 +347,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
   const [nodeMap, setNodeMap] = useState<Map<string, TreeNode>>(new Map());
   const [shouldApplyPolicies, setShouldApplyPolicies] = useState(false);
   const [policyText, setPolicyText] = useState('');
+  const [highlightedPolicy, setHighlightedPolicy] = useState<string | null>(null);
 
   // Function to reset trees for edit view
   const resetEditViewTrees = (trees: TreeNode[]): TreeNode[] => {
@@ -371,6 +403,20 @@ const PermissionChat: React.FC = (): JSX.Element => {
       setIsLoading(false);
     });
     
+    newSocket.on('highlight_policy', (policyKey: string) => {
+      console.log('Received highlight_policy event:', {
+        policyKey,
+        currentHighlightedPolicy: highlightedPolicy
+      });
+      setHighlightedPolicy(policyKey);
+      
+      // Clear the highlight after animation completes (3 seconds)
+      setTimeout(() => {
+        console.log('Clearing policy highlight');
+        setHighlightedPolicy(null);
+      }, 3000);
+    });
+    
     setSocket(newSocket);
     
     // Clean up on unmount
@@ -390,17 +436,19 @@ const PermissionChat: React.FC = (): JSX.Element => {
       const newNodeMap = new Map<string, TreeNode>();
       
       const addNodesToMap = (node: TreeNode) => {
-        // Parse the node label to get the base label and value
-        const { baseLabel, value } = parseNodeLabel(node.label);
-        
-        // Create a composite key using all attributes
-        const nodeKey = `${baseLabel}:${value || ''}:${node.access || ''}:${node.position || ''}`;
+        const nodeKey = createNodeKey(node.label, node.access || '', node.position || '', node.positionValue || 1);
+        console.log('Adding node to map:', {
+          nodeLabel: node.label,
+          nodeAccess: node.access,
+          nodePosition: node.position,
+          nodeKey
+        });
         
         // Map the composite key to the full node data
         newNodeMap.set(nodeKey, {
           ...node,
-          label: baseLabel, // Use the base label without the value
-          value: value || node.value || '', // Preserve existing value or use parsed value
+          label: node.label, // Use the base label without the value
+          value: node.value || '', // Preserve existing value or use parsed value
           access: node.access || '', // Ensure access is preserved
           position: node.position || '' // Ensure position is preserved
         });
@@ -429,9 +477,25 @@ const PermissionChat: React.FC = (): JSX.Element => {
   }, [attributeTrees]);
 
   // Function to create a composite key for node lookup
-  const createNodeKey = (granular_data: string, data_access: string, position: string): string => {
-    // For chained labels, use the complete granular_data as part of the key
-    return `${granular_data}:${data_access.toLowerCase()}:${position.toLowerCase()}`;
+  const createNodeKey = (granular_data: string, data_access: string, position: string, positionValue?: number): string => {
+    console.log('Creating node key with:', {
+      granular_data,
+      data_access,
+      position,
+      positionValue
+    });
+    
+    // If granular_data already contains the value in parentheses, use it as is
+    if (granular_data.includes('(')) {
+      const key = `${granular_data}-${data_access}-${position}${positionValue ? `::${positionValue}` : ''}`;
+      console.log('Created node key (existing format):', key);
+      return key;
+    }
+    
+    // Otherwise, construct the key in the backend format
+    const key = `${granular_data}(*)-${data_access}-${position}${positionValue ? `::${positionValue}` : ''}`;
+    console.log('Created node key (constructed format):', key);
+    return key;
   };
 
   // Function to parse a node label and extract its value
@@ -591,15 +655,21 @@ const PermissionChat: React.FC = (): JSX.Element => {
     const existingNodesMap = new Map<string, TreeNode>();
     
     const addNodesToMap = (node: TreeNode) => {
-      // Create a composite key using all attributes
-      const nodeKey = createNodeKey(node.label, node.access || '', node.position || '');
+      const nodeKey = createNodeKey(node.label, node.access || '', node.position || '', node.positionValue || 1);
+      console.log('Adding node to map:', {
+        nodeLabel: node.label,
+        nodeAccess: node.access,
+        nodePosition: node.position,
+        nodeKey
+      });
       
       // Map the composite key to the full node data
       existingNodesMap.set(nodeKey, {
         ...node,
         value: node.value || '', // Ensure value is preserved
         access: node.access || '', // Ensure access is preserved
-        position: node.position || '' // Ensure position is preserved
+        position: node.position || '', // Ensure position is preserved
+        positionValue: node.positionValue || 1 // Ensure positionValue is preserved
       });
       
       // Process children
@@ -619,7 +689,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
     // Apply each policy to the attribute trees
     policies.forEach(policy => {
       // Create a unique key for the policy
-      const policyKey = `${policy.granular_data}-${policy.data_access}-${policy.position}`;
+      const policyKey = `${policy.granular_data}-${policy.data_access}-${policy.position}-${policy.positionValue || 1}`;
       
       console.log('Processing policy:', policy);
       console.log('Policy key:', policyKey);
@@ -637,7 +707,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
       console.log('Applying policy:', policy);
       
       // Create composite key for node lookup
-      const nodeKey = createNodeKey(policy.granular_data, policy.data_access, policy.position);
+      const nodeKey = createNodeKey(policy.granular_data, policy.data_access, policy.position, policy.positionValue);
       
       console.log('Looking for node with key:', nodeKey);
       console.log('Node exists in map:', existingNodesMap.has(nodeKey));
@@ -731,8 +801,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
                 
                 // Check if the parent already has a child with the same composite key
                 const existingChildIndex = updatedParentNode.children.findIndex(child => {
-                const childKey = createNodeKey(child.label, child.access, child.position);
-                const newKey = createNodeKey(newNodeTree.label, newNodeTree.access, newNodeTree.position);
+                const childKey = createNodeKey(child.label, child.access, child.position, child.positionValue || 1);
+                const newKey = createNodeKey(newNodeTree.label, newNodeTree.access, newNodeTree.position, newNodeTree.positionValue || 1);
                   return childKey === newKey;
                 });
                 
@@ -747,7 +817,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
                 
               // Add all nodes in the tree to our map
                 const addNodesToNodeMap = (node: TreeNode) => {
-                const nodeKey = createNodeKey(node.label, node.access, node.position);
+                const nodeKey = createNodeKey(node.label, node.access, node.position, node.positionValue || 1);
                   updatedNodeMap.set(nodeKey, node);
                   
                   if (node.children && node.children.length > 0) {
@@ -781,8 +851,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
             
             // Check if a root node with the same composite key already exists
             const existingRootIndex = updatedTrees.findIndex((tree: TreeNode) => {
-            const treeKey = createNodeKey(tree.label, tree.access, tree.position);
-            const newKey = createNodeKey(newRootNodeTree.label, newRootNodeTree.access, newRootNodeTree.position);
+            const treeKey = createNodeKey(tree.label, tree.access, tree.position, tree.positionValue || 1);
+            const newKey = createNodeKey(newRootNodeTree.label, newRootNodeTree.access, newRootNodeTree.position, newRootNodeTree.positionValue || 1);
               return treeKey === newKey;
             });
             
@@ -797,7 +867,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
             
           // Add all nodes in the tree to our map
             const addNodesToNodeMap = (node: TreeNode) => {
-            const nodeKey = createNodeKey(node.label, node.access, node.position);
+            const nodeKey = createNodeKey(node.label, node.access, node.position, node.positionValue || 1);
               updatedNodeMap.set(nodeKey, node);
               
               if (node.children && node.children.length > 0) {
@@ -1197,6 +1267,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
         onPositionChange={viewMode === 'edit' ? handlePositionChange : undefined}
         onValueChange={viewMode === 'edit' ? handleValueChange : undefined}
         onDelete={handleDeletePolicy}
+        highlightedPolicy={highlightedPolicy}
       />
     </Box>
   );

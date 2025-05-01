@@ -7,6 +7,7 @@ import styles from './PermissionChat.module.css'
 import { io, Socket } from 'socket.io-client'
 import { JSX } from 'react/jsx-runtime'
 import PermissionModeSelector from './ui/PermissionModeSelector'
+import LogsView from './LogsView'
 
 interface TreeNode {
   label: string;
@@ -40,7 +41,7 @@ interface Message {
   content: string;
 }
 
-type ViewMode = 'permitted' | 'edit' | 'all';
+type ViewMode = 'permitted' | 'edit' | 'all' | 'logs';
 type DisplayMode = 'tree' | 'text';
 
 const TreeView: React.FC<TreeViewProps> = ({ 
@@ -1830,6 +1831,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
               onClick={() => handleViewModeChange('edit')}
               borderTopRadius="md"
               borderBottomRadius="none"
+              borderRight="1px solid"
               borderLeft="1px solid"
               borderColor="gray.200"
               _hover={{
@@ -1838,6 +1840,23 @@ const PermissionChat: React.FC = (): JSX.Element => {
               transition="all 0.2s"
             >
               Create Permissions
+            </Button>
+            <Button
+              size="md"
+              flex={0.5}
+              colorScheme={viewMode === 'logs' ? 'blue' : 'gray'}
+              variant={viewMode === 'logs' ? 'solid' : 'ghost'}
+              onClick={() => handleViewModeChange('logs')}
+              borderTopRadius="md"
+              borderBottomRadius="none"
+              borderLeft="1px solid"
+              borderColor="gray.200"
+              _hover={{
+                bg: viewMode === 'logs' ? 'blue.500' : 'gray.100'
+              }}
+              transition="all 0.2s"
+            >
+              Logs
             </Button>
           </HStack>
         </Box>
@@ -1911,7 +1930,9 @@ const PermissionChat: React.FC = (): JSX.Element => {
         
         {!isLoading && !error && attributeTrees.length > 0 && (
           <VStack align="stretch" spacing={2} width="100%">
-            {viewMode === 'permitted' && displayMode === 'text' ? (
+            {viewMode === 'logs' ? (
+              <LogsView />
+            ) : viewMode === 'permitted' && displayMode === 'text' ? (
               <VStack align="stretch" spacing={4}>
                 {permissionTexts.length > 0 ? (
                   permissionTexts.map((text, index) => (

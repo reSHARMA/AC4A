@@ -22,6 +22,10 @@ export default defineConfig({
       '/get_history': {
         target: 'http://localhost:5000',
         changeOrigin: true,
+      },
+      '/get_logs': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
       }
     }
   }

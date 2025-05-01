@@ -128,15 +128,16 @@ class PolicySystem:
         logger.info(f"✅ API REGISTRATION COMPLETE: {api_class.__name__}")
         return api_instance
 
+    def get_all_policy_prompts(self):
+        prompts = []
+        for policy in self.policy_rules:
+            prompts.append(self.text(policy=policy, mode="prompt"))
+        return prompts
+
     def add_policy(self, policy_rule):
-        if self.prompt:
-            if self.is_action_allowed(policy_rule, False):
-                logger.info("Policy rule already subsumed by existing policies. Skipping addition.")
-                return
-            txt = self.text(policy=policy_rule, mode="prompt")
-            user_response = input(f"{txt} (yes/no): ").strip().lower()
-            if user_response != "yes":
-                return
+        if self.is_action_allowed(policy_rule, False):
+            logger.info("Policy rule already subsumed by existing policies. Skipping addition.")
+            return
 
         # Check for duplicate policy using the same key matching logic as remove_policy
         target_key = f"{policy_rule['granular_data'].lower()}-{policy_rule['data_access'].lower()}-{policy_rule['position'].lower()}"

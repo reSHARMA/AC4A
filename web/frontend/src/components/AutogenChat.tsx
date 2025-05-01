@@ -62,7 +62,10 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
     // Listen for different message types
     listenForMessages(socketRef.current, 'agent_message', (message: Message) => {
       setMessages(prev => [...prev, message])
-      setIsAssistantTyping(false)
+      // Check if message starts with "Chat Session Ended"
+      if (message.content.startsWith('Chat Session Ended')) {
+        setIsAssistantTyping(false)
+      }
     })
     
     listenForMessages(socketRef.current, 'user_message', (message: Message) => {
@@ -71,11 +74,19 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
     
     listenForMessages(socketRef.current, 'system_message', (message: Message) => {
       setMessages(prev => [...prev, message])
+      // Also check system messages for session end
+      if (message.content.startsWith('Chat Session Ended')) {
+        setIsAssistantTyping(false)
+      }
     })
     
     // Fallback for any message
     listenForMessages(socketRef.current, 'message', (message: Message) => {
       setMessages(prev => [...prev, message])
+      // Check all messages for session end
+      if (message.content.startsWith('Chat Session Ended')) {
+        setIsAssistantTyping(false)
+      }
     })
 
     return () => {

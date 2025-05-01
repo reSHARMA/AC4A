@@ -1121,10 +1121,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
   const handleSubmitChanges = async () => {
     try {
       setIsLoading(true);
+      const port = import.meta.env.VITE_PORT || 5000;
       
       // If there's text in the policy text box, submit that first
       if (policyText.trim()) {
-        const port = import.meta.env.VITE_PORT || 5000;
         const apiUrl = import.meta.env.PROD 
           ? `http://localhost:${port}/add_policy_from_text` 
           : `http://localhost:${port}/add_policy_from_text`;

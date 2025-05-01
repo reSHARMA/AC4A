@@ -55,12 +55,6 @@ def reset_agent_session(emit_termination: bool = True):
         except queue.Empty:
             break
     
-    while not agent_message_queue.empty():
-        try:
-            agent_message_queue.get_nowait()
-        except queue.Empty:
-            break
-    
     # Reset flags
     set_agent_waiting_for_input(False)
     last_input_request = None
@@ -144,7 +138,7 @@ def run_agent_thread():
         agent_loop = None
         agent_thread = None
         agent_initialized = False
-        reset_agent_session(emit_termination=True)
+        reset_agent_session(emit_termination=False)
 
 def run_agent_sync() -> str:
     """Synchronous wrapper for running the agent"""

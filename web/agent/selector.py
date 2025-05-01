@@ -68,6 +68,10 @@ def selector_exp(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
     
     # Add the agent to the default_agent list if it's not "User"
     if agent != "User":
+        if len(agent.split()) == 1:
+            default_agent.append(agent)
+        else:
+            default_agent.append("unknown")
         default_agent.append(agent)
         logger.error(f"Added {agent} to default_agent list. Current list: {default_agent}")
     

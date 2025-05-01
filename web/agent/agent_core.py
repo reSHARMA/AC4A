@@ -107,9 +107,10 @@ async def run_agent() -> str:
                             logger.info("Skipping concatenated TaskResult message")
                             continue
                         
-                        if type(content) == str and ("terminate" in content.lower() or "perm_err" in content.lower() or "error" in content.lower()):
+                        if type(content) == str and ("terminate" in content.lower()):
                             logger.info(f"Termination detected: {content}")
                             chat_result = f"Termination reason: {content}"
+                            agent_message_queue.put(f"Chat Session Ended:\n{content}\n\nSay Hi! to start a new session")
                             await stream.aclose()
                             break
                         
@@ -202,11 +203,17 @@ async def run_agent() -> str:
                             def check_user_or_data(formatted_message: str) -> bool:
                                 agent_called = formatted_message.split(":")
                                 logger.info(f"Agent called: {agent_called}")
-                                return len(agent_called) > 1 and agent_called[1].strip().lower() in ["user", "data"]
+                                if len(agent_called) <= 1:
+                                    return False
+                                first_word = agent_called[1].strip().split()[0].lower()
+                                return first_word in ["user", "data"]
                             
                             if not check_user_or_data(formatted_message):
                                 # Put the formatted message in the agent message queue
+                                logger.info(f"Putting formatted message in the agent message queue: {formatted_message}")
                                 agent_message_queue.put(formatted_message)
+                        else:
+                            logger.info(f"Could not format content: {content}, so skipping")
 
                     except Exception as e:
                         logger.error(f"Error processing message: {str(e)}", exc_info=True)

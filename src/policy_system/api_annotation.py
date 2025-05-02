@@ -1,6 +1,7 @@
 from src.utils.time_utils import TimeUtils
 from src.policy_system.policy_system import PolicySystem
 from config import WILDCARD
+from web.utils.custom_logger import send_custom_log
 
 class APIAnnotationBase:
     def __init__(self, namespace, attributes):
@@ -32,6 +33,7 @@ class APIAnnotationBase:
 
 def policy_interceptor(api_func):
     def wrapper(self, attributes, *args, **kwargs):
+        send_custom_log("Calling", f"{attributes}")
         if self.policy_system.is_action_allowed(attributes):
             return api_func(self, *args, **kwargs)
         else:

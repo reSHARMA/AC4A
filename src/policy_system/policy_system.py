@@ -154,7 +154,7 @@ class PolicySystem:
             if callable(value):
                 policy_rule[attr] = value()
         self.policy_rules.append(policy_rule)
-        send_custom_log("Policy Added:", f"{target_key}")
+        send_custom_log("Permission Added", f"{target_key}")
         logger.info(f"Added new policy with key: {target_key}")
 
     def is_action_allowed(self, attributes, print_policy=True):
@@ -171,9 +171,11 @@ class PolicySystem:
             if self.check_subsumption(rule, attributes):
                 if print_policy:
                     logger.info(f"✅ POLICY ALLOWED - Action is allowed by rule: {rule}")
+                    send_custom_log("✅ Access Granted by", f"{rule}")
                 return True
         if print_policy:
             logger.error(f"❌ POLICY DENIED - Action not allowed for attributes: {attributes}")
+            send_custom_log("❌ Access Denied by", f"{attributes}")
         return False
 
     def check_subsumption(self, rule, attributes):
@@ -336,6 +338,7 @@ class PolicySystem:
         
         # Create composite key for the policy to remove
         target_key = f"{policy_rule['granular_data'].lower()}-{policy_rule['data_access'].lower()}-{policy_rule['position'].lower()}"
+        send_custom_log("Permission Removed", f"{target_key}")
         
         # Find and remove the matching policy
         for i, rule in enumerate(self.policy_rules):

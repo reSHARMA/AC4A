@@ -28,6 +28,7 @@ const LogsView: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   // Scroll to bottom when new logs arrive
   const scrollToBottom = () => {
@@ -44,6 +45,8 @@ const LogsView: React.FC = () => {
 
     const handleConnect = () => {
       console.log('Socket connected');
+      // Fetch logs when socket connects
+      fetchLogs();
     };
 
     const handleDisconnect = () => {
@@ -89,6 +92,9 @@ const LogsView: React.FC = () => {
       fetchLogs();
     }
 
+    // Mark component as mounted
+    setIsMounted(true);
+
     // Clean up
     return () => {
       console.log('Cleaning up socket event listeners');
@@ -96,8 +102,16 @@ const LogsView: React.FC = () => {
       socket.off('disconnect', handleDisconnect);
       socket.off('session_reset', handleSessionReset);
       socket.off('new_log', handleNewLog);
+      setIsMounted(false);
     };
   }, []);
+
+  // Fetch logs when component is mounted
+  useEffect(() => {
+    if (isMounted) {
+      fetchLogs();
+    }
+  }, [isMounted]);
 
   // Separate effect for handling filter changes
   useEffect(() => {
@@ -208,7 +222,11 @@ const LogsView: React.FC = () => {
           fontSize="sm"
           boxShadow="sm"
         >
-          {filteredLogs.length === 0 ? (
+          {isLoading ? (
+            <Text textAlign="center" color="gray.500">
+              Loading logs...
+            </Text>
+          ) : filteredLogs.length === 0 ? (
             <Text textAlign="center" color="gray.500">
               No logs found
             </Text>
@@ -220,6 +238,8 @@ const LogsView: React.FC = () => {
                   switch (level) {
                     case 'Permission Added':
                       return 'green.500';
+                    case 'Permission Removed':
+                      return 'red.500';
                     case 'Calling':
                       return 'blue.500';
                     case 'Access Denied by':

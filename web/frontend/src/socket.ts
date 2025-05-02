@@ -7,6 +7,5 @@ export const socket = io(`http://localhost:${port}`, {
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
   path: '/socket.io',
-  transports: ['websocket'],
-  forceNew: true
+  transports: ['websocket']
 }); 

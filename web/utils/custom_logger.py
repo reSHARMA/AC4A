@@ -3,12 +3,12 @@ import os
 import logging
 logger = logging.getLogger(__name__)
 
-def send_custom_log(category: int, message: str) -> bool:
+def send_custom_log(category: str, message: str) -> bool:
     """
     Send a custom log message to the backend.
     
     Args:
-        category (int): The category number for the log
+        category (str): The category for the log (e.g., "Permission Added", "Permission Removed")
         message (str): The log message
         
     Returns:
@@ -19,11 +19,11 @@ def send_custom_log(category: int, message: str) -> bool:
         port = int(os.environ.get('PORT', 5000))
         
         logger.info(f"Sent custom log: {message}")
-        # Send the log to the backend
+        # Send the log to the backend with CUSTOM_ prefix
         response = requests.post(
             f'http://localhost:{port}/send_log',
             json={
-                'category': category,
+                'category': f"CUSTOM_{category}",
                 'message': message
             }
         )

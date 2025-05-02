@@ -584,23 +584,16 @@ def get_logs():
                     if ' - ' not in line:
                         continue
                     
-                    # Skip lines that contain logger module names (like web.agent.queues)
-                    if any(module in line for module in ['web.', 'INFO', 'DEBUG', 'WARNING', 'ERROR']):
-                        continue
-                    
-                    # Skip time-related logs
-                    if any(time_marker in line for time_marker in ['Time:', 'AM', 'PM']):
-                        continue
-                    
                     # Parse the log line
                     # Format: category - message
                     parts = line.strip().split(' - ', 1)
                     if len(parts) == 2:
                         category, message = parts
-                        # Only include logs that are about policies
-                        if 'policy' in message.lower():
+                        # Only include logs with CUSTOM_ prefix
+                        if category.startswith('CUSTOM_'):
+                            # Remove the CUSTOM_ prefix when displaying
                             logs.append({
-                                'level': category,
+                                'level': category[7:],  # Remove 'CUSTOM_' prefix
                                 'message': message
                             })
         except PermissionError:

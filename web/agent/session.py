@@ -89,7 +89,13 @@ def initialize_agent_session():
     if is_agent_session_active():
         logger.info("Agent session already active")
         return
-     # Emit session reset event to all connected clients
+
+    # If the agent has already been initialized, reset it first
+    if agent_initialized:
+        logger.info("Agent already initialized, resetting first")
+        reset_agent_session(emit_termination=False)  # Don't emit termination message during initialization
+
+    # Emit session reset event to all connected clients
     try:
         logger.info("Emitting session_reset event")
         from web.utils.events import socketio
@@ -97,12 +103,7 @@ def initialize_agent_session():
         logger.info("Session reset event emitted")
     except Exception as e:
         logger.error(f"Error emitting session_reset event: {str(e)}") 
-
-    # If the agent has already been initialized, reset it first
-    if agent_initialized:
-        logger.info("Agent already initialized, resetting first")
-        reset_agent_session(emit_termination=False)  # Don't emit termination message during initialization
-    
+ 
     logger.info("Initializing agent session")
     
     # Create a new event loop for the agent

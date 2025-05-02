@@ -287,7 +287,7 @@ const TreeView: React.FC<TreeViewProps> = ({
             </HStack>
           ) : (
             <Badge colorScheme="purple">
-              {data.position ? `${data.position !== "Current" ? data.position : ""}${data.position !== "Current" && !data.position.includes('(') && (data.positionValue || data.positionValue === 0) ? `::${data.positionValue}` : ''}` : "Position"}
+              {data.position ? `${data.position !== "Current" ? data.position : ""}${data.position !== "Current" && !data.position.includes('(') ? `::${data.positionValue || 1}` : ''}` : "Position"}
             </Badge>
           )}
 

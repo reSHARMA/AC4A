@@ -192,6 +192,13 @@ def add_policy():
         # Emit policy update to all connected clients
         emit_policy_update()
         
+        # Emit a log entry for the new policy
+        emit_new_log({
+            'source': 'CustomLog',
+            'level': 'CUSTOM_Permission Added',
+            'message': policy_key
+        })
+        
         return jsonify({"status": "success", "message": "Policy added successfully"})
     except Exception as e:
         logger.error(f"Error in add_policy: {str(e)}", exc_info=True)
@@ -253,8 +260,20 @@ def delete_policy():
         
         logger.info(f"Successfully removed policy: {policy_data}")
         
+        # Construct policy key for highlighting
+        policy_key = f"{policy_data['granular_data']}-{policy_data['data_access']}-{policy_data['position']}"
+        logger.info(f"Emitting highlight for policy: {policy_key}")
+        socketio.emit('highlight_policy', policy_key)
+        
         # Emit policy update to all connected clients
         emit_policy_update()
+        
+        # Emit a log entry for the removed policy
+        emit_new_log({
+            'source': 'CustomLog',
+            'level': 'CUSTOM_Permission Removed',
+            'message': policy_key
+        })
         
         return jsonify({"status": "success", "message": "Policy deleted successfully"})
     except Exception as e:
@@ -540,7 +559,7 @@ def send_log():
         if not category or not message:
             return jsonify({"error": "Category and message are required"}), 400
             
-        # Format the log entry without timestamp and CustomLog prefix
+        # Format the log entry without timestamp
         log_entry = f"{category} - {message}\n"
         
         # Append to debug.log
@@ -551,7 +570,7 @@ def send_log():
         # Emit the new log to all connected clients
         emit_new_log({
             'source': 'CustomLog',
-            'level': category,
+            'level': category,  # Don't strip the CUSTOM_ prefix
             'message': message
         })
             
@@ -605,8 +624,6 @@ def get_logs():
         
         # Return the last 1000 logs (most recent)
         logs = logs[-1000:]
-        logger.info(f"Returning {len(logs)} logs")
-        
         return jsonify({"logs": logs})
     except Exception as e:
         logger.error(f"Error in get_logs: {str(e)}", exc_info=True)

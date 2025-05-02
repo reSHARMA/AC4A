@@ -6,6 +6,7 @@ import { socket } from '../socket';
 interface LogEntry {
   level: string;
   message: string;
+  source?: string;
 }
 
 // Create a persistent store for logs outside the component
@@ -17,6 +18,12 @@ const logStore = {
   },
   setFilteredLogs: (newFilteredLogs: LogEntry[]) => {
     logStore.filteredLogs = newFilteredLogs;
+  },
+  // Add a function to add a single log
+  addLog: (log: LogEntry) => {
+    // Don't strip the CUSTOM_ prefix here, just add the log as is
+    logStore.logs = [...logStore.logs, log];
+    return logStore.logs;
   }
 };
 
@@ -25,7 +32,6 @@ const LogsView: React.FC = () => {
   const [filteredLogs, setFilteredLogs] = useState<LogEntry[]>(logStore.filteredLogs);
   const [searchTerm, setSearchTerm] = useState('');
   const [levelFilter, setLevelFilter] = useState('all');
-  const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
   const logsEndRef = useRef<HTMLDivElement>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -39,18 +45,47 @@ const LogsView: React.FC = () => {
     scrollToBottom();
   }, [filteredLogs]);
 
+  // On mount: fetch initial logs to backfill any missed events
+  useEffect(() => {
+    const port = import.meta.env.VITE_PORT || '5000';
+    const baseUrl = import.meta.env.PROD ? `http://localhost:${port}` : `http://localhost:${port}`;
+    fetch(`${baseUrl}/get_logs`)
+      .then(res => res.json())
+      .then(data => {
+        console.log('Fetched initial logs:', data.logs);
+        const initialLogs: LogEntry[] = (data.logs || []).map((log: any) => {
+          const rawLevel = log.level || '';
+          const level = rawLevel.startsWith('CUSTOM_') ? rawLevel.slice(7) : rawLevel;
+          return {
+            level,
+            message: log.message,
+            source: log.source
+          };
+        });
+        logStore.setLogs(initialLogs);
+        setLogs(initialLogs);
+        setFilteredLogs(initialLogs);
+        logStore.setFilteredLogs(initialLogs);
+      })
+      .catch(err => console.error('Error fetching initial logs:', err));
+  }, []);
+
   // Set up socket event listeners
   useEffect(() => {
     console.log('Setting up socket event listeners');
+    console.log('Socket connection status:', socket.connected);
+    console.log('Socket ID:', socket.id);
 
     const handleConnect = () => {
       console.log('Socket connected');
-      // Fetch logs when socket connects
-      fetchLogs();
+      console.log('Socket connection status:', socket.connected);
+      console.log('Socket ID:', socket.id);
     };
 
     const handleDisconnect = () => {
       console.log('Socket disconnected');
+      console.log('Socket connection status:', socket.connected);
+      console.log('Socket ID:', socket.id);
     };
 
     const handleSessionReset = (data: { reset: boolean }) => {
@@ -61,39 +96,55 @@ const LogsView: React.FC = () => {
         setFilteredLogs(emptyLogs);
         logStore.setLogs(emptyLogs);
         logStore.setFilteredLogs(emptyLogs);
-        // Also fetch fresh logs after reset
-        fetchLogs();
       }
     };
 
     const handleNewLog = (newLog: LogEntry) => {
       console.log('New log received:', newLog);
-      setLogs(prevLogs => {
-        const updatedLogs = [...prevLogs, newLog];
-        logStore.setLogs(updatedLogs);
-        return updatedLogs;
+      console.log('Socket connection status:', socket.connected);
+      console.log('Socket ID:', socket.id);
+      // Strip the CUSTOM_ prefix from the level before displaying
+      const rawLevel = newLog.level || '';
+      const level = rawLevel.startsWith('CUSTOM_') ? rawLevel.slice(7) : rawLevel;
+      const logEntry: LogEntry = {
+        level,
+        message: newLog.message,
+        source: newLog.source
+      };
+      console.log('Processed log entry:', logEntry);
+      // Use the store's addLog function to ensure consistency
+      const updatedLogs = logStore.addLog(logEntry);
+      console.log('Updated logs:', updatedLogs);
+      setLogs(updatedLogs);
+      // Update filtered logs immediately
+      const filtered = updatedLogs.filter(log => {
+        const matchesLevel = levelFilter === 'all' || String(log.level) === levelFilter;
+        const matchesSearch = !searchTerm || log.message.toLowerCase().includes(searchTerm.toLowerCase());
+        console.log(`Log filtering - level: ${log.level}, matchesLevel: ${matchesLevel}, matchesSearch: ${matchesSearch}`);
+        return matchesLevel && matchesSearch;
       });
+      console.log('Filtered logs:', filtered);
+      setFilteredLogs(filtered);
     };
 
     // Connect socket if not already connected
     if (!socket.connected) {
       console.log('Socket not connected, connecting...');
       socket.connect();
+    } else {
+      console.log('Socket already connected');
     }
 
     // Set up event listeners
+    console.log('Setting up socket event listeners');
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
     socket.on('session_reset', handleSessionReset);
     socket.on('new_log', handleNewLog);
 
-    // Initial fetch if we don't have logs yet
-    if (logs.length === 0) {
-      fetchLogs();
-    }
-
     // Mark component as mounted
     setIsMounted(true);
+    console.log('LogsView component mounted');
 
     // Clean up
     return () => {
@@ -105,13 +156,6 @@ const LogsView: React.FC = () => {
       setIsMounted(false);
     };
   }, []);
-
-  // Fetch logs when component is mounted
-  useEffect(() => {
-    if (isMounted) {
-      fetchLogs();
-    }
-  }, [isMounted]);
 
   // Separate effect for handling filter changes
   useEffect(() => {
@@ -128,59 +172,14 @@ const LogsView: React.FC = () => {
     logStore.setFilteredLogs(filtered);
   }, [logs, levelFilter, searchTerm]);
 
-  // Fetch logs from backend
-  const fetchLogs = async () => {
-    try {
-      setIsLoading(true);
-      console.log('Fetching logs...');
-      const response = await fetch('/get_logs');
-      console.log('Logs response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response text:', errorText);
-        throw new Error(`Failed to fetch logs: ${response.status} ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      console.log('Received logs:', data.logs.length);
-      
-      setLogs(data.logs);
-      logStore.setLogs(data.logs);
-      
-      // Apply filters to the logs
-      const filteredLogs = data.logs.filter((log: LogEntry) => {
-        if (levelFilter !== 'all' && String(log.level) !== levelFilter) {
-          return false;
-        }
-        if (searchTerm && !log.message.toLowerCase().includes(searchTerm.toLowerCase())) {
-          return false;
-        }
-        return true;
-      });
-      
-      setFilteredLogs(filteredLogs);
-      logStore.setFilteredLogs(filteredLogs);
-    } catch (error) {
-      console.error('Error fetching logs:', error);
-      toast({
-        title: 'Error fetching logs',
-        description: error instanceof Error ? error.message : 'Unknown error',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Get unique log levels for filters
-  const logLevels = ['all', ...new Set(logs.map(log => String(log.level)))].sort((a, b) => {
-    if (a === 'all') return -1;
-    if (b === 'all') return 1;
-    return Number(a) - Number(b);
-  });
+  const logLevels = ['all', ...new Set(logs.map(log => String(log.level)))]
+    .filter(level => level !== 'CUSTOM_') // Filter out CUSTOM_ prefix
+    .sort((a, b) => {
+      if (a === 'all') return -1;
+      if (b === 'all') return 1;
+      return Number(a) - Number(b);
+    });
 
   return (
     <Box p={4} width="100%">
@@ -222,11 +221,7 @@ const LogsView: React.FC = () => {
           fontSize="sm"
           boxShadow="sm"
         >
-          {isLoading ? (
-            <Text textAlign="center" color="gray.500">
-              Loading logs...
-            </Text>
-          ) : filteredLogs.length === 0 ? (
+          {filteredLogs.length === 0 ? (
             <Text textAlign="center" color="gray.500">
               No logs found
             </Text>

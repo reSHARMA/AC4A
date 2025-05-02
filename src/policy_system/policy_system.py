@@ -3,6 +3,7 @@ from src.utils.attribute_tree import AttributeTree
 from src.utils.logger import get_logger
 from src.utils.dummy_data import call_openai_api
 from src.prompts import POLICY_TEXT, POLICY_TRANSLATION
+from web.utils.custom_logger import send_custom_log
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 # Set up logger for policy system
@@ -153,6 +154,7 @@ class PolicySystem:
             if callable(value):
                 policy_rule[attr] = value()
         self.policy_rules.append(policy_rule)
+        send_custom_log(1, f"Added new policy with key: {target_key}")
         logger.info(f"Added new policy with key: {target_key}")
 
     def is_action_allowed(self, attributes, print_policy=True):

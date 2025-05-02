@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Box, VStack, HStack, Text, Select, Input, Button, useToast, InputGroup, InputLeftElement } from '@chakra-ui/react';
 import { SearchIcon } from '@chakra-ui/icons';
+import { socket } from '../socket';
 
 interface LogEntry {
   timestamp: string;
@@ -17,19 +18,104 @@ const LogsView: React.FC = () => {
   const [sourceFilter, setSourceFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
+  const logsEndRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to bottom when new logs arrive
+  const scrollToBottom = () => {
+    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [filteredLogs]);
+
+  // Set up socket event listeners
+  useEffect(() => {
+    console.log('Setting up socket event listeners');
+
+    const handleConnect = () => {
+      console.log('Socket connected');
+    };
+
+    const handleDisconnect = () => {
+      console.log('Socket disconnected');
+    };
+
+    const handleSessionReset = () => {
+      console.log('Session reset event received');
+      setLogs([]);
+      setFilteredLogs([]);
+    };
+
+    const handleNewLog = (newLog: LogEntry) => {
+      console.log('New log received:', newLog);
+      setLogs(prevLogs => {
+        const updatedLogs = [...prevLogs, newLog];
+        // Apply current filters to the new log
+        let filtered = updatedLogs;
+        if (levelFilter !== 'all') {
+          filtered = filtered.filter(log => log.level.toLowerCase() === levelFilter.toLowerCase());
+        }
+        if (sourceFilter !== 'all') {
+          filtered = filtered.filter(log => log.source.toLowerCase() === sourceFilter.toLowerCase());
+        }
+        if (searchTerm) {
+          const term = searchTerm.toLowerCase();
+          filtered = filtered.filter(log => 
+            log.message.toLowerCase().includes(term) ||
+            log.timestamp.toLowerCase().includes(term)
+          );
+        }
+        setFilteredLogs(filtered);
+        return updatedLogs;
+      });
+    };
+
+    // Connect socket if not already connected
+    if (!socket.connected) {
+      console.log('Socket not connected, connecting...');
+      socket.connect();
+    }
+
+    // Set up event listeners
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('session_reset', handleSessionReset);
+    socket.on('new_log', handleNewLog);
+
+    // Initial fetch
+    fetchLogs();
+
+    // Clean up
+    return () => {
+      console.log('Cleaning up socket event listeners');
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('session_reset', handleSessionReset);
+      socket.off('new_log', handleNewLog);
+    };
+  }, [levelFilter, sourceFilter, searchTerm]);
 
   // Fetch logs from backend
   const fetchLogs = async () => {
     try {
       setIsLoading(true);
+      console.log('Fetching logs from /get_logs');
       const response = await fetch('/get_logs');
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch logs');
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Failed to fetch logs: ${response.status} ${response.statusText}`);
       }
+      
       const data = await response.json();
+      console.log('Received logs:', data.logs.length);
       setLogs(data.logs);
       setFilteredLogs(data.logs);
     } catch (error) {
+      console.error('Error in fetchLogs:', error);
       toast({
         title: 'Error fetching logs',
         description: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -41,37 +127,6 @@ const LogsView: React.FC = () => {
       setIsLoading(false);
     }
   };
-
-  // Apply filters
-  useEffect(() => {
-    let filtered = [...logs];
-
-    // Apply level filter
-    if (levelFilter !== 'all') {
-      filtered = filtered.filter(log => log.level.toLowerCase() === levelFilter.toLowerCase());
-    }
-
-    // Apply source filter
-    if (sourceFilter !== 'all') {
-      filtered = filtered.filter(log => log.source.toLowerCase() === sourceFilter.toLowerCase());
-    }
-
-    // Apply search term
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(log => 
-        log.message.toLowerCase().includes(term) ||
-        log.timestamp.toLowerCase().includes(term)
-      );
-    }
-
-    setFilteredLogs(filtered);
-  }, [logs, levelFilter, sourceFilter, searchTerm]);
-
-  // Fetch logs on component mount
-  useEffect(() => {
-    fetchLogs();
-  }, []);
 
   // Get unique log levels and sources for filters
   const logLevels = ['all', ...new Set(logs.map(log => log.level.toLowerCase()))];
@@ -175,6 +230,7 @@ const LogsView: React.FC = () => {
                   </HStack>
                 </Box>
               ))}
+              <div ref={logsEndRef} />
             </VStack>
           )}
         </Box>

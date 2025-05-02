@@ -274,6 +274,15 @@ def reset_session():
     # Clear the conversation history
     conversation_history = []
     
+    # Clear the debug.log file
+    log_path = os.path.join(os.path.dirname(__file__), 'debug.log')
+    try:
+        with open(log_path, 'w') as f:
+            f.write('')
+        logger.info("Cleared debug.log file")
+    except Exception as e:
+        logger.error(f"Error clearing debug.log: {str(e)}")
+    
     # Reset the waiting flag
     set_agent_waiting_for_input(False)
     
@@ -285,6 +294,11 @@ def reset_session():
     initialize_agent_session()
     new_session_needed = False
     logger.info("New session initialized after reset")
+    
+    # Emit session reset event to all connected clients
+    logger.info("Emitting session_reset event")
+    socketio.emit('session_reset', namespace='/')
+    logger.info("Session reset event emitted")
     
     return jsonify({"status": "success", "message": "Session reset"})
 
@@ -306,7 +320,13 @@ def handle_connect():
         emit_policy_update()
     else:
         logger.info("Agent session is active, not resetting")
-    
+
+def emit_new_log(log_entry):
+    """Emit a new log entry to all connected clients"""
+    logger.info(f"Emitting new log: {log_entry}")
+    socketio.emit('new_log', log_entry, namespace='/')
+    logger.info("New log event emitted")
+
 @socketio.on('disconnect')
 def handle_disconnect():
     logger.info('Client disconnected')
@@ -505,6 +525,92 @@ def set_permission_mode():
     logger.info(f"Setting permission mode to: {mode}")
     os.environ['PERMISSION_MANAGEMENT_MODE'] = mode
     return jsonify({'status': 'ok', 'mode': mode})
+
+@app.route('/send_log', methods=['POST'])
+def send_log():
+    """Send a new log message with category"""
+    try:
+        data = request.get_json()
+        category = data.get('category')
+        message = data.get('message')
+        
+        if not category or not message:
+            return jsonify({"error": "Category and message are required"}), 400
+            
+        # Create a timestamp
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S,%f')[:-3]
+        
+        # Format the log entry
+        log_entry = f"{timestamp} - CustomLog - CATEGORY_{category} - {message}\n"
+        
+        # Append to debug.log
+        log_path = os.path.join(os.path.dirname(__file__), 'debug.log')
+        with open(log_path, 'a') as f:
+            f.write(log_entry)
+            
+        # Emit the new log to all connected clients
+        emit_new_log({
+            'timestamp': timestamp,
+            'source': 'CustomLog',
+            'level': f'CATEGORY_{category}',
+            'message': message
+        })
+            
+        return jsonify({"status": "success", "message": "Log sent successfully"})
+    except Exception as e:
+        logger.error(f"Error in send_log: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/get_logs', methods=['GET'])
+def get_logs():
+    """Get logs from the debug.log file"""
+    try:
+        logger.info("Received request to get logs")
+        logger.info(f"Request headers: {request.headers}")
+        logger.info(f"Request args: {request.args}")
+        
+        # Use the correct path to debug.log
+        log_path = os.path.join(os.path.dirname(__file__), 'debug.log')
+        logger.info(f"Looking for log file at: {log_path}")
+        
+        # Check if the file exists
+        if not os.path.exists(log_path):
+            logger.warning(f"debug.log file not found at {log_path}")
+            return jsonify({"logs": [], "message": "No logs available yet"})
+            
+        # Read the debug.log file
+        logs = []
+        try:
+            with open(log_path, 'r') as f:
+                for line in f:
+                    # Parse the log line
+                    # Format: timestamp - name - level - message
+                    parts = line.strip().split(' - ', 3)
+                    if len(parts) == 4:
+                        timestamp, source, level, message = parts
+                        # Only include logs from CustomLog source
+                        if source == "CustomLog":
+                            logs.append({
+                                'timestamp': timestamp,
+                                'source': source,
+                                'level': level,
+                                'message': message
+                            })
+        except PermissionError:
+            logger.error("Permission denied when reading debug.log")
+            return jsonify({"error": "Permission denied when reading logs"}), 403
+        except Exception as e:
+            logger.error(f"Error reading debug.log: {str(e)}")
+            return jsonify({"error": f"Error reading logs: {str(e)}"}), 500
+        
+        # Return the last 1000 logs (most recent)
+        logs = logs[-1000:]
+        logger.info(f"Returning {len(logs)} logs")
+        
+        return jsonify({"logs": logs})
+    except Exception as e:
+        logger.error(f"Error in get_logs: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     # Don't initialize the agent session when the application starts

@@ -540,11 +540,8 @@ def send_log():
         if not category or not message:
             return jsonify({"error": "Category and message are required"}), 400
             
-        # Create a timestamp
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S,%f')[:-3]
-        
-        # Format the log entry
-        log_entry = f"{timestamp} - CustomLog - CATEGORY_{category} - {message}\n"
+        # Format the log entry without timestamp and CustomLog prefix
+        log_entry = f"{category} - {message}\n"
         
         # Append to debug.log
         log_path = os.path.join(os.path.dirname(__file__), 'debug.log')
@@ -553,9 +550,8 @@ def send_log():
             
         # Emit the new log to all connected clients
         emit_new_log({
-            'timestamp': timestamp,
             'source': 'CustomLog',
-            'level': f'CATEGORY_{category}',
+            'level': category,
             'message': message
         })
             
@@ -569,8 +565,6 @@ def get_logs():
     """Get logs from the debug.log file"""
     try:
         logger.info("Received request to get logs")
-        logger.info(f"Request headers: {request.headers}")
-        logger.info(f"Request args: {request.args}")
         
         # Use the correct path to debug.log
         log_path = os.path.join(os.path.dirname(__file__), 'debug.log')
@@ -586,17 +580,27 @@ def get_logs():
         try:
             with open(log_path, 'r') as f:
                 for line in f:
+                    # Skip lines that don't match our custom log format (category - message)
+                    if ' - ' not in line:
+                        continue
+                    
+                    # Skip lines that contain logger module names (like web.agent.queues)
+                    if any(module in line for module in ['web.', 'INFO', 'DEBUG', 'WARNING', 'ERROR']):
+                        continue
+                    
+                    # Skip time-related logs
+                    if any(time_marker in line for time_marker in ['Time:', 'AM', 'PM']):
+                        continue
+                    
                     # Parse the log line
-                    # Format: timestamp - name - level - message
-                    parts = line.strip().split(' - ', 3)
-                    if len(parts) == 4:
-                        timestamp, source, level, message = parts
-                        # Only include logs from CustomLog source
-                        if source == "CustomLog":
+                    # Format: category - message
+                    parts = line.strip().split(' - ', 1)
+                    if len(parts) == 2:
+                        category, message = parts
+                        # Only include logs that are about policies
+                        if 'policy' in message.lower():
                             logs.append({
-                                'timestamp': timestamp,
-                                'source': source,
-                                'level': level,
+                                'level': category,
                                 'message': message
                             })
         except PermissionError:

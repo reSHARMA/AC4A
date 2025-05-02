@@ -4,10 +4,8 @@ import { SearchIcon } from '@chakra-ui/icons';
 import { socket } from '../socket';
 
 interface LogEntry {
-  timestamp: string;
   level: string;
   message: string;
-  source: string;
 }
 
 const LogsView: React.FC = () => {
@@ -15,7 +13,6 @@ const LogsView: React.FC = () => {
   const [filteredLogs, setFilteredLogs] = useState<LogEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [levelFilter, setLevelFilter] = useState('all');
-  const [sourceFilter, setSourceFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
   const logsEndRef = useRef<HTMLDivElement>(null);
@@ -55,20 +52,14 @@ const LogsView: React.FC = () => {
       console.log('New log received:', newLog);
       setLogs(prevLogs => {
         const updatedLogs = [...prevLogs, newLog];
-        // Apply current filters to the new log
+        // Apply filters to the new log
         let filtered = updatedLogs;
         if (levelFilter !== 'all') {
-          filtered = filtered.filter(log => log.level.toLowerCase() === levelFilter.toLowerCase());
-        }
-        if (sourceFilter !== 'all') {
-          filtered = filtered.filter(log => log.source.toLowerCase() === sourceFilter.toLowerCase());
+          filtered = filtered.filter(log => String(log.level) === levelFilter);
         }
         if (searchTerm) {
           const term = searchTerm.toLowerCase();
-          filtered = filtered.filter(log => 
-            log.message.toLowerCase().includes(term) ||
-            log.timestamp.toLowerCase().includes(term)
-          );
+          filtered = filtered.filter(log => log.message.toLowerCase().includes(term));
         }
         setFilteredLogs(filtered);
         return updatedLogs;
@@ -98,31 +89,45 @@ const LogsView: React.FC = () => {
       socket.off('session_reset', handleSessionReset);
       socket.off('new_log', handleNewLog);
     };
-  }, [levelFilter, sourceFilter, searchTerm]);
+  }, [levelFilter, searchTerm]);
 
   // Fetch logs from backend
   const fetchLogs = async () => {
     try {
       setIsLoading(true);
-      console.log('Fetching logs from /get_logs');
+      console.log('Fetching logs...');
       const response = await fetch('/get_logs');
-      console.log('Response status:', response.status);
+      console.log('Logs response status:', response.status);
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Error response:', errorText);
+        console.error('Error response text:', errorText);
         throw new Error(`Failed to fetch logs: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
       console.log('Received logs:', data.logs.length);
+      
+      // Apply filters to the logs
+      const filteredLogs = data.logs.filter((log: LogEntry) => {
+        // Check category filter
+        if (levelFilter !== 'all' && String(log.level) !== levelFilter) {
+          return false;
+        }
+        // Check search text filter
+        if (searchTerm && !log.message.toLowerCase().includes(searchTerm.toLowerCase())) {
+          return false;
+        }
+        return true;
+      });
+      
       setLogs(data.logs);
-      setFilteredLogs(data.logs);
+      setFilteredLogs(filteredLogs);
     } catch (error) {
-      console.error('Error in fetchLogs:', error);
+      console.error('Error fetching logs:', error);
       toast({
         title: 'Error fetching logs',
-        description: error instanceof Error ? error.message : 'Unknown error occurred',
+        description: error instanceof Error ? error.message : 'Unknown error',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -132,9 +137,12 @@ const LogsView: React.FC = () => {
     }
   };
 
-  // Get unique log levels and sources for filters
-  const logLevels = ['all', ...new Set(logs.map(log => log.level.toLowerCase()))];
-  const logSources = ['all', ...new Set(logs.map(log => log.source.toLowerCase()))];
+  // Get unique log levels for filters
+  const logLevels = ['all', ...new Set(logs.map(log => String(log.level)))].sort((a, b) => {
+    if (a === 'all') return -1;
+    if (b === 'all') return 1;
+    return Number(a) - Number(b);
+  });
 
   return (
     <Box p={4} maxW="800px" mx="auto">
@@ -160,19 +168,7 @@ const LogsView: React.FC = () => {
           >
             {logLevels.map(level => (
               <option key={level} value={level}>
-                {level.charAt(0).toUpperCase() + level.slice(1)}
-              </option>
-            ))}
-          </Select>
-          <Select
-            value={sourceFilter}
-            onChange={(e) => setSourceFilter(e.target.value)}
-            width="120px"
-            size="sm"
-          >
-            {logSources.map(source => (
-              <option key={source} value={source}>
-                {source.charAt(0).toUpperCase() + source.slice(1)}
+                {level === 'all' ? 'All Categories' : `Category ${level}`}
               </option>
             ))}
           </Select>
@@ -210,25 +206,13 @@ const LogsView: React.FC = () => {
                   boxShadow="sm"
                 >
                   <HStack spacing={2}>
-                    <Text fontSize="xs" color="gray.500" minW="140px">
-                      {log.timestamp}
-                    </Text>
                     <Text
                       fontSize="xs"
                       fontWeight="bold"
-                      color={
-                        log.level.toLowerCase() === 'error'
-                          ? 'red.500'
-                          : log.level.toLowerCase() === 'warning'
-                          ? 'yellow.500'
-                          : 'blue.500'
-                      }
+                      color="blue.500"
                       minW="60px"
                     >
-                      {log.level}
-                    </Text>
-                    <Text fontSize="xs" color="gray.500" minW="100px">
-                      {log.source}
+                      [{log.level}]
                     </Text>
                     <Text fontSize="xs" isTruncated>{log.message}</Text>
                   </HStack>

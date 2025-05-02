@@ -361,11 +361,30 @@ const PermissionChat: React.FC = (): JSX.Element => {
     }));
   };
 
+  // Add a function to filter nodes based on original default values
+  const filterDefaultSchemaNodes = (node: TreeNode): TreeNode | null => {
+    // Only include nodes whose original default value is empty (default)
+    if (node.value !== '') {
+      return null;
+    }
+    // Recursively filter children
+    const filteredChildren: TreeNode[] = [];
+    node.children.forEach(child => {
+      const filteredChild = filterDefaultSchemaNodes(child);
+      if (filteredChild) filteredChildren.push(filteredChild);
+    });
+    return { ...node, children: filteredChildren };
+  };
+
   // Handle view mode changes
   const handleViewModeChange = (newMode: ViewMode) => {
     if (newMode === 'edit') {
-      // Create a fresh copy of the current trees for edit view
-      const freshEditTrees = resetEditViewTrees(JSON.parse(JSON.stringify(attributeTrees)));
+      // Filter original attributeTrees to only default-valued nodes for the create-permission view
+      const defaultTrees: TreeNode[] = attributeTrees
+        .map(tree => filterDefaultSchemaNodes(tree))
+        .filter((t): t is TreeNode => t !== null);
+      // Create a fresh copy of the default-only trees for edit view
+      const freshEditTrees = resetEditViewTrees(defaultTrees);
       setEditViewTrees(freshEditTrees);
     }
     setViewMode(newMode);

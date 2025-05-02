@@ -169,7 +169,7 @@ const LogsView: React.FC = () => {
   });
 
   return (
-    <Box p={4} maxW="800px" mx="auto">
+    <Box p={4} width="100%">
       <VStack spacing={4} align="stretch">
         {/* Filters */}
         <HStack spacing={2}>
@@ -230,7 +230,7 @@ const LogsView: React.FC = () => {
                     >
                       [{log.level}]
                     </Text>
-                    <Text fontSize="xs" isTruncated>{log.message}</Text>
+                    <Text fontSize="xs">{log.message}</Text>
                   </HStack>
                 </Box>
               ))}

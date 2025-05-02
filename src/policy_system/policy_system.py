@@ -142,17 +142,21 @@ class PolicySystem:
 
         if policy_rule['granular_data']:
             values = policy_rule['granular_data'].split("::")
+            logger.info(f"Split granular data into values: {values}")
+            
             # Find first value matching pattern "prefix(*)"
             value_idx = next(
                 (i for i, value in enumerate(values) 
-                 if "(" in value and ")" in value and value.split("(")[0] + "*)" == value),
+                 if not ("(" in value and ")" in value and value.split("(")[0] + "*)" == value)),
                 None
             )
+            logger.info(f"Found wildcard pattern at index: {value_idx}")
             
             policy_rule['granular_data'] = (
                 "::".join(values[value_idx:]) if value_idx is not None 
                 else values[0]
             )
+            logger.info(f"Updated granular data to: {policy_rule['granular_data']}")
 
         # Check for duplicate policy using the same key matching logic as remove_policy
         target_key = f"{policy_rule['granular_data'].lower()}-{policy_rule['data_access'].lower()}-{policy_rule['position'].lower()}"

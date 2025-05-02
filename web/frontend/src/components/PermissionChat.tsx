@@ -189,6 +189,14 @@ const TreeView: React.FC<TreeViewProps> = ({
         )}
         <Text ml={2} fontWeight={hasChildren ? "medium" : "normal"} flex={1}>
           {data.label}
+          {/* show child values inline for permitted view */}
+          {viewMode === 'permitted' && isRoot && (
+            data.children.filter(child => child.value !== '' && child.value !== '*').length > 0 && (
+              <Text as="span" ml={2} fontSize="sm" color="gray.500">
+                ({data.children.filter(child => child.value !== '' && child.value !== '*').map(child => child.value).join(', ')})
+              </Text>
+            )
+          )}
         </Text>
         
         <HStack spacing={2} justify="flex-end" minW="300px">
@@ -1173,11 +1181,6 @@ const PermissionChat: React.FC = (): JSX.Element => {
         if (node.value !== '' && node.value !== 'default' && (node.access || node.position)) {
           modifiedNodes.push(node);
         }
-        
-        // Check children
-        if (node.children && node.children.length > 0) {
-          node.children.forEach(findModifiedNodes);
-        }
       };
       
       // Search through edit view trees
@@ -1194,34 +1197,34 @@ const PermissionChat: React.FC = (): JSX.Element => {
         
         // Find chainable children
         const chainableChildren = findChainableChildren(node, editViewTrees);
+        console.log('Chainable children:', chainableChildren);
         
         if (chainableChildren.length > 0) {
+          const allChildGranularData = `${node.label}(${node.value})::${chainableChildren.map(child => `${child.label}(${child.value})`).join('::')}`
+          console.log('All child granular data:', allChildGranularData);
           // Create combined policies for each chainable child
-          chainableChildren.forEach(child => {
-            const policyData = {
-              granular_data: createCombinedLabel(node, child),
-              data_access: node.access,
-              position: node.position === "Current" ? "Current" : `${node.position}::${node.positionValue || 1}`
-            };
-            
-            const apiUrl = import.meta.env.PROD 
-              ? `http://localhost:${port}/add_policy` 
-              : `http://localhost:${port}/add_policy`;
-            
-            policyPromises.push(
-              fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(policyData),
-              })
-            );
-            
-            // Mark both nodes as processed
-            processedNodes.add(node.label);
-            processedNodes.add(child.label);
-          });
+          const policyData = {
+            granular_data: allChildGranularData,
+            data_access: node.access,
+            position: node.position === "Current" ? "Current" : `${node.position}::${node.positionValue || 1}`
+          };
+          
+          const apiUrl = import.meta.env.PROD 
+            ? `http://localhost:${port}/add_policy` 
+            : `http://localhost:${port}/add_policy`;
+          
+          policyPromises.push(
+            fetch(apiUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(policyData),
+            })
+          );
+          
+          // Mark both nodes as processed
+          processedNodes.add(node.label);
         } else {
           // Create regular policy for non-chainable node
           const policyData = {
@@ -1636,6 +1639,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
 
   // Helper function to check if two nodes can form a chain
   const isChainable = (parent: TreeNode, child: TreeNode): boolean => {
+    console.log('Checking if nodes are chainable:', parent, child);
     return parent.value !== '' && 
            child.value !== '' && 
            parent.access === child.access && 
@@ -1659,6 +1663,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
           if (isChainable(node, child)) {
             if (node.label !== child.label) {
               chainableChildren.push(child);
+              console.log('Chainable child found:', child);
             }
           }
           traverse(child);
@@ -1667,6 +1672,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
     };
     
     trees.forEach(traverse);
+    console.log('Chainable children:', chainableChildren);
     return chainableChildren;
   };
 

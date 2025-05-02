@@ -154,7 +154,7 @@ class PolicySystem:
             if callable(value):
                 policy_rule[attr] = value()
         self.policy_rules.append(policy_rule)
-        send_custom_log(1, f"Added new policy with key: {target_key}")
+        send_custom_log("Policy Added:", f"{target_key}")
         logger.info(f"Added new policy with key: {target_key}")
 
     def is_action_allowed(self, attributes, print_policy=True):

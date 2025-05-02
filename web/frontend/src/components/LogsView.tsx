@@ -8,9 +8,21 @@ interface LogEntry {
   message: string;
 }
 
+// Create a persistent store for logs outside the component
+const logStore = {
+  logs: [] as LogEntry[],
+  filteredLogs: [] as LogEntry[],
+  setLogs: (newLogs: LogEntry[]) => {
+    logStore.logs = newLogs;
+  },
+  setFilteredLogs: (newFilteredLogs: LogEntry[]) => {
+    logStore.filteredLogs = newFilteredLogs;
+  }
+};
+
 const LogsView: React.FC = () => {
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [filteredLogs, setFilteredLogs] = useState<LogEntry[]>([]);
+  const [logs, setLogs] = useState<LogEntry[]>(logStore.logs);
+  const [filteredLogs, setFilteredLogs] = useState<LogEntry[]>(logStore.filteredLogs);
   const [searchTerm, setSearchTerm] = useState('');
   const [levelFilter, setLevelFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(false);
@@ -41,8 +53,11 @@ const LogsView: React.FC = () => {
     const handleSessionReset = (data: { reset: boolean }) => {
       console.log('Session reset event received with data:', data);
       if (data.reset) {
-        setLogs([]);
-        setFilteredLogs([]);
+        const emptyLogs: LogEntry[] = [];
+        setLogs(emptyLogs);
+        setFilteredLogs(emptyLogs);
+        logStore.setLogs(emptyLogs);
+        logStore.setFilteredLogs(emptyLogs);
         // Also fetch fresh logs after reset
         fetchLogs();
       }
@@ -52,16 +67,7 @@ const LogsView: React.FC = () => {
       console.log('New log received:', newLog);
       setLogs(prevLogs => {
         const updatedLogs = [...prevLogs, newLog];
-        // Apply filters to the new log
-        let filtered = updatedLogs;
-        if (levelFilter !== 'all') {
-          filtered = filtered.filter(log => String(log.level) === levelFilter);
-        }
-        if (searchTerm) {
-          const term = searchTerm.toLowerCase();
-          filtered = filtered.filter(log => log.message.toLowerCase().includes(term));
-        }
-        setFilteredLogs(filtered);
+        logStore.setLogs(updatedLogs);
         return updatedLogs;
       });
     };
@@ -78,8 +84,10 @@ const LogsView: React.FC = () => {
     socket.on('session_reset', handleSessionReset);
     socket.on('new_log', handleNewLog);
 
-    // Initial fetch
-    fetchLogs();
+    // Initial fetch if we don't have logs yet
+    if (logs.length === 0) {
+      fetchLogs();
+    }
 
     // Clean up
     return () => {
@@ -89,7 +97,22 @@ const LogsView: React.FC = () => {
       socket.off('session_reset', handleSessionReset);
       socket.off('new_log', handleNewLog);
     };
-  }, [levelFilter, searchTerm]);
+  }, []);
+
+  // Separate effect for handling filter changes
+  useEffect(() => {
+    const filtered = logs.filter(log => {
+      if (levelFilter !== 'all' && String(log.level) !== levelFilter) {
+        return false;
+      }
+      if (searchTerm && !log.message.toLowerCase().includes(searchTerm.toLowerCase())) {
+        return false;
+      }
+      return true;
+    });
+    setFilteredLogs(filtered);
+    logStore.setFilteredLogs(filtered);
+  }, [logs, levelFilter, searchTerm]);
 
   // Fetch logs from backend
   const fetchLogs = async () => {
@@ -108,21 +131,22 @@ const LogsView: React.FC = () => {
       const data = await response.json();
       console.log('Received logs:', data.logs.length);
       
+      setLogs(data.logs);
+      logStore.setLogs(data.logs);
+      
       // Apply filters to the logs
       const filteredLogs = data.logs.filter((log: LogEntry) => {
-        // Check category filter
         if (levelFilter !== 'all' && String(log.level) !== levelFilter) {
           return false;
         }
-        // Check search text filter
         if (searchTerm && !log.message.toLowerCase().includes(searchTerm.toLowerCase())) {
           return false;
         }
         return true;
       });
       
-      setLogs(data.logs);
       setFilteredLogs(filteredLogs);
+      logStore.setFilteredLogs(filteredLogs);
     } catch (error) {
       console.error('Error fetching logs:', error);
       toast({
@@ -172,14 +196,6 @@ const LogsView: React.FC = () => {
               </option>
             ))}
           </Select>
-          <Button
-            leftIcon={<SearchIcon boxSize={3} />}
-            onClick={fetchLogs}
-            isLoading={isLoading}
-            size="sm"
-          >
-            Refresh
-          </Button>
         </HStack>
 
         {/* Logs display */}

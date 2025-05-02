@@ -534,7 +534,7 @@ def send_log():
     """Send a new log message with category"""
     try:
         data = request.get_json()
-        category = data.get('category')
+        category = str(data.get('category'))  # Convert category to string
         message = data.get('message')
         
         if not category or not message:

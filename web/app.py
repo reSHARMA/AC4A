@@ -296,9 +296,12 @@ def reset_session():
     logger.info("New session initialized after reset")
     
     # Emit session reset event to all connected clients
-    logger.info("Emitting session_reset event")
-    socketio.emit('session_reset', namespace='/')
-    logger.info("Session reset event emitted")
+    try:
+        logger.info("Emitting session_reset event")
+        socketio.emit('session_reset', {'reset': True}, namespace='/')
+        logger.info("Session reset event emitted")
+    except Exception as e:
+        logger.error(f"Error emitting session_reset event: {str(e)}")
     
     return jsonify({"status": "success", "message": "Session reset"})
 

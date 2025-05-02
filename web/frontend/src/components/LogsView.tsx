@@ -41,10 +41,14 @@ const LogsView: React.FC = () => {
       console.log('Socket disconnected');
     };
 
-    const handleSessionReset = () => {
-      console.log('Session reset event received');
-      setLogs([]);
-      setFilteredLogs([]);
+    const handleSessionReset = (data: { reset: boolean }) => {
+      console.log('Session reset event received with data:', data);
+      if (data.reset) {
+        setLogs([]);
+        setFilteredLogs([]);
+        // Also fetch fresh logs after reset
+        fetchLogs();
+      }
     };
 
     const handleNewLog = (newLog: LogEntry) => {

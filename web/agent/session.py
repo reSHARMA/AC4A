@@ -4,6 +4,7 @@ import gc
 import logging
 import uuid
 import queue
+import os
 from .queues import (
     agent_initialized, 
     agent_message_queue, 
@@ -69,6 +70,15 @@ def reset_agent_session(emit_termination: bool = True):
     # Set session as inactive after cleanup
     set_agent_session_active(False)
     
+    # Clear the debug.log file
+    log_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'debug.log')
+    try:
+        with open(log_path, 'w') as f:
+            f.write('')
+        logger.info("Cleared debug.log file")
+    except Exception as e:
+        logger.error(f"Error clearing debug.log: {str(e)}")
+    
     logger.info("Agent session reset complete")
 
 def initialize_agent_session():
@@ -79,7 +89,15 @@ def initialize_agent_session():
     if is_agent_session_active():
         logger.info("Agent session already active")
         return
-    
+     # Emit session reset event to all connected clients
+    try:
+        logger.info("Emitting session_reset event")
+        from web.utils.events import socketio
+        socketio.emit('session_reset', {'reset': True}, namespace='/')
+        logger.info("Session reset event emitted")
+    except Exception as e:
+        logger.error(f"Error emitting session_reset event: {str(e)}") 
+
     # If the agent has already been initialized, reset it first
     if agent_initialized:
         logger.info("Agent already initialized, resetting first")

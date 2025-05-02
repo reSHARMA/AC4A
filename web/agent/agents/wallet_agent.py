@@ -15,7 +15,6 @@ class WalletAPIAnnotation(APIAnnotationBase):
         super().__init__("Wallet", {
             'granular_data': [
                 AttributeTree(f'Wallet:CreditCard', [
-                    AttributeTree(f'Wallet:CreditCardName'),
                     AttributeTree(f'Wallet:CreditCardType'),
                     AttributeTree(f'Wallet:CreditCardNumber'),
                     AttributeTree(f'Wallet:CreditCardPin')

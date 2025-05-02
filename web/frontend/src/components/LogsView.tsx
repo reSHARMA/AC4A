@@ -187,7 +187,7 @@ const LogsView: React.FC = () => {
           <Select
             value={levelFilter}
             onChange={(e) => setLevelFilter(e.target.value)}
-            width="120px"
+            width="200px"
             size="sm"
           >
             {logLevels.map(level => (
@@ -204,36 +204,62 @@ const LogsView: React.FC = () => {
           overflowY="auto"
           bg="gray.50"
           borderRadius="md"
-          p={2}
+          p={4}
           fontSize="sm"
+          boxShadow="sm"
         >
           {filteredLogs.length === 0 ? (
             <Text textAlign="center" color="gray.500">
               No logs found
             </Text>
           ) : (
-            <VStack spacing={1} align="stretch">
-              {filteredLogs.map((log, index) => (
-                <Box
-                  key={index}
-                  p={1}
-                  bg="white"
-                  borderRadius="md"
-                  boxShadow="sm"
-                >
-                  <HStack spacing={2}>
-                    <Text
-                      fontSize="xs"
-                      fontWeight="bold"
-                      color="blue.500"
-                      minW="60px"
-                    >
-                      [{log.level}]
-                    </Text>
-                    <Text fontSize="xs">{log.message}</Text>
-                  </HStack>
-                </Box>
-              ))}
+            <VStack spacing={2} align="stretch">
+              {filteredLogs.map((log, index) => {
+                // Define colors for different log categories
+                const getCategoryColor = (level: string) => {
+                  switch (level) {
+                    case 'Permission Added':
+                      return 'green.500';
+                    case 'Calling':
+                      return 'blue.500';
+                    case 'Access Denied by':
+                      return 'red.500';
+                    case 'Access Granted by':
+                      return 'green.500';
+                    default:
+                      return 'gray.500';
+                  }
+                };
+
+                return (
+                  <Box
+                    key={index}
+                    p={2}
+                    bg="white"
+                    borderRadius="md"
+                    boxShadow="sm"
+                    borderLeft="3px solid"
+                    borderColor={getCategoryColor(log.level)}
+                    transition="all 0.2s"
+                    _hover={{
+                      transform: 'translateX(2px)',
+                      boxShadow: 'md'
+                    }}
+                  >
+                    <HStack spacing={1}>
+                      <Text
+                        fontSize="xs"
+                        fontWeight="bold"
+                        color={getCategoryColor(log.level)}
+                        minW="100px"
+                      >
+                        [{log.level}]
+                      </Text>
+                      <Text fontSize="xs" color="gray.700" fontFamily="mono">{log.message}</Text>
+                    </HStack>
+                  </Box>
+                );
+              })}
               <div ref={logsEndRef} />
             </VStack>
           )}

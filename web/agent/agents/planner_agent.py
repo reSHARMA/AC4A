@@ -25,9 +25,7 @@ class PlannerAgent(BaseAgent):
 
         First output the name of the application and then the description in the format, application: description. The description must contains all the required information for the application, do not make up data, if you need data invoke the User application to get the required data first before calling the application.
 
-        When all the tasks are completed return terminate.
-        for any other reason of failure return error
-        Always give reason for termination or error.
+        When all tasks are completed from your end, output terminate along with the reason of termination.
         """
         
         tools = []

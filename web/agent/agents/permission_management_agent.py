@@ -9,7 +9,7 @@ class PermissionManagementAgent:
         "ask": "ask the user to please set the necessary permissions to continue. If available, share the error with the user so that they can set the appropriate permissions.",
         "skip": "suggest a work around which will not require using the resource you are not able to access or ask the user to please suggest how to proceed. ",
         "infer": "ask the user to please allow the required permissions. ",
-        "yolo": "tell the user that I am automatically approving the required permissions. "
+        "yolo": "try again on your own. Try calling the application again with the request. Do not disturb the user. The user have made you the super user to complete the task and it is your responsibility to complete the task even if it requires sending strict messages to the application. "
     }
 
     def __init__(self, mode=None, prompt=None):

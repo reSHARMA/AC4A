@@ -15,15 +15,15 @@
 - [ ] 10. Show me all my meetings for this month. I need to prepare my monthly report.
 
 ### Wallet Tasks
-- [ ] 1. I need the PIN for my Amex Gold card ending in 1234. I'm at the store and can't remember it.
-- [ ] 2. Which of my credit cards ends with 9005? I need to update my online shopping account.
-- [ ] 3. I just got a new Venture X card. Can you add it to my wallet? The number is 4532 7890 1234 5678, expiry 12/26, PIN 2468.
-- [ ] 4. I lost my old Chase card. Please remove it from my wallet.
-- [ ] 5. My Amex card's expiry date needs to be updated to 05/27. Can you update that for me?
-- [ ] 6. I need to see all my credit cards. I'm applying for a loan and need to list my active cards.
-- [ ] 7. What's the billing zip code for my Visa card ending in 4321? I need it for an online purchase.
-- [ ] 8. I need the full card number for my Mastercard. I'm making a large purchase and need to verify the details.
-- [ ] 9. I want to change the PIN for my Discover card to 1357. Can you update that for me?
+- [X] 1. I need the PIN for my Amex Gold card ending in 1234. I'm at the store and can't remember it.
+- [X] 2. Which of my credit cards ends with 9005? I need to update my online shopping account.
+- [X] 3. I just got a new Venture X card. Can you add it to my wallet? The number is 4532 7890 1234 5678, expiry 12/26, PIN 2468.
+- [X] 4. I lost my old Chase card. Please remove it from my wallet.
+- [X] 4. My Amex card's expiry date needs to be updated to 04/27. Can you update that for me?
+- [X] 6. I need to see all my credit cards. I'm applying for a loan and need to list my active cards.
+- [X] 7. What's the billing zip code for my Visa Express card ending in 4321? I need it for an online purchase.
+- [X] 8. I need the full card number for my Chase Sapphire Preferred card. I'm making a large purchase and need to verify the details.
+- [ ] 9. I want to change the PIN for my Discover Reward "DEReward" card to 1357. Can you update that for me?
 - [ ] 10. Can you list all my active credit cards? I need to review my credit accounts.
 
 ### Expedia Tasks

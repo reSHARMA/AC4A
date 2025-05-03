@@ -147,7 +147,7 @@ class WalletAgent(BaseAgent):
         - card_pin: The card pin, example "123".
         - billing_zip_code: The billing zip code, example "12345".
 
-        Use the tool `wallet_get_all_credit_card_names` to get all the credit card names.
+        Use the tool `wallet_get_all_credit_card_names` to get all the credit card names. This tool returns a list of all the credit card names and does not take any parameters.
 
         Return "done" when you have completed your work.
         """

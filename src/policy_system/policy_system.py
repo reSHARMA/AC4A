@@ -138,6 +138,7 @@ class PolicySystem:
     def add_policy(self, policy_rule):
         if self.is_action_allowed(policy_rule, False):
             logger.info("Policy rule already subsumed by existing policies. Skipping addition.")
+            send_custom_log("Permission Subsumed", f"{policy_rule}")
             return
 
         if policy_rule['granular_data']:

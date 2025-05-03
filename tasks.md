@@ -1,17 +1,177 @@
 # List of tasks tested
 
-# Calendar
-## What is on my calendar for 15th June 2025?
-## Show me what in on my calendar for the week starting 10th July 2025.
-## Reserve a slot in my calender for 4pm, 21st July 2026 as a reminder about vacation
-## Am I available to attend a party on 9th November 2025 9pm?
+## Single App Tasks
 
-# Wallet
-## get credit card pin of my amex gold card
-## which of my credit card ends with 9005
+### Calendar Tasks
+- [x] 1. I need to check my schedule for June 15th, 2025. I have an important client meeting that day and want to make sure I'm free.
+- [x] 2. Can you show me my calendar for the week of July 10th, 2025? I'm planning a project timeline and need to see my availability.
+- [x] 3. Please add a reminder to my calendar for July 21st, 2026 at 4pm about my vacation plans to Hawaii.
+- [x] 4. I got invited to a party on November 9th, 2025 at 9pm. Can you check if I'm available that evening?
+- [ ] 5. I need to schedule a team meeting for next week. Can you show me my availability for Tuesday through Thursday?
+- [x] 6. I'm planning to visit my family on December 25th, 2025. Am I free that day?
+- [ ] 7. Please add a meeting with the marketing team for tomorrow at 2pm in the conference room.
+- [x] 8. What's on my schedule for today? I need to plan my workday.
+- [ ] 9. I need to schedule a 1-hour call with a client. Can you find the next available slot in my calendar?
+- [ ] 10. Show me all my meetings for this month. I need to prepare my monthly report.
 
-# Expedia
-## search flights between sea to slc for 16th June 2025
+### Wallet Tasks
+- [ ] 1. I need the PIN for my Amex Gold card ending in 1234. I'm at the store and can't remember it.
+- [ ] 2. Which of my credit cards ends with 9005? I need to update my online shopping account.
+- [ ] 3. I just got a new Venture X card. Can you add it to my wallet? The number is 4532 7890 1234 5678, expiry 12/26, PIN 2468.
+- [ ] 4. I lost my old Chase card. Please remove it from my wallet.
+- [ ] 5. My Amex card's expiry date needs to be updated to 05/27. Can you update that for me?
+- [ ] 6. I need to see all my credit cards. I'm applying for a loan and need to list my active cards.
+- [ ] 7. What's the billing zip code for my Visa card ending in 4321? I need it for an online purchase.
+- [ ] 8. I need the full card number for my Mastercard. I'm making a large purchase and need to verify the details.
+- [ ] 9. I want to change the PIN for my Discover card to 1357. Can you update that for me?
+- [ ] 10. Can you list all my active credit cards? I need to review my credit accounts.
 
-# Combinations
-## Book the cheapest flight ticket for the first week of January 2026 from Sea to Slc based on the constraint on my calendar. Pay using my amex gold card and add the trip to my calendar.
+### Expedia Tasks
+- [ ] 1. I need to fly from Seattle to Salt Lake City on June 16th, 2025. Can you find me some flight options?
+- [ ] 2. I'm visiting New York next weekend. Can you find me a hotel near Times Square?
+- [ ] 3. I need a rental car in Los Angeles for my business trip next week. Looking for a mid-size sedan.
+- [ ] 4. I'm interested in taking a cruise from Miami. Can you show me some options for next month?
+- [ ] 5. I'm going to Paris next month. Can you find me some unique experiences or tours to book?
+- [ ] 6. I need to book a flight from Chicago to London for my business trip. Looking for business class options.
+- [ ] 7. I'm planning a trip to Disney World. Can you find me hotels within walking distance of the park?
+- [ ] 8. I need a rental car in San Francisco for three days next week. Looking for something economical.
+- [ ] 9. I want to take a Caribbean cruise. Can you show me some options for this summer?
+- [ ] 10. I'm visiting Tokyo next month. Can you find me some cultural experiences or food tours to book?
+
+### Contact Manager Tasks
+- [ ] 1. I just met John Smith at a conference. Can you add him to my contacts? His number is 555-0123 and email is john.smith@example.com.
+- [ ] 2. John's phone number has changed to 555-4567. Can you update that in my contacts?
+- [ ] 3. I no longer need Sarah's contact information. Please remove her from my contacts.
+- [ ] 4. I need to find all my contacts in New York. I'm planning a business trip there.
+- [ ] 5. Can you show me all contacts who have birthdays in June? I need to send out birthday cards.
+- [ ] 6. Michael's email has changed to michael.new@example.com. Please update his contact information.
+- [ ] 7. I need to create a new group for my book club members. Can you help me set that up?
+- [ ] 8. Show me all my work contacts. I need to send out a company announcement.
+- [ ] 9. I need to see all my family contacts. I'm planning a family reunion.
+- [ ] 10. Lisa moved to a new address: 123 Main St, Anytown, CA 90210. Can you update that in her contact information?
+
+## Two App Combinations
+
+### Calendar + Wallet
+- [ ] 1. My Amex Gold card bill is due on the 15th of each month. Can you set up a reminder in my calendar and store the payment details?
+- [ ] 2. I need to set up recurring payment reminders for my Visa card. The minimum payment is due on the 20th of each month.
+- [ ] 3. I have several credit card payments coming up. Can you check my calendar availability and schedule reminders for each payment date?
+- [ ] 4. I need to schedule bill payment reminders for all my cards. Can you add them to my calendar with the respective card details?
+- [ ] 5. I want to plan my credit card payment schedule for this month. Can you check my calendar and set up reminders for each payment?
+- [ ] 6. My credit card rewards are expiring next month. Can you set a reminder in my calendar and store the rewards details?
+- [ ] 7. I need to set up automatic payments for my cards. Can you schedule reminders to verify the setup in my calendar?
+- [ ] 8. I want to review my credit card statements monthly. Can you schedule a recurring meeting in my calendar?
+- [ ] 9. I'm planning to request a credit limit increase. Can you set a reminder in my calendar and store the current limit details?
+- [ ] 10. I need to check my credit score quarterly. Can you schedule reminders in my calendar and store the score history?
+
+### Calendar + Expedia
+- [ ] 1. I need to book a flight to New York, but I want to make sure it doesn't conflict with my existing meetings. Can you check my calendar and find suitable flights?
+- [ ] 2. I'm planning a vacation but need to work around my work schedule. Can you check my calendar availability and suggest travel dates?
+- [ ] 3. I have a business trip coming up with several meetings. Can you help me book flights that work with my meeting schedule?
+- [ ] 4. I just booked a flight. Can you add the flight details to my calendar, including check-in and boarding times?
+- [ ] 5. I'm planning a weekend getaway. Can you check my calendar for free weekends and suggest travel options?
+- [ ] 6. I have a flight landing at 3pm. Can you schedule an airport transfer in my calendar based on the flight time?
+- [ ] 7. I'm traveling to Paris next month. Can you check my calendar availability and suggest activities for my free time?
+- [ ] 8. I just booked a hotel. Can you add the check-in and check-out times to my calendar?
+- [ ] 9. I'm visiting Rome and want to see the sights. Can you check my calendar and suggest a sightseeing schedule?
+- [ ] 10. I'm planning a multi-city trip. Can you help me coordinate the travel dates with my calendar availability?
+
+### Calendar + Contact Manager
+- [ ] 1. I need to schedule a meeting with John Smith. Can you check both our calendars and find a suitable time?
+- [ ] 2. I'm planning a team event. Can you check the availability of all team members in my contacts?
+- [ ] 3. Can you add all my contacts' birthdays to my calendar? I want to make sure I don't miss any.
+- [ ] 4. I need to schedule follow-up calls with my clients. Can you check my contacts and calendar to find suitable times?
+- [ ] 5. I'm planning a team meeting. Can you check the availability of all employees in my contacts?
+- [ ] 6. I want to organize a family gathering. Can you check the availability of all family members in my contacts?
+- [ ] 7. Can you add all my contacts' anniversaries to my calendar? I want to send them cards.
+- [ ] 8. I'm planning a networking event. Can you check my business contacts' availability?
+- [ ] 9. I need to schedule client review meetings. Can you check my client contacts and calendar availability?
+- [ ] 10. I'm planning a social event. Can you check the availability of my friends in my contacts?
+
+### Wallet + Expedia
+- [ ] 1. I want to book a flight using my Amex Gold card. Can you help me with the payment?
+- [ ] 2. I need to pay for my hotel booking. Can you use my Visa card ending in 4321?
+- [ ] 3. I'm renting a car and want to use my Mastercard for the payment. Can you help me with that?
+- [ ] 4. I'm booking a cruise and want to use my Discover card. Can you process the payment?
+- [ ] 5. I want to book some experiences in Paris. Can you use my stored card for the payment?
+- [ ] 6. I need to split the payment for our group trip. Can you help me divide the cost among my cards?
+- [ ] 7. I want to purchase travel insurance. Can you use my specific card that has travel benefits?
+- [ ] 8. I need to pay for some travel add-ons. Can you use my stored card for the payment?
+- [ ] 9. I want to book a hotel using my card that has hotel benefits. Can you help me with that?
+- [ ] 10. I need to pay for cruise add-ons. Can you use my stored card for the payment?
+
+### Wallet + Contact Manager
+- [ ] 1. I need to store payment information for my regular clients. Can you help me organize that?
+- [ ] 2. I'm sharing expenses with my roommate. Can you track our shared payments?
+- [ ] 3. I need to manage payment information for my book club members. Can you help me set that up?
+- [ ] 4. I want to store billing information for my business clients. Can you help me organize that?
+- [ ] 5. I need to track shared expenses with my family members. Can you help me manage that?
+- [ ] 6. I want to manage business expense contacts. Can you help me organize their payment information?
+- [ ] 7. I need to store vendor payment information. Can you help me set that up?
+- [ ] 8. I want to track client billing details. Can you help me organize that information?
+- [ ] 9. I need to manage subscription payments. Can you help me track those?
+- [ ] 10. I want to store recurring payment contacts. Can you help me organize that information?
+
+### Expedia + Contact Manager
+- [ ] 1. I'm booking travel for my team. Can you help me organize the bookings for each team member?
+- [ ] 2. I'm planning a group trip with my friends. Can you help me coordinate the travel arrangements?
+- [ ] 3. I want to share travel itineraries with my family. Can you help me organize that?
+- [ ] 4. I'm booking activities for my book club. Can you help me coordinate that?
+- [ ] 5. I'm planning a family vacation. Can you help me organize the travel arrangements?
+- [ ] 6. I'm organizing a business trip with my colleagues. Can you help me coordinate that?
+- [ ] 7. I want to share hotel bookings with my team. Can you help me organize that?
+- [ ] 8. I'm planning a team retreat. Can you help me coordinate the arrangements?
+- [ ] 9. I want to organize a group tour. Can you help me coordinate that?
+- [ ] 10. I'm planning a reunion with old friends. Can you help me organize the travel arrangements?
+
+## Three App Combinations
+
+### Calendar + Wallet + Expedia
+- [ ] 1. I need to plan a complete travel itinerary for my business trip to Tokyo. I need to check my calendar availability, book flights and hotels, and pay with my corporate card. Can you help me coordinate all of this?
+- [ ] 2. I'm planning a business trip to London with several meetings. I need to schedule the meetings, book travel arrangements, and pay with my business card. Can you help me organize everything?
+- [ ] 3. I'm planning a vacation to Hawaii. I need to check my vacation dates, book flights and activities, and pay with my personal card. Can you help me plan this trip?
+- [ ] 4. I want to book a cruise vacation. I need to check my calendar availability, book the cruise and add-ons, and pay with my stored card. Can you help me with this?
+- [ ] 5. I'm planning a multi-city business trip to New York, Chicago, and Los Angeles. I need to schedule meetings in each city, book flights and hotels, and pay with my corporate card. Can you help me coordinate this?
+
+### Calendar + Wallet + Contact Manager
+- [ ] 1. I need to plan and track group expenses for our team project. I need to schedule payment meetings, track shared expenses, and manage contact payments. Can you help me organize this?
+- [ ] 2. I'm organizing our family budget planning. I need to schedule budget meetings, track family expenses, and manage family contacts. Can you help me with this?
+- [ ] 3. I need to plan my client billing schedule. I need to schedule client meetings, track client payments, and manage client contacts. Can you help me organize this?
+- [ ] 4. I'm organizing our team expenses. I need to schedule expense reviews, track team spending, and manage team contacts. Can you help me with this?
+- [ ] 5. I need to plan vendor payments. I need to schedule payment dates, track vendor expenses, and manage vendor contacts. Can you help me organize this?
+
+### Calendar + Expedia + Contact Manager
+- [ ] 1. I'm planning a group trip to Paris. I need to check everyone's availability, book group travel, and manage travel contacts. Can you help me coordinate this?
+- [ ] 2. I'm organizing a family vacation to Disney World. I need to check family schedules, book family activities, and manage family contacts. Can you help me plan this?
+- [ ] 3. I'm planning a business retreat. I need to check team availability, book team activities, and manage team contacts. Can you help me organize this?
+- [ ] 4. I'm organizing a client trip to New York. I need to check client availability, book client activities, and manage client contacts. Can you help me coordinate this?
+- [ ] 5. I'm planning a team building event. I need to check team schedules, book team activities, and manage team contacts. Can you help me organize this?
+
+### Wallet + Expedia + Contact Manager
+- [ ] 1. I'm planning a group trip to Las Vegas. I need to manage group payments, book group travel, and track contact payments. Can you help me organize this?
+- [ ] 2. I'm organizing a family vacation to Hawaii. I need to track family expenses, book family travel, and manage family contacts. Can you help me plan this?
+- [ ] 3. I'm planning a business trip to London. I need to track business expenses, book business travel, and manage business contacts. Can you help me organize this?
+- [ ] 4. I'm organizing client travel to a conference. I need to track client expenses, book client travel, and manage client contacts. Can you help me coordinate this?
+- [ ] 5. I'm planning a team event in San Francisco. I need to track team expenses, book team activities, and manage team contacts. Can you help me organize this?
+
+## Four App Combinations (All Apps)
+
+- [ ] 1. I'm organizing a complete travel planning system for our company's annual retreat. I need to check calendar availability for all 50 participants, book travel and activities, manage payments and expenses, track all contacts involved, add all events to calendars, and split costs among participants. Can you help me coordinate this massive undertaking?
+
+- [ ] 2. I'm planning a business conference in New York. I need to schedule conference dates that work for all speakers, book the venue and travel arrangements, manage attendee payments, track all 200 participants, add conference events to everyone's calendar, and handle expense reports. Can you help me organize this complex event?
+
+- [ ] 3. I'm organizing a family reunion in Hawaii. I need to check availability for all 30 family members, book the venue and activities, manage family payments, track all family members' contact information, add reunion events to everyone's calendar, and split costs among family members. Can you help me coordinate this family gathering?
+
+- [ ] 4. I'm planning a team building retreat in Colorado. I need to check team availability, book retreat activities, manage team expenses, track all 25 team members, add retreat events to everyone's calendar, and handle company payments. Can you help me organize this team event?
+
+- [ ] 5. I'm organizing a client appreciation event in Las Vegas. I need to schedule the event date, book the venue and activities, manage client payments, track all 50 clients, add the event to everyone's calendar, and handle expense tracking. Can you help me coordinate this client event?
+
+- [ ] 6. I'm planning my wedding in Napa Valley. I need to schedule wedding events, book the venue and vendors, manage wedding payments, track all 150 guests, add wedding events to everyone's calendar, and handle gift tracking. Can you help me organize this special day?
+
+- [ ] 7. I'm organizing a corporate training program in Chicago. I need to schedule training dates, book the training venue, manage participant payments, track all 75 trainees, add training to everyone's calendar, and handle expense reports. Can you help me coordinate this training program?
+
+- [ ] 8. I'm planning a group vacation to Italy. I need to check group availability, book vacation activities, manage group payments, track all 15 participants, add vacation events to everyone's calendar, and split vacation costs. Can you help me organize this group trip?
+
+- [ ] 9. I'm organizing a business partner summit in Miami. I need to schedule summit dates, book the summit venue, manage partner payments, track all 40 partners, add summit events to everyone's calendar, and handle partnership expenses. Can you help me coordinate this summit?
+
+- [ ] 10. I'm planning our annual company retreat in San Diego. I need to schedule retreat dates, book retreat activities, manage company payments, track all 100 employees, add retreat events to everyone's calendar, and handle corporate expenses. Can you help me organize this company event?

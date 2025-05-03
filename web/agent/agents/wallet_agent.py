@@ -36,7 +36,8 @@ class WalletAPIAnnotation(APIAnnotationBase):
             'add_credit_card': ('CreditCard', kwargs.get('card_name', '*')),
             'remove_credit_card': ('CreditCard', kwargs.get('card_name', '*')),
             'update_credit_card': ('CreditCard', kwargs.get('card_name', '*')),
-            'get_credit_card_info': ('CreditCard', kwargs.get('card_name', '*'))
+            'get_credit_card_info': ('CreditCard', kwargs.get('card_name', '*')),
+            'get_all_credit_card_names': ('CreditCard', '*')
         }
         label, detail = api_to_granular_data.get(endpoint_name, ('CreditCard', '*'))
         if use_wildcard:
@@ -100,6 +101,13 @@ class WalletAPI:
             **kwargs
         )
 
+    @WalletAPIAnnotation.annotate
+    def get_all_credit_card_names(self, *args, **kwargs):
+        return generate_dummy_data(
+            api_endpoint="get_all_credit_card_names: get all the credit card names",
+            **kwargs
+        )
+
 class WalletAgent(BaseAgent):
     """Wallet agent for managing wallet operations"""
     
@@ -115,8 +123,6 @@ class WalletAgent(BaseAgent):
         You are a wallet agent.
 
         wallet_get_credit_card_info tool takes card_name as input and returns all the credit card information, always including the card type, card number, card expiry date, card pin and the billing zip code for the given card name.
-
-        If the card information is requested but card name is not provided, ask the user for the card name using `web_input_func` tool that only takes a single input as a string which is the message to the user.
 
         Use the tool `wallet_get_credit_card_info` to get the credit card information. The tool takes the following parameters:
         - card_name: The name of the card to get the information for, example "Venture X".
@@ -140,6 +146,8 @@ class WalletAgent(BaseAgent):
         - card_expiry: The card expiry date as MM/YY, example "01/26".
         - card_pin: The card pin, example "123".
         - billing_zip_code: The billing zip code, example "12345".
+
+        Use the tool `wallet_get_all_credit_card_names` to get all the credit card names.
 
         Return "done" when you have completed your work.
         """
@@ -218,3 +226,11 @@ class WalletAgent(BaseAgent):
         logger.info(f"Calling WalletAPI get_credit_card_info with card_name={card_name}")
         result = self.wallet_api.get_credit_card_info(card_name=card_name)
         return result 
+
+    async def wallet_get_all_credit_card_names(self) -> str:
+        """
+        Get all the credit card names
+        """
+        logger.info("Calling WalletAPI get_all_credit_card_names")
+        result = self.wallet_api.get_all_credit_card_names()
+        return result

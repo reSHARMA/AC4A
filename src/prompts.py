@@ -500,7 +500,8 @@ You are given a data permission policy in an python embedded DSL.
 granular_data is the data for which the permission is given.
 position is always interpreted for the granular_data.
 if the position is current and it does not make sense for the granular_data ignore it from the output.
-- position for calendar will always represent unbounded time (previous -> past, current -> present and next -> future)
+- position for calendar will always represent unbounded time (previous -> past, current -> present and next -> future) when it does not have a value.
+- when the position is not current, it will always have a value. This value will be a number which will be the number of steps from the granular_data.
 - position must be ignored for data from expedia
 
 Convert each policy into one linear natural language statements which can be shown to the user.
@@ -513,21 +514,21 @@ Example:
 
 decl 
 policy_system.add_policy({
-    "granular_data": "Calendar:Year",
+    "granular_data": "Calendar:Year(2025)",
     "data_access": "Read",
-    "position": "Next"
+    "position": "Next(1)"
 })
 
-The system has been granted read access to the future calendar year data.
+The system has been granted read access to calendar year data from 2025 to 2026.
 
 prompt
 policy_system.add_policy({
-    "granular_data": "Calendar:Year",
+    "granular_data": "Calendar:Year(*)",
     "data_access": "Read",
-    "position": "Next"
+    "position": "Current"
 })
 
-Do you allow read access to the future calendar year data?
+Do you allow read access to all the calendar year data?
 """
 
 PERMISSION_REQUIRED = """

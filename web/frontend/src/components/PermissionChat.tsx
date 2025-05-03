@@ -1177,16 +1177,24 @@ const PermissionChat: React.FC = (): JSX.Element => {
       const processedNodes = new Set<string>(); // Track nodes we've already processed
       
       const findModifiedNodes = (node: TreeNode) => {
+        console.log('EDIT VIEW: Checking node:', node);
         // If this node has non-default values, add it
         if (node.value !== '' && node.value !== 'default' && (node.access || node.position)) {
           modifiedNodes.push(node);
         }
       };
       
-      // Search through edit view trees
-      editViewTrees.forEach(findModifiedNodes);
+      // Search through edit view trees using BFS
+      const queue = [...editViewTrees];
+      while (queue.length > 0) {
+        const node = queue.shift()!;
+        findModifiedNodes(node);
+        if (node.children) {
+          queue.push(...node.children);
+        }
+      }
       
-      console.log('Found modified nodes:', modifiedNodes);
+      console.log('EDIT VIEW: Found modified nodes:', modifiedNodes);
       
       // Create policies for modified nodes
       const policyPromises: Promise<Response>[] = [];

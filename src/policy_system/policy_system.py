@@ -145,13 +145,17 @@ class PolicySystem:
             values = policy_rule['granular_data'].split("::")
             logger.info(f"Split granular data into values: {values}")
             
-            # Find first value matching pattern "prefix(*)"
-            value_idx = next(
-                (i for i, value in enumerate(values) 
-                 if not ("(" in value and ")" in value and value.split("(")[0] + "*)" == value)),
-                None
-            )
-            logger.info(f"Found wildcard pattern at index: {value_idx}")
+            value_idx = None
+            # iterate values in reverse order
+            for i in range(len(values) - 1, -1, -1):
+                if values[i].split("(")[0] + "*)" != values[i]:
+                    value_idx = i
+
+            if value_idx is None:
+                logger.info("Only wildcard pattern found, using first value")
+                value_idx = 0
+            else:
+                logger.info(f"Found non-wildcard pattern at index: {value_idx}")
             
             policy_rule['granular_data'] = (
                 "::".join(values[value_idx:]) if value_idx is not None 

@@ -102,10 +102,9 @@ class WalletAPI:
         )
 
     @WalletAPIAnnotation.annotate
-    def get_all_credit_card_names(self, *args, **kwargs):
+    def get_all_credit_card_names(self):
         return generate_dummy_data(
-            api_endpoint="get_all_credit_card_names: get all the credit card names",
-            **kwargs
+            api_endpoint="get_all_credit_card_names: get all the credit card names"
         )
 
 class WalletAgent(BaseAgent):
@@ -121,12 +120,12 @@ class WalletAgent(BaseAgent):
         """
         system_message = """
         You are a wallet agent.
+        
+        Use the tool `wallet_get_all_credit_card_names` to get all the credit card names. This tool returns a list of all the credit card names and does not take any parameters.
 
-        wallet_get_credit_card_info tool takes card_name as input and returns all the credit card information, always including the card type, card number, card expiry date, card pin and the billing zip code for the given card name.
-
-        Use the tool `wallet_get_credit_card_info` to get the credit card information. The tool takes the following parameters:
+        Use the tool `wallet_get_credit_card_info` to get the credit card information of individual cards. The tool takes the following parameters:
         - card_name: The name of the card to get the information for, example "Venture X".
-        and returns the card type, card number, card expiry date, card pin, card type and the billing zip code for the given card name. 
+        and returns the card type, card number, card expiry date, card pin, and the billing zip code for the given card name. 
 
         Use the tool `wallet_add_credit_card` to add a credit card to the wallet. The tool takes the following parameters:
         - card_name: The name of the card to add, example "Venture X".
@@ -147,7 +146,9 @@ class WalletAgent(BaseAgent):
         - card_pin: The card pin, example "123".
         - billing_zip_code: The billing zip code, example "12345".
 
-        Use the tool `wallet_get_all_credit_card_names` to get all the credit card names. This tool returns a list of all the credit card names and does not take any parameters.
+      
+
+        You are capable of doing tasks which requires you to use the tools in a sequence. 
 
         Return "done" when you have completed your work.
         """

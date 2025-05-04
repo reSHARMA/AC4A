@@ -27,19 +27,19 @@
 - [ ] 10. Can you list all my active credit cards? I need to review my credit accounts.
 
 ### Expedia Tasks
-- [ ] 1. I need to fly from Seattle to Salt Lake City on June 16th, 2025. Can you find me some flight options?
-- [ ] 2. I'm visiting New York next weekend. Can you find me a hotel near Times Square?
+- [X] 1. I need to fly from Seattle to Salt Lake City on June 16th, 2025. Can you find me some flight options?
+- [X] 2. I'm visiting New York next weekend. Can you find me a hotel near Times Square?
 - [ ] 3. I need a rental car in Los Angeles for my business trip next week. Looking for a mid-size sedan.
-- [ ] 4. I'm interested in taking a cruise from Miami. Can you show me some options for next month?
-- [ ] 5. I'm going to Paris next month. Can you find me some unique experiences or tours to book?
-- [ ] 6. I need to book a flight from Chicago to London for my business trip. Looking for business class options.
-- [ ] 7. I'm planning a trip to Disney World. Can you find me hotels within walking distance of the park?
+- [X] 4. I'm interested in taking a cruise from Miami. Can you show me some options for next month?
+- [X] 5. I'm going to Paris next month. Can you find me some unique experiences or tours to book?
+- [X] 6. I need to book a flight from Chicago to London for my business trip. Looking for business class options.
+- [X] 7. I'm planning a trip to Disney World. Can you find me hotels within walking distance of the park?
 - [ ] 8. I need a rental car in San Francisco for three days next week. Looking for something economical.
-- [ ] 9. I want to take a Caribbean cruise. Can you show me some options for this summer?
+- [X] 9. I want to take a Caribbean cruise. Can you show me some options for this summer?
 - [ ] 10. I'm visiting Tokyo next month. Can you find me some cultural experiences or food tours to book?
 
 ### Contact Manager Tasks
-- [ ] 1. I just met John Smith at a conference. Can you add him to my contacts? His number is 555-0123 and email is john.smith@example.com.
+- [X] 1. I just met John Smith at a conference. Can you add him to my contacts? His number is 555-0123 and email is john.smith@example.com.
 - [ ] 2. John's phone number has changed to 555-4567. Can you update that in my contacts?
 - [ ] 3. I no longer need Sarah's contact information. Please remove her from my contacts.
 - [ ] 4. I need to find all my contacts in New York. I'm planning a business trip there.

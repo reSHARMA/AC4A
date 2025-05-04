@@ -42,4 +42,7 @@ class PermissionManagementAgent:
         # Return the custom prompt for the current mode if set, else the default
         prefix = "If there is a permission error and you are not able to access an API or resource, "
         suffix = "You can ask the user by calling the tool `web_input_func` if available or returning User: message. "
+        
+        if self._mode == "yolo":
+            suffix += "\n\nAvoid using the tool `web_input_func` and most of the time just try calling the application again with the same request. ATleast try 5 times before you give up."
         return prefix + self._custom_prompts.get(self._mode, self.DEFAULT_PROMPTS[self._mode]) + suffix

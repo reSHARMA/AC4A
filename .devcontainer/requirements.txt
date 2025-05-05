@@ -1,0 +1,15 @@
+# Python dependencies for AC4A
+flask==3.0.2
+flask-cors==4.0.0
+python-dotenv==1.0.1
+requests==2.31.0
+pytest==8.0.2
+black==24.2.0
+pylint==3.0.3
+python-jose==3.3.0
+cryptography==42.0.2
+pymongo==4.6.1
+redis==5.0.1
+celery==5.3.6
+flower==2.0.1
+gunicorn==21.2.0 

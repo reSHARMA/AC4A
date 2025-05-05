@@ -202,13 +202,17 @@ class PolicySystem:
         return False
 
     def check_subsumption(self, rule, attributes):
-        logger.debug(f"Checking rule: {rule}")
-        logger.debug(f"For attributes: {attributes}")
+        logger.info(f"Checking rule: {rule}")
+        logger.info(f"For attributes: {attributes}")
 
+        skip_attr = ['expiry']
         for attr in rule:
-            logger.debug(f"Checking attribute: {attr}")
+            if attr in skip_attr:
+                continue
+
+            logger.info(f"Checking attribute: {attr}")
             rule_value = rule[attr]
-            logger.debug(f"Rule value: {rule_value}")
+            logger.info(f"Rule value: {rule_value}")
 
             if attr == 'expiry':
                 # Compare datetime values directly
@@ -223,7 +227,7 @@ class PolicySystem:
                 parsed_values = []
                 if "::" in rule_value:
                     parts = rule_value.split("::")
-                    logger.debug(f"Split rule value into parts: {parts}")
+                    logger.info(f"Split rule value into parts: {parts}")
                     for part in parts:
                         if "(" in part and ")" in part:
                             key, value = part.split("(")
@@ -231,20 +235,20 @@ class PolicySystem:
                             # Handle empty value as default
                             if value == "":
                                 parsed_values.append({key: "default"})
-                                logger.debug(f"Parsed empty value as default for key: {key}")
+                                logger.info(f"Parsed empty value as default for key: {key}")
                             # Handle * as all values
                             elif value == "*":
                                 parsed_values.append({key: "*"})
-                                logger.debug(f"Parsed wildcard value for key: {key}")
+                                logger.info(f"Parsed wildcard value for key: {key}")
                             # Handle specific value
                             else:
                                 parsed_values.append({key: value})
-                                logger.debug(f"Parsed specific value '{value}' for key: {key}")
-                            logger.debug(f"Parsed part with key-value: {key} - {value}")
+                                logger.info(f"Parsed specific value '{value}' for key: {key}")
+                            logger.info(f"Parsed part with key-value: {key} - {value}")
                         else:
                             # No parentheses means default value
                             parsed_values.append({part: "default"})
-                            logger.debug(f"Parsed part with default value: {part} - default")
+                            logger.info(f"Parsed part with default value: {part} - default")
                 else:
                     if "(" in rule_value and ")" in rule_value:
                         key, value = rule_value.split("(")
@@ -252,45 +256,50 @@ class PolicySystem:
                         # Handle empty value as default
                         if value == "":
                             parsed_values.append({key: "default"})
-                            logger.debug(f"Parsed empty value as default for key: {key}")
+                            logger.info(f"Parsed empty value as default for key: {key}")
                         # Handle * as all values
                         elif value == "*":
                             parsed_values.append({key: "*"})
-                            logger.debug(f"Parsed wildcard value for key: {key}")
+                            logger.info(f"Parsed wildcard value for key: {key}")
                         # Handle specific value
                         else:
                             parsed_values.append({key: value})
-                            logger.debug(f"Parsed specific value '{value}' for key: {key}")
-                        logger.debug(f"Parsed single rule with key-value: {key} - {value}")
+                            logger.info(f"Parsed specific value '{value}' for key: {key}")
+                        logger.info(f"Parsed single rule with key-value: {key} - {value}")
                     else:
                         # No parentheses means default value
                         parsed_values.append({rule_value: "default"})
-                        logger.debug(f"Parsed single rule with default value: {rule_value} - default")
+                        logger.info(f"Parsed single rule with default value: {rule_value} - default")
                 
-                logger.debug(f"Final parsed rule value: {parsed_values}")
+                logger.info(f"Final parsed rule value: {parsed_values}")
                 return parsed_values
 
             parsed_rule_value = parse_rule_value(rule_value)
             attr_value = parse_rule_value(attributes.get(attr))
 
-            logger.debug(f"Attribute value for {attr}: {attr_value}")
-            logger.debug(f"Rule value for {attr}: {parsed_rule_value}")
-
-            if not self.validate_attribute(parsed_rule_value, attr_value, attr):
-                logger.debug(f"Validation failed for attribute: {attr}")
+            logger.info(f"Attribute value for {attr}: {attr_value}")
+            logger.info(f"Rule value for {attr}: {parsed_rule_value}")
+            
+            valid = self.validate_attribute(parsed_rule_value, attr_value, attr)
+            if valid < 0:
+                logger.info(f"Validation failed for attribute: {attr}")
                 return False
-        logger.debug("Validation successful, returning True")
+
+            if attr == 'granular_data' and valid > 0:
+                skip_attr.append('position')
+
+        logger.info("Validation successful, returning True")
         return True
 
     def validate_attribute(self, rule_value, attribute_value, attribute_type):
-        logger.debug(f"Validating attribute {attribute_type}")
-        logger.debug(f"Rule value: {rule_value}")
-        logger.debug(f"Attribute value: {attribute_value}")
+        logger.info(f"Validating attribute {attribute_type}")
+        logger.info(f"Rule value: {rule_value}")
+        logger.info(f"Attribute value: {attribute_value}")
         
-        valid = False  # Initialize valid at the start
+        valid = -1  # Initialize valid at the start
         
         if not rule_value:
-            logger.debug("No rule value provided")
+            logger.info("No rule value provided")
             return True
 
         if attribute_type in self.attribute_definitions:
@@ -298,17 +307,17 @@ class PolicySystem:
             for root in hierarchy:
                 if isinstance(root, AttributeTree):
                     # Hierarchical structure, convert to flat list and check subsumption
-                    logger.debug("Processing root of hierarchy")
+                    logger.info("Processing root of hierarchy")
                     values_list = root
-                    logger.debug("Printing attribute definition")
+                    logger.info("Printing attribute definition")
                     root.print_tree()
-                    logger.debug(f"Rule value: {rule_value}")
+                    logger.info(f"Rule value: {rule_value}")
                     rule_tree = self.build_tree_from_values(root, rule_value)
 
                     if not rule_tree:
                         continue
 
-                    logger.debug("Built rule tree from values")
+                    logger.info("Built rule tree from values")
                     rule_tree.print_tree()  # Print the rule tree
                     # Create an attribute tree from the rule_value
                     attribute_tree = self.build_tree_from_values(root, attribute_value)
@@ -316,16 +325,16 @@ class PolicySystem:
                     if not attribute_tree:
                         continue
 
-                    logger.debug("Built attribute tree from values")
+                    logger.info("Built attribute tree from values")
                     attribute_tree.print_tree()  # Print the attribute tree
-
-                    valid = valid or rule_tree.check_subtree(attribute_tree)
-                    logger.debug(f"Validation result for current root: {valid}")
                     
-                    if valid:
+                    valid = rule_tree.check_subtree(attribute_tree)
+                    logger.info(f"Validation result for current root: {valid}")
+                    
+                    if valid >= 0:
                         return valid
                 
-        logger.debug(f"Final validation result: {valid}")
+        logger.info(f"Final validation result: {valid}")
         return valid
 
     def build_tree_from_values(self, hierarchy_tree, values):

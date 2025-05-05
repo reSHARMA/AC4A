@@ -12,8 +12,8 @@
 - [x] 6. I'm planning to visit my family on December 25th, 2025. Am I free that day?
 - [x] 7. Please add a meeting with the marketing team for tomorrow at 2pm in the conference room.
 - [x] 8. What's on my schedule for today? I need to plan my workday.
-- [ ] 9. I need to schedule a 1-hour call with a client. Can you find the next available slot in my calendar?
-- [ ] 10. Show me all my meetings for this month. I need to prepare my monthly report.
+- [x] 9. I need to schedule a 1-hour call with a client. Can you find the next available slot in my calendar?
+- [x] 10. Show me all my meetings for this month. I need to prepare my monthly report.
 
 ### Wallet Tasks
 - [X] 1. I need the PIN for my Amex Gold card ending in 1234. I'm at the store and can't remember it.

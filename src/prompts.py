@@ -58,13 +58,19 @@ policy_system.add_policy({
 
 **Reasoning:** The user requires `Read` access for "November" and "December" under the "Calendar Month" hierarchy that spans multiple months. "November" corresponds to `Current`, and "December" corresponds to `Next(1)` wrt to current month November.
 It is important to note that instead of creating two policies for November and December, we can create a single policy for November and December by using a range in the position.
+Since we prefer multiple policies over a single policy with a wide range, we will create 2 policies for November and December.
 
 **Generated Policy:**
 ```python
 policy_system.add_policy({
     "granular_data": "Calendar:Month(November)",
     "data_access": "Read",
-    "position": "Next(1)"
+    "position": "Current"
+})
+policy_system.add_policy({
+    "granular_data": "Calendar:Month(December)",
+    "data_access": "Read",
+    "position": "Current"
 })
 ```
 
@@ -100,14 +106,21 @@ policy_system.add_policy({
 **Request:** Grant read-only access to Calendar Day data from 10th July 2025 to 16th July 2025.
 
 **Reasoning:** The request seeks `Read` access for data scoped to July 2025 within the "Calendar Year and Month" hierarchy with Calendar Day ranging from 10th to 16th. Granular data must be Calendar::Day with range start value, 10th along with the month and year as it is specified in the request. The position must be Next(7) as the request is for a range of 7 days starting from 10th July 2025. If it was for a single day, the position would have been Current. If it was for two days, the position would have been Next(2) as the start and end days are also included in the range and so on.
+Since we prefer multiple policies over a single policy with a wide range, we will create 7 policies for each day in July between 10th and 16th.
 
 **Generated Policy:**
 ```python
 policy_system.add_policy({
     "granular_data": "Calendar:Year(2025)::Calendar:Month(July)::Calendar:Day(10)",
     "data_access": "Read",
-    "position": "Next(7)"
+    "position": "Current"
 })
+policy_system.add_policy({
+    "granular_data": "Calendar:Year(2025)::Calendar:Month(July)::Calendar:Day(11)",
+    "data_access": "Read",
+    "position": "Current"
+})
+# ... repeat for all days from 12th to 16th
 ```
 ### Additional Guidelines
 
@@ -123,9 +136,14 @@ policy_system.add_policy({
 3. **Output Multi-Level Permissions Accurately:**
    - Represent hierarchical or multi-level data requests by appropriately nesting keys in `granular_data`. For instance:
      - `Calendar:Month(July)::Calendar:Day(14)` represents July 14th within the calendar hierarchy.
+  - Hierarchies must be inferred from the <ALL DATA> and must not be made up.
 
 4. **Data Without Value:**
-   - If the data does not have a value, then the value should be *, example Calendar:Month(*)
+   - If the data does not have a value, then the value should be *, example Calendar:Month(*) which will allow access to all months.
+
+5. **Prefer multiple policies over a single policy with a wide range:**
+   - If the request is for data that spans multiple values, prefer to create multiple policies with more granular ranges over a single policy with a wide range.
+   - Example: If the request is for data from July 10th to July 20th, prefer to either create a policy for complete July month or create 11 policies for each day in July between 10th and 20th.
   
 5. **Output Structure:**
    - First, provide a brief **reasoning** for each generated policy, summarizing how it satisfies the request.

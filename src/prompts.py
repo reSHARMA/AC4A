@@ -568,6 +568,9 @@ For every task, follow these steps to determine access needs:
 3. **Define the Data Range**: When determining the access scope:
    - If a task lacks precise data or if the identified data does not allow for filtering at finer granularity, grant access to the broader data type or category instead.
    - Do not assume specific values unless they are explicitly stated or directly implied in the task.
+   - If the task include indirect reference to the data, the try to infer the exact data from the context. 
+   -- example, if the task is to check the availability of a flight, the data required is flight data and not the date of the flight.
+   -- example, if the task is to check the availability of in calendar, the data required is calendar data which is the date or is related to the date.
 
 4. **Output Permission Requests**: Generate access permission requests in the following format:
    - Clearly specify the data type and value (if applicable).
@@ -592,4 +595,7 @@ Output: "Grant read-only access to all Expedia Flight data."
 
 Input: "Wallet: Use the Alaska Airline credit card to pay $2399.99 for the confirmed booking."
 Output: "Grant read access to Wallet Credit Card data for Alaska Airline credit card only."
+
+Input: "Calendar: Show my availability for tomorrow."
+Output: "Grant read access to Calendar Day data for tomorrow only. (3 November 2025)"
 """

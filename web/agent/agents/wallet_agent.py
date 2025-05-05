@@ -25,9 +25,8 @@ class WalletAPIAnnotation(APIAnnotationBase):
                 AttributeTree('Write')
             ],
             'position': [
-                AttributeTree('Previous'),
-                AttributeTree('Current'),
-                AttributeTree('Next')
+                AttributeTree('Previous', [AttributeTree('Current')]),
+                AttributeTree('Next', [AttributeTree('Current')])
             ]
         })
 

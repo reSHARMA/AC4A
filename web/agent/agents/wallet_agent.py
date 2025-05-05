@@ -156,6 +156,7 @@ class WalletAgent(BaseAgent):
         self.wallet_api = WalletAPI(policy_system)
         
         tools = [
+            self.wallet_get_all_credit_card_names,
             self.wallet_get_credit_card_info,
             self.wallet_add_credit_card,
             self.wallet_remove_credit_card,

@@ -24,7 +24,7 @@
 - [X] 6. I need to see all my credit cards. I'm applying for a loan and need to list my active cards.
 - [X] 7. What's the billing zip code for my Visa Express card ending in 4321? I need it for an online purchase.
 - [X] 8. I need the full card number for my Chase Sapphire Preferred card. I'm making a large purchase and need to verify the details.
-- [ ] 9. I want to change the PIN for my Discover Reward "DEReward" card to 1357. Can you update that for me?
+- [ ] 9. I want to change the PIN for my DEReward card to 1357. Can you update that for me?
 - [ ] 10. Can you list all my active credit cards? I need to review my credit accounts.
 
 ### Expedia Tasks

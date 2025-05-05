@@ -198,7 +198,7 @@ class PolicySystem:
                 return True
         if print_policy:
             logger.error(f"❌ POLICY DENIED - Action not allowed for attributes: {attributes}")
-            send_custom_log("❌ Access Denied by", f"{attributes}")
+            send_custom_log("❌ Access Denied for", f"{attributes}")
         return False
 
     def check_subsumption(self, rule, attributes):

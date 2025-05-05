@@ -93,7 +93,7 @@ The application will be available at:
 
 ## Development
 
-### GitHub Codespaces
+### GitHub Codespaces (WIP)
 This project is configured to work with GitHub Codespaces. To get started:
 
 1. Click the "Code" button in the repository
@@ -103,13 +103,24 @@ This project is configured to work with GitHub Codespaces. To get started:
 The codespace will automatically:
 - Set up a Python 3.11 environment
 - Install Node.js 18.x
-- Install all Python dependencies
-- Install all frontend dependencies
+- Install all Python dependencies from `web/requirements.txt`
+- Install all frontend dependencies in `web/frontend`
 - Configure VS Code with recommended extensions
 
 The development environment will be ready to use with:
 - Frontend running on port 5173
 - Backend running on port 5000
+
+To start the development server:
+```bash
+# Start the backend
+cd web
+python app.py
+
+# In another terminal, start the frontend
+cd web/frontend
+npm run dev
+```
 
 ### Testing
 - Backend tests are located in `src/tests/`

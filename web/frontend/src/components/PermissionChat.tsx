@@ -1,6 +1,6 @@
 /** @jsxImportSource @emotion/react */
 import React, { useState, useEffect, useRef, useMemo } from 'react'
-import { Box, Text, VStack, Spinner, Select, HStack, Badge, Button, Switch, Input, IconButton } from '@chakra-ui/react'
+import { Box, Text, VStack, Spinner, Select, HStack, Badge, Button, Switch, Input, IconButton, Tooltip, Stack } from '@chakra-ui/react'
 import { MdAccountTree, MdSubdirectoryArrowRight, MdLabel, MdTextFields, MdViewList } from 'react-icons/md'
 import { FaTrash } from 'react-icons/fa'
 import styles from './PermissionChat.module.css'
@@ -214,16 +214,18 @@ const TreeView: React.FC<TreeViewProps> = ({
                 onClick={(e) => e.stopPropagation()}
               />
             ) : (
-              <Badge 
-                colorScheme="green" 
-                cursor="pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleValueClick();
-                }}
-              >
-                {getValueBadgeText()}
-              </Badge>
+              <Tooltip label="Click to edit the value for this data" placement="top">
+                <Badge 
+                  colorScheme="green"
+                  cursor="pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleValueClick();
+                  }}
+                >
+                   {getValueBadgeText()}
+                </Badge>
+              </Tooltip>
             )
           ) : (
             <Badge colorScheme="green">
@@ -233,17 +235,19 @@ const TreeView: React.FC<TreeViewProps> = ({
 
           {/* Access badge/select */}
           {onAccessChange ? (
-            <Select 
-              size="xs" 
-              width="80px" 
-              value={data.access || ""} 
-              onChange={handleAccessChange}
-              onClick={(e) => e.stopPropagation()}
-              placeholder="Access"
-            >
-              <option value="Read">Read</option>
-              <option value="Write">Write</option>
-            </Select>
+            <Tooltip label="Select read or write access for this data" placement="top">
+              <Select 
+                size="xs" 
+                width="80px" 
+                value={data.access || ""} 
+                onChange={handleAccessChange}
+                onClick={(e) => e.stopPropagation()}
+                placeholder="Access"
+              >
+                <option value="Read">Read</option>
+                <option value="Write">Write</option>
+              </Select>
+            </Tooltip>
           ) : (
             <Badge colorScheme="blue">
               {data.access ? data.access.toUpperCase() : "Access"}
@@ -252,47 +256,51 @@ const TreeView: React.FC<TreeViewProps> = ({
               
           {/* Position badge/select and value input */}
           {onPositionChange ? (
-            <HStack spacing={1}>
-              <Select 
-                size="xs" 
-                width="90px" 
-                value={data.position || ""} 
-                onChange={handlePositionChange}
-                onClick={(e) => e.stopPropagation()}
-                placeholder="Position"
-              >
-                <option value="Previous">Previous</option>
-                <option value="Current">Current</option>
-                <option value="Next">Next</option>
-              </Select>
-              {data.position && data.position !== "Current" && !data.position.includes('(') && (
-                isEditingPositionValue ? (
-                  <Input
-                    size="xs"
-                    width="50px"
-                    type="number"
-                    min="0"
-                    value={editedPositionValue}
-                    onChange={handlePositionValueChange}
-                    onKeyDown={handlePositionValueKeyPress}
-                    onBlur={handlePositionValueSubmit}
-                    autoFocus
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                ) : (
-                  <Badge 
-                    colorScheme="purple" 
-                    cursor="pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsEditingPositionValue(true);
-                    }}
-                  >
-                    {data.positionValue || 1}
-                  </Badge>
-                )
-              )}
-            </HStack>
+            <Tooltip label="Select the range of the data starting from the value given for this data." placement="top">
+              <HStack spacing={1}>
+                <Select 
+                  size="xs" 
+                  width="90px" 
+                  value={data.position || ""} 
+                  onChange={handlePositionChange}
+                  onClick={(e) => e.stopPropagation()}
+                  placeholder="Position"
+                >
+                  <option value="Previous">Previous</option>
+                  <option value="Current">Current</option>
+                  <option value="Next">Next</option>
+                </Select>
+                {data.position && data.position !== "Current" && !data.position.includes('(') && (
+                  isEditingPositionValue ? (
+                    <Tooltip label="Position value (order in hierarchy)" placement="top">
+                      <Input
+                        size="xs"
+                        width="50px"
+                        type="number"
+                        min="0"
+                        value={editedPositionValue}
+                        onChange={handlePositionValueChange}
+                        onKeyDown={handlePositionValueKeyPress}
+                        onBlur={handlePositionValueSubmit}
+                        autoFocus
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </Tooltip>
+                  ) : (
+                    <Badge 
+                      colorScheme="purple" 
+                      cursor="pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEditingPositionValue(true);
+                      }}
+                    >
+                      {data.positionValue || 1}
+                    </Badge>
+                  )
+                )}
+              </HStack>
+            </Tooltip>
           ) : (
             <Badge colorScheme="purple">
               {data.position ? `${data.position !== "Current" ? data.position : ""}${data.position !== "Current" && !data.position.includes('(') && (data.positionValue || data.positionValue === 0) ? `::${data.positionValue}` : ''}` : "Position"}
@@ -301,18 +309,20 @@ const TreeView: React.FC<TreeViewProps> = ({
 
           {/* Delete button - only show in all permission view */}
           {isRoot && onDelete && viewMode === 'permitted' && (
-            <IconButton
-              size="xs"
-              variant="ghost"
-              colorScheme="red"
-              aria-label="Delete policy"
-              icon={<FaTrash />}
-              onClick={handleDelete}
-              _hover={{
-                bg: 'red.100'
-              }}
-              color="red.500"
-            />
+            <Tooltip label="Revoke this permission" placement="top">
+              <IconButton
+                size="xs"
+                variant="ghost"
+                colorScheme="red"
+                aria-label="Delete policy"
+                icon={<FaTrash />}
+                onClick={handleDelete}
+                _hover={{
+                  bg: 'red.100'
+                }}
+                color="red.500"
+              />
+            </Tooltip>
           )}
         </HStack>
       </Box>
@@ -1787,154 +1797,181 @@ const PermissionChat: React.FC = (): JSX.Element => {
       <Box className={styles.messagesContainer} overflow="auto">
         <HStack justify="space-between" mb={4}>
           <HStack justify="space-between" align="center" width="100%">
-            <Text 
-              fontSize="xl" 
-              fontWeight="bold" 
-              color="brand.800"
-              letterSpacing="tight"
-              textTransform="uppercase"
-              position="relative"
-              _after={{
-                content: '""',
-                position: 'absolute',
-                bottom: '-2px',
-                left: '0',
-                width: '100%',
-                height: '2px',
-                bg: 'brand.600',
-                transform: 'scaleX(0)',
-                transformOrigin: 'left',
-                transition: 'transform 0.3s ease-in-out',
-                _groupHover: {
-                  transform: 'scaleX(1)',
-                },
-              }}
-              _hover={{
-                color: 'brand.700',
-              }}
-            >
-              Permissions Manager
-            </Text>
-            <Box flexShrink={0}><PermissionModeSelector compact label="Mode:" onModeChange={handleModeChange} /></Box>
+            <Tooltip label="Permission Management Dashboard for adding, removing and modifying permissions." placement="top">
+              <Text 
+                fontSize="xl" 
+                fontWeight="bold" 
+                color="brand.800"
+                letterSpacing="tight"
+                textTransform="uppercase"
+                position="relative"
+                _after={{
+                  content: '""',
+                  position: 'absolute',
+                  bottom: '-2px',
+                  left: '0',
+                  width: '100%',
+                  height: '2px',
+                  bg: 'brand.600',
+                  transform: 'scaleX(0)',
+                  transformOrigin: 'left',
+                  transition: 'transform 0.3s ease-in-out',
+                  _groupHover: {
+                    transform: 'scaleX(1)',
+                  },
+                }}
+                _hover={{
+                  color: 'brand.700',
+                }}
+              >
+                Permissions Manager
+              </Text>
+            </Tooltip>
+            <Tooltip label={
+              <Box>
+                <Stack>
+                  <Text>Select the mode for viewing and managing permissions.</Text>
+                  <Text>Four modes are available: Ask, Skip, Infer and Yolo.</Text>
+                  <Text>Ask: The agent asks the user to grant permissions manually.</Text>
+                  <Text>Skip: The agent tries to not use the resource which is not permissioned.</Text>
+                  <Text>Infer: The agent infers the permission based on the task but takes user's approval before enforcing them.</Text>
+                  <Text>Yolo: The agent automatically infers and deploys the permissions based on the task.</Text>
+                </Stack>
+              </Box>
+            } placement="top">
+              <Box flexShrink={0}><PermissionModeSelector compact label="Mode:" onModeChange={handleModeChange} /></Box>
+            </Tooltip>
           </HStack>
         </HStack>
 
         <Box mb={4}>
           <HStack spacing={0} borderBottom="2px solid" borderColor="gray.200">
-            <Button
-              size="md"
-              flex={1}
-              colorScheme={viewMode === 'all' ? 'blue' : 'gray'}
-              variant={viewMode === 'all' ? 'solid' : 'ghost'}
-              onClick={() => handleViewModeChange('all')}
-              borderTopRadius="md"
-              borderBottomRadius="none"
-              borderRight="1px solid"
-              borderColor="gray.200"
-              _hover={{
-                bg: viewMode === 'all' ? 'blue.500' : 'gray.100'
-              }}
-              transition="all 0.2s"
-            >
-              Data Schema
-            </Button>
-            <Button
-              size="md"
-              flex={1}
-              colorScheme={viewMode === 'permitted' ? 'blue' : 'gray'}
-              variant={viewMode === 'permitted' ? 'solid' : 'ghost'}
-              onClick={() => handleViewModeChange('permitted')}
-              borderTopRadius="md"
-              borderBottomRadius="none"
-              borderRight="1px solid"
-              borderLeft="1px solid"
-              borderColor="gray.200"
-              _hover={{
-                bg: viewMode === 'permitted' ? 'blue.500' : 'gray.100'
-              }}
-              transition="all 0.2s"
-            >
-              Active Permissions
-            </Button>
-            <Button
-              size="md"
-              flex={1}
-              colorScheme={viewMode === 'edit' ? 'blue' : 'gray'}
-              variant={viewMode === 'edit' ? 'solid' : 'ghost'}
-              onClick={() => handleViewModeChange('edit')}
-              borderTopRadius="md"
-              borderBottomRadius="none"
-              borderRight="1px solid"
-              borderLeft="1px solid"
-              borderColor="gray.200"
-              _hover={{
-                bg: viewMode === 'edit' ? 'blue.500' : 'gray.100'
-              }}
-              transition="all 0.2s"
-            >
-              Create Permissions
-            </Button>
-            <Button
-              size="md"
-              flex={0.5}
-              colorScheme={viewMode === 'logs' ? 'blue' : 'gray'}
-              variant={viewMode === 'logs' ? 'solid' : 'ghost'}
-              onClick={() => handleViewModeChange('logs')}
-              borderTopRadius="md"
-              borderBottomRadius="none"
-              borderLeft="1px solid"
-              borderColor="gray.200"
-              _hover={{
-                bg: viewMode === 'logs' ? 'blue.500' : 'gray.100'
-              }}
-              transition="all 0.2s"
-            >
-              Logs
-            </Button>
+            <Tooltip label="View the complete data schema retrieved from the available applications." placement="top">
+              <Button
+                size="md"
+                flex={1}
+                colorScheme={viewMode === 'all' ? 'blue' : 'gray'}
+                variant={viewMode === 'all' ? 'solid' : 'ghost'}
+                onClick={() => handleViewModeChange('all')}
+                borderTopRadius="md"
+                borderBottomRadius="none"
+                borderRight="1px solid"
+                borderColor="gray.200"
+                _hover={{
+                  bg: viewMode === 'all' ? 'blue.500' : 'gray.100'
+                }}
+                transition="all 0.2s"
+              >
+                Data Schema
+              </Button>
+            </Tooltip>
+            <Tooltip label="View and manage currently active permissions." placement="top">
+              <Button
+                size="md"
+                flex={1}
+                colorScheme={viewMode === 'permitted' ? 'blue' : 'gray'}
+                variant={viewMode === 'permitted' ? 'solid' : 'ghost'}
+                onClick={() => handleViewModeChange('permitted')}
+                borderTopRadius="md"
+                borderBottomRadius="none"
+                borderRight="1px solid"
+                borderLeft="1px solid"
+                borderColor="gray.200"
+                _hover={{
+                  bg: viewMode === 'permitted' ? 'blue.500' : 'gray.100'
+                }}
+                transition="all 0.2s"
+              >
+                Active Permissions
+              </Button>
+            </Tooltip>
+            <Tooltip label="Create new permissions manually or using text input." placement="top">
+              <Button
+                size="md"
+                flex={1}
+                colorScheme={viewMode === 'edit' ? 'blue' : 'gray'}
+                variant={viewMode === 'edit' ? 'solid' : 'ghost'}
+                onClick={() => handleViewModeChange('edit')}
+                borderTopRadius="md"
+                borderBottomRadius="none"
+                borderRight="1px solid"
+                borderLeft="1px solid"
+                borderColor="gray.200"
+                _hover={{
+                  bg: viewMode === 'edit' ? 'blue.500' : 'gray.100'
+                }}
+                transition="all 0.2s"
+              >
+                Create Permissions
+              </Button>
+            </Tooltip>
+            <Tooltip label="View logs of permissions getting added and removed from the system. Also, the API calls made by the agents along with the arguments passed to them with the permission which allowed that action." placement="top">
+              <Button
+                size="md"
+                flex={0.5}
+                colorScheme={viewMode === 'logs' ? 'blue' : 'gray'}
+                variant={viewMode === 'logs' ? 'solid' : 'ghost'}
+                onClick={() => handleViewModeChange('logs')}
+                borderTopRadius="md"
+                borderBottomRadius="none"
+                borderLeft="1px solid"
+                borderColor="gray.200"
+                _hover={{
+                  bg: viewMode === 'logs' ? 'blue.500' : 'gray.100'
+                }}
+                transition="all 0.2s"
+              >
+                Logs
+              </Button>
+            </Tooltip>
           </HStack>
         </Box>
 
         {viewMode === 'permitted' && (
           <Box mb={4}>
             <HStack spacing={0} borderBottom="2px solid" borderColor="gray.200" justify="flex-start">
-              <Button
-                size="sm"
-                height="32px"
-                fontSize="sm"
-                leftIcon={<MdAccountTree size={16} />}
-                colorScheme={displayMode === 'tree' ? 'blue' : 'gray'}
-                variant={displayMode === 'tree' ? 'solid' : 'ghost'}
-                onClick={() => setDisplayMode('tree')}
-                borderTopRadius="md"
-                borderBottomRadius="none"
-                borderRight="1px solid"
-                borderColor="gray.200"
-                _hover={{
-                  bg: displayMode === 'tree' ? 'blue.500' : 'gray.100'
-                }}
-                transition="all 0.2s"
-              >
-                Tree View
-              </Button>
-              <Button
-                size="sm"
-                height="32px"
-                fontSize="sm"
-                leftIcon={<MdTextFields size={16} />}
-                colorScheme={displayMode === 'text' ? 'blue' : 'gray'}
-                variant={displayMode === 'text' ? 'solid' : 'ghost'}
-                onClick={() => setDisplayMode('text')}
-                borderTopRadius="md"
-                borderBottomRadius="none"
-                borderLeft="1px solid"
-                borderColor="gray.200"
-                _hover={{
-                  bg: displayMode === 'text' ? 'blue.500' : 'gray.100'
-                }}
-                transition="all 0.2s"
-              >
-                Text View
-              </Button>
+              <Tooltip label="View active permissions in a hierarchical tree structure" placement="top">
+                <Button
+                  size="sm"
+                  height="32px"
+                  fontSize="sm"
+                  leftIcon={<MdAccountTree size={16} />}
+                  colorScheme={displayMode === 'tree' ? 'blue' : 'gray'}
+                  variant={displayMode === 'tree' ? 'solid' : 'ghost'}
+                  onClick={() => setDisplayMode('tree')}
+                  borderTopRadius="md"
+                  borderBottomRadius="none"
+                  borderRight="1px solid"
+                  borderColor="gray.200"
+                  _hover={{
+                    bg: displayMode === 'tree' ? 'blue.500' : 'gray.100'
+                  }}
+                  transition="all 0.2s"
+                >
+                  Tree View
+                </Button>
+              </Tooltip>
+              <Tooltip label="View active permissions as text" placement="top">
+                <Button
+                  size="sm"
+                  height="32px"
+                  fontSize="sm"
+                  leftIcon={<MdTextFields size={16} />}
+                  colorScheme={displayMode === 'text' ? 'blue' : 'gray'}
+                  variant={displayMode === 'text' ? 'solid' : 'ghost'}
+                  onClick={() => setDisplayMode('text')}
+                  borderTopRadius="md"
+                  borderBottomRadius="none"
+                  borderLeft="1px solid"
+                  borderColor="gray.200"
+                  _hover={{
+                    bg: displayMode === 'text' ? 'blue.500' : 'gray.100'
+                  }}
+                  transition="all 0.2s"
+                >
+                  Text View
+                </Button>
+              </Tooltip>
             </HStack>
           </Box>
         )}
@@ -1994,70 +2031,76 @@ const PermissionChat: React.FC = (): JSX.Element => {
                   return filteredTree ? renderTree(filteredTree, index) : null;
                 })}
                 <Box mt={4}>
-                  <Text 
-                    fontSize="lg" 
-                    fontWeight="bold" 
-                    mb={2}
-                    color="brand.800"
-                    letterSpacing="tight"
-                    textTransform="uppercase"
-                    position="relative"
-                    _after={{
-                      content: '""',
-                      position: 'absolute',
-                      bottom: '-2px',
-                      left: '0',
-                      width: '100%',
-                      height: '2px',
-                      bg: 'brand.600',
-                      transform: 'scaleX(0)',
-                      transformOrigin: 'left',
-                      transition: 'transform 0.3s ease-in-out',
-                      _groupHover: {
-                        transform: 'scaleX(1)',
-                      },
-                    }}
-                    _hover={{
-                      color: 'brand.700',
-                    }}
-                  >
-                    Create New Permission
-                  </Text>
-                  <Box width="100%" mb={4}>
-                    <textarea
-                      value={policyText}
-                      onChange={(e) => setPolicyText(e.target.value)}
-                      placeholder="Enter permission text here..."
-                      style={{
+                  <Tooltip label="Grant permissions using natural language text input" placement="top">
+                    <Text 
+                      fontSize="lg" 
+                      fontWeight="bold" 
+                      mb={2}
+                      color="brand.800"
+                      letterSpacing="tight"
+                      textTransform="uppercase"
+                      position="relative"
+                      _after={{
+                        content: '""',
+                        position: 'absolute',
+                        bottom: '-2px',
+                        left: '0',
                         width: '100%',
-                        minHeight: '100px',
-                        padding: '12px',
-                        fontSize: '14px',
-                        borderRadius: '6px',
-                        border: '1px solid #E2E8F0',
-                        resize: 'vertical',
-                        fontFamily: 'inherit'
+                        height: '2px',
+                        bg: 'brand.600',
+                        transform: 'scaleX(0)',
+                        transformOrigin: 'left',
+                        transition: 'transform 0.3s ease-in-out',
+                        _groupHover: {
+                          transform: 'scaleX(1)',
+                        },
                       }}
-                    />
-                  </Box>
-                  <Box textAlign="right">
-                    <Button 
-                      size="md" 
-                      colorScheme="purple" 
-                      onClick={handleSubmitChanges}
-                      isLoading={isLoading}
                       _hover={{
-                        bg: 'purple.600',
-                        transform: 'translateY(-1px)',
-                        boxShadow: 'lg'
-                      }}
-                      _active={{
-                        bg: 'purple.700',
-                        transform: 'translateY(0)'
+                        color: 'brand.700',
                       }}
                     >
-                      Submit Changes
-                    </Button>
+                      Create New Permission
+                    </Text>
+                  </Tooltip>
+                  <Box width="100%" mb={4}>
+                    <Tooltip label="Enter permission text like, grant access to all the calendar data for 2026." placement="top">
+                      <textarea
+                        value={policyText}
+                        onChange={(e) => setPolicyText(e.target.value)}
+                        placeholder="Enter permission text here..."
+                        style={{
+                          width: '100%',
+                          minHeight: '100px',
+                          padding: '12px',
+                          fontSize: '14px',
+                          borderRadius: '6px',
+                          border: '1px solid #E2E8F0',
+                          resize: 'vertical',
+                          fontFamily: 'inherit'
+                        }}
+                      />
+                    </Tooltip>
+                  </Box>
+                  <Box textAlign="right">
+                    <Tooltip label="Generate new permissions." placement="top">
+                      <Button 
+                        size="md" 
+                        colorScheme="purple" 
+                        onClick={handleSubmitChanges}
+                        isLoading={isLoading}
+                        _hover={{
+                          bg: 'purple.600',
+                          transform: 'translateY(-1px)',
+                          boxShadow: 'lg'
+                        }}
+                        _active={{
+                          bg: 'purple.700',
+                          transform: 'translateY(0)'
+                        }}
+                      >
+                        Submit Changes
+                      </Button>
+                    </Tooltip>
                   </Box>
                 </Box>
               </>

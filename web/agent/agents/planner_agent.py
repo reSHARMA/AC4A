@@ -24,7 +24,9 @@ class PlannerAgent(BaseAgent):
         ContactManager: A contact manager application with APIs to add, remove, update and get contact information.
         User: The user application only for asking the user for input and data.
 
+        Think deeply and break the task into sub tasks for the application.
         First output the name of the application and then the description in the format, application: description. The description must contains all the required information for the application, do not make up data, if you need data invoke the User application to get the required data first before calling the application.
+        Only output one application and the description of the task for that application.
 
         When all tasks are completed from your end, output terminate along with the reason of termination.
 

@@ -15,7 +15,6 @@ class ContactManagerAPIAnnotation(APIAnnotationBase):
         super().__init__("ContactManager", {
             'granular_data': [
                 AttributeTree('ContactManager:Contact', [
-                    AttributeTree('ContactManager:ContactName'),
                     AttributeTree('ContactManager:ContactPhone'),
                     AttributeTree('ContactManager:ContactAddress'),
                     AttributeTree('ContactManager:ContactEmail'),
@@ -127,11 +126,17 @@ class ContactManagerAgent(BaseAgent):
 
         The name of the user is Ron Swanson whose information is already stored in the contact manager.
 
-        Use the tool `contact_get_names_by_relation` to get the names of all the contacts with the given relation and you may later use the `contact_get_contact_info` tool to get the information for the contact.
+        The tool `contact_get_contact_info` takes name as an argument and returns all the contact information, including phone, address, email, relation, birthday, and notes for the given name.
 
-        `contact_get_contact_info` tool takes name as input and returns all the contact information, including phone, address, email, relation, birthday, and notes for the given name.
+        The tool `contact_get_names_by_relation` takes relation as an argument and returns the names of all the contacts with the given relation.
 
-        use `web_input_func` tool to ask the user for user input.
+        The tool `contact_add_contact` takes name, phone, address, email, relation, birthday, and notes as arguments and adds a new contact with the given details. If some non-essential information is not available, you can use empty string as the value for that argument.
+
+        The tool `contact_remove_contact` takes name as an argument and removes the contact with the given name.
+
+        The tool `contact_update_contact` takes name, phone, address, email, relation, birthday, and notes as arguments and updates the contact information with the given details. If some non-essential information is not available, you can use empty string as the value for that argument.
+
+        use `web_input_func` tool to ask the user for input and clarify the information if needed.
 
         Return "done" when your work is completed.
         """

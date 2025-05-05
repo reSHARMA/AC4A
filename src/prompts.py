@@ -33,7 +33,8 @@ Your role is to translate a user's request for data access into well-defined emb
 
 5 **Strictly follow the data hierarchy**:
   - The data hierarchy is provided in the <ALL DATA> contains the available data types as a tree.
-  - In granular_data, the succeeding data type must strictly be the child of the previous data type.
+  - In <ALL DATA>, the childs are denoted by indentation.
+  - In granular_data, the succeeding data type must strictly be the child of the previous data type, example can never have something like Calendar:Day::Calendar:Year but can have Calendar:Month::Calendar:Day.
 
 ### Format of Policies
 
@@ -598,4 +599,8 @@ Output: "Grant read access to Wallet Credit Card data for Alaska Airline credit 
 
 Input: "Calendar: Show my availability for tomorrow."
 Output: "Grant read access to Calendar Day data for tomorrow only. (3 November 2025)"
+
+Input: "ContactManager: Get the contact details of my brother."
+Output: "Grant read access to all ContactManager Contact data." 
+# In this all data is provided because brother is not a specific contact and requires searching through all contacts.
 """

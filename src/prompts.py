@@ -30,11 +30,13 @@ Your role is to translate a user's request for data access into well-defined emb
    - Do not make composite values or values which are descriptive in nature.
    - These values will be passed as API parameters and you must be mindful about it.
    - Do not try to make up any data value or use arbitrary values.
+   - There must always be a value for the data type, example Calendar:Month(December) is valid but Calendar:Month is not valid.
+   - '*' can be used as a value for the data type, example Calendar:Month(*) is valid and allows access to all months.
 
 5 **Strictly follow the data hierarchy**:
   - The data hierarchy is provided in the <ALL DATA> contains the available data types as a tree.
   - In <ALL DATA>, the childs are denoted by indentation.
-  - In granular_data, the succeeding data type must strictly be the child of the previous data type, example can never have something like Calendar:Day::Calendar:Year but can have Calendar:Month::Calendar:Day.
+  - In granular_data, the succeeding data type must strictly be the child of the previous data type, example can never have something like Calendar:Day(10)::Calendar:Year(2025) but can have Calendar:Month(December)::Calendar:Day(10).
 
 ### Format of Policies
 

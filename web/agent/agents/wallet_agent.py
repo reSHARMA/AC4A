@@ -118,9 +118,9 @@ class WalletAgent(BaseAgent):
             policy_system: The policy system to use
         """
         system_message = """
-        You are a wallet agent.
+        You are a wallet agent. Use the tools provided to you to complete the task given to you.
         
-        Use the tool `wallet_get_all_credit_card_names` to get all the credit card names. This tool returns a list of all the credit card names and does not take any parameters.
+        Use the tool `wallet_get_all_credit_card_names` to get all the credit card names. This tool returns a list of all the credit card names and does not take any parameters. Use this tool if you do not have the name of the card.
 
         Use the tool `wallet_get_credit_card_info` to get the credit card information of individual cards. The tool takes the following parameters:
         - card_name: The name of the card to get the information for, example "Venture X".
@@ -144,8 +144,6 @@ class WalletAgent(BaseAgent):
         - card_expiry: The card expiry date as MM/YY, example "01/26".
         - card_pin: The card pin, example "123".
         - billing_zip_code: The billing zip code, example "12345".
-
-      
 
         You are capable of doing tasks which requires you to use the tools in a sequence. 
 

@@ -338,6 +338,73 @@ class PolicySystem:
         return valid
 
     def build_tree_from_values(self, hierarchy_tree, values):
+        # Check if any value is not '*', 'default', or ''
+        has_special_value = False
+        for val in values:
+            for v in val.values():
+                if v not in ['*', 'default', '']:
+                    has_special_value = True
+                    break
+            if has_special_value:
+                break
+
+        logger.info(f"Special value check result: {has_special_value}")
+        logger.info(f"Input values: {values}")
+
+        if has_special_value:
+            # Special case: Create tree with only paths containing nodes from values
+            def build_special_tree(node, values, parent_has_special=False):
+                node_key = list(node.value.keys())[0]
+                logger.info(f"Processing node with key: {node_key}")
+                
+                # Find if this node exists in values
+                try:
+                    node_value = next((v[node_key] for v in values if node_key in v), None)
+                    logger.info(f"Found value for {node_key}: {node_value}")
+                except Exception as e:
+                    logger.error(f"Error finding value for {node_key}: {str(e)}")
+                    node_value = None
+
+                # If parent has special value, this node should be '*' unless it has its own special value
+                if parent_has_special and node_value is None:
+                    node_value = '*'
+                    logger.info(f"Using '*' for {node_key} as parent has special value")
+
+                # Process children first to check if any have special values
+                children_with_values = []
+                for child in node.children:
+                    logger.info(f"Processing child of {node_key}")
+                    # Pass True if this node has a special value
+                    new_child = build_special_tree(child, values, node_value is not None)
+                    if new_child:
+                        logger.info(f"Adding child {list(new_child.value.keys())[0]} to {node_key}")
+                        children_with_values.append(new_child)
+
+                # If we have children with values or this node has a value, create the node
+                if children_with_values or node_value is not None:
+                    # If this node doesn't have a specific value but is part of a path with special values,
+                    # use '*' as the value
+                    if node_value is None:
+                        node_value = '*'
+                        logger.info(f"Using '*' for {node_key} as it's part of a path with special values")
+                    
+                    logger.info(f"Creating new node for {node_key} with value {node_value}")
+                    new_node = AttributeTree(node_key, data=node_value)
+                    new_node.children.extend(children_with_values)
+                    return new_node
+
+                logger.info(f"No value found for {node_key} and no children with values, returning None")
+                return None
+
+            result = build_special_tree(hierarchy_tree, values)
+            logger.info("Final tree structure:")
+            if result:
+                result.print_tree()
+            else:
+                logger.info("No tree was created")
+            return result
+
+        # Original logic for non-special case
         root = None
         def dfs(node, values, append):
             node_key = list(node.value.keys())[0]

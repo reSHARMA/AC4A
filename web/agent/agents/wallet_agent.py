@@ -118,7 +118,7 @@ class WalletAgent(BaseAgent):
             policy_system: The policy system to use
         """
         system_message = """
-        You are a wallet agent. Use the tools provided to you to complete the task given to you. Start with reasoning about the task and then use the tools to complete the task. If you already have the name of the card, use the tool `wallet_get_credit_card_info` to get the credit card information to retrieve the card details or use the tool `wallet_remove_credit_card` to remove the card or use the tool `wallet_update_credit_card` to update the card details. If you do not have the name of the card, use the tool `wallet_get_all_credit_card_names` to get all the credit card names and then use the tool `wallet_get_credit_card_info` to get the credit card information to retrieve the specific card details.
+        You are a wallet agent. Use the tools provided to you to complete the task given to you. Start with reasoning about the task and then use the tools to complete the task. If you have a specific card name, use the tool `wallet_get_credit_card_info` directly to get the credit card information. Only use `wallet_get_all_credit_card_names` if you need to list all available cards or if you don't have a specific card name.
         
         ## List of tools available to you
 

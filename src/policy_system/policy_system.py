@@ -136,6 +136,67 @@ class PolicySystem:
         return prompts
 
     def add_policy(self, policy_rule):
+        # Validate granular_data hierarchy
+        if 'granular_data' in policy_rule and 'granular_data' in self.attribute_definitions:
+            granular_data = policy_rule['granular_data']
+            if granular_data:
+                # First validate the format of each part
+                values = granular_data.split("::")
+                for value in values:
+                    if "(" not in value or ")" not in value:
+                        error_msg = f"Invalid format: {value} must follow the format key(value), value can be * or a specific string"
+                        logger.error(error_msg)
+                        raise ValueError(error_msg)
+                    
+                    key, val = value.split("(", 1)
+                    val = val.rstrip(")")
+                    if not key or not val:
+                        error_msg = f"Invalid format: {value} must have both key and value"
+                        logger.error(error_msg)
+                        raise ValueError(error_msg)
+
+                current_node = None
+                
+                def find_node_in_tree(tree, target_key):
+                    if list(tree.value.keys())[0] == target_key:
+                        return tree
+                    for child in tree.children:
+                        result = find_node_in_tree(child, target_key)
+                        if result:
+                            return result
+                    return None
+                
+                for i in range(len(values)):
+                    # Extract key, ignoring value
+                    key = values[i].split("(")[0] if "(" in values[i] else values[i]
+                    
+                    if i == 0:
+                        # For first node, find it anywhere in any tree
+                        for tree in self.attribute_definitions['granular_data']:
+                            if isinstance(tree, AttributeTree):
+                                found_node = find_node_in_tree(tree, key)
+                                if found_node:
+                                    current_node = found_node
+                                    break
+                        
+                        if not current_node:
+                            error_msg = f"Invalid hierarchy: {key} is not a valid node in the hierarchy"
+                            logger.error(error_msg)
+                            raise ValueError(error_msg)
+                    else:
+                        # For subsequent nodes, check if they are children of current_node
+                        found = False
+                        for child in current_node.children:
+                            if list(child.value.keys())[0] == key:
+                                current_node = child
+                                found = True
+                                break
+                        
+                        if not found:
+                            error_msg = f"Invalid hierarchy: {key} cannot be a child of {list(current_node.value.keys())[0]}"
+                            logger.error(error_msg)
+                            raise ValueError(error_msg)
+
         if self.is_action_allowed(policy_rule, False):
             logger.info("Policy rule already subsumed by existing policies. Skipping addition.")
             send_custom_log("Permission Subsumed", f"{policy_rule}")
@@ -489,13 +550,28 @@ class PolicySystem:
         
         # Execute each policy snippet
         success = True
+        error_info = ""
         for snippet in snippets:
             try:
                 # Create a dictionary with policy_system for exec
                 exec_globals = {"policy_system": self}
                 exec(snippet, exec_globals)
-            except Exception as e:
-                logger.error(f"Error executing policy: {str(e)}", exc_info=True)
+            except ValueError as ve:
+                # This is the hierarchy validation error from add_policy
+                error_msg = str(ve)
+                logger.error(error_msg)
+                error_info += f"\nHierarchy Error: {error_msg}"
                 success = False
+            except Exception as e:
+                error_msg = f"Error executing policy: {str(e)}"
+                logger.error(error_msg, exc_info=True)
+                error_info += f"\nError: {error_msg}"
+                success = False
+        
+        if not success:
+            # If any policy failed, append error information to the original policy text
+            retry_text = policy_text + "\nThe earlier generated granular_data is using wrong hierarchy, do not repeat the same mistake. " + error_info
+            logger.info("Retrying entire policy text with error information appended")
+            return self.add_policies_from_text(retry_text, agent_manager)
                 
         return success

@@ -518,12 +518,12 @@ class ExpediaAgent(BaseAgent):
         result = self.expedia_api.search_hotels(location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
         return result
         
-    async def expedia_book_hotel(self, hotel_name: str, location: str, check_in_date: str, check_out_date: str, room_type: str = None) -> str:
+    async def expedia_book_hotel(self, hotel_id: str, location: str, check_in_date: str, check_out_date: str, room_type: str = None) -> str:
         """
         Book a hotel
         
         Args:
-            hotel_name: The name of the hotel to book
+            hotel_id: The ID of the hotel to book
             location: The location of the hotel
             check_in_date: The check-in date in YYYY-MM-DD format
             check_out_date: The check-out date in YYYY-MM-DD format
@@ -532,8 +532,8 @@ class ExpediaAgent(BaseAgent):
         Returns:
             The booking result
         """
-        logger.info(f"Calling ExpediaAPI book_hotel with hotel_name={hotel_name}, location={location}, check_in_date={check_in_date}, check_out_date={check_out_date}, room_type={room_type}")
-        result = self.expedia_api.book_hotel(hotel_name=hotel_name, location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
+        logger.info(f"Calling ExpediaAPI book_hotel with hotel_id={hotel_id}, location={location}, check_in_date={check_in_date}, check_out_date={check_out_date}, room_type={room_type}")
+        result = self.expedia_api.book_hotel(hotel_id=hotel_id, location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
         return result
         
     async def expedia_get_hotel_info(self, hotel_id: str) -> str:
@@ -617,12 +617,12 @@ class ExpediaAgent(BaseAgent):
         result = self.expedia_api.search_experience(experience_name=experience_name, location=location, date=date, participants=participants)
         return result
     
-    async def expedia_book_experience(self, experience_name: str, location: str, date: str, participants: int = 1) -> str:
+    async def expedia_book_experience(self, experience_id: str, location: str, date: str, participants: int = 1) -> str:
         """
         Book an experience
         
         Args:
-            experience_name: The name of the experience to book
+            experience_id: The ID of the experience to book
             location: The location of the experience
             date: The date of the experience in YYYY-MM-DD format
             participants: The number of participants
@@ -630,8 +630,8 @@ class ExpediaAgent(BaseAgent):
         Returns:
             The booking result
         """
-        logger.info(f"Calling ExpediaAPI book_experience with experience_name={experience_name}, location={location}, date={date}, participants={participants}")
-        result = self.expedia_api.book_experience(experience_name=experience_name, location=location, date=date, participants=participants)
+        logger.info(f"Calling ExpediaAPI book_experience with experience_id={experience_id}, location={location}, date={date}, participants={participants}")
+        result = self.expedia_api.book_experience(experience_id=experience_id, location=location, date=date, participants=participants)
         return result
 
     async def expedia_get_experience_info(self, experience_id: str) -> str:
@@ -666,12 +666,12 @@ class ExpediaAgent(BaseAgent):
         result = self.expedia_api.search_cruise(departure_port=departure_port, destination=destination, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
         return result
     
-    async def expedia_book_cruise(self, cruise_name: str, departure_port: str, departure_date: str, return_date: str, cabin_type: str = None) -> str:
+    async def expedia_book_cruise(self, cruise_id: str, departure_port: str, departure_date: str, return_date: str, cabin_type: str = None) -> str:
         """
         Book a cruise
         
         Args:
-            cruise_name: The name of the cruise
+            cruise_id: The ID of the cruise
             departure_port: The departure port
             departure_date: The departure date in YYYY-MM-DD format
             return_date: The return date in YYYY-MM-DD format
@@ -680,8 +680,8 @@ class ExpediaAgent(BaseAgent):
         Returns:
             The booking result
         """
-        logger.info(f"Calling ExpediaAPI book_cruise with cruise_name={cruise_name}, departure_port={departure_port}, departure_date={departure_date}, return_date={return_date}, cabin_type={cabin_type}")
-        result = self.expedia_api.book_cruise(cruise_name=cruise_name, departure_port=departure_port, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
+        logger.info(f"Calling ExpediaAPI book_cruise with cruise_id={cruise_id}, departure_port={departure_port}, departure_date={departure_date}, return_date={return_date}, cabin_type={cabin_type}")
+        result = self.expedia_api.book_cruise(cruise_id=cruise_id, departure_port=departure_port, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
         return result
         
     async def expedia_get_cruise_info(self, cruise_id: str) -> str:

@@ -511,18 +511,19 @@ class PolicySystem:
         logger.warning(f"No matching policy found for key: {target_key}")
         return False
 
-    def add_policies_from_text(self, policy_text: str, agent_manager=None) -> bool:
+    def add_policies_from_text(self, policy_text: str, agent_manager=None, attempt=1) -> bool:
         """
         Generate and add policies from text input.
         
         Args:
             policy_text (str): Text describing the policies to generate and add
             agent_manager: The agent manager instance to get attribute trees from
+            attempt (int): Current attempt number (starts at 1)
             
         Returns:
             bool: True if all policies were added successfully, False otherwise
         """
-        logger.info("Generating and adding policies from text")
+        logger.info(f"Generating and adding policies from text (Attempt {attempt})")
         
         if policy_text == "":
             logger.info("[policy_system.py] Empty policy text")
@@ -569,16 +570,20 @@ class PolicySystem:
                 success = False
         
         if not success:
+            if attempt >= 5:
+                logger.error("Maximum retry attempts (5) reached. Giving up.")
+                return False
+                
             # If any policy failed, append error information to the original policy text
             retry_text = f"""For permission request: {policy_text}
-The following permissions were generated but failed:
+Attempt {attempt} failed. The following permissions were generated but failed:
 {generated_code}
 The following is the error information:
 {error_info}
 Please generate the permission again for the request: {policy_text}
 Do not repeat the same mistake.
 """
-            logger.info("Retrying entire policy text with error information appended")
-            return self.add_policies_from_text(retry_text, agent_manager)
+            logger.info(f"Retrying entire policy text with error information appended (Attempt {attempt + 1})")
+            return self.add_policies_from_text(retry_text, agent_manager, attempt + 1)
                 
         return success

@@ -281,7 +281,7 @@ class PolicySystem:
         
         expanded_attributes = []
         for i in range(0, increment_value):
-            new_value = last_non_wildcard_value + i
+            new_value = last_non_wildcard_value + i if increment else last_non_wildcard_value - i
             new_key = last_non_wildcard_key + f"({new_value})"
             new_attributes = attributes.copy()
             new_attributes['granular_data'] = new_attributes['granular_data'].replace(last_non_wildcard, new_key)

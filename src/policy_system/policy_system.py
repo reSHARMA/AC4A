@@ -241,6 +241,56 @@ class PolicySystem:
         send_custom_log("Permission Added", f"{target_key}")
         logger.info(f"Added new policy with key: {target_key}")
 
+    def expand_attributes(self, attributes):
+        increment = attributes['position'].lower().startswith('next') 
+        logger.info(f"Increment: {increment}")
+        increment_value = attributes['position'].split('(')[1].rstrip(')')
+        logger.info(f"Increment value: {increment_value}")
+        
+        # Convert increment_value to integer early
+        try:
+            increment_value = int(increment_value)
+        except ValueError:
+            logger.info("Invalid increment value, returning original attributes with position current")
+            attributes['position'] = 'Current'
+            return [attributes]
+
+        # get last non-wildcard value in granular_data
+        last_non_wildcard = None
+        for value in attributes['granular_data'].split('::'):
+            if '(*)' not in value:
+                last_non_wildcard = value
+        
+        logger.info(f"Last non-wildcard: {last_non_wildcard}")
+
+        if not last_non_wildcard:
+            logger.info("No non-wildcard value found, returning original attributes with position current")
+            attributes['position'] = 'Current'
+            return [attributes]
+        
+        last_non_wildcard_key = last_non_wildcard.split('(')[0]
+        last_non_wildcard_value = last_non_wildcard.split('(')[1].rstrip(')')
+        logger.info(f"Last non-wildcard value: {last_non_wildcard_value}")
+
+        if not last_non_wildcard_value.isdigit():
+            logger.info("Last non-wildcard value is not an integer, returning original attributes with position current")
+            attributes['position'] = 'Current'
+            return [attributes]
+            
+        last_non_wildcard_value = int(last_non_wildcard_value)
+        
+        expanded_attributes = []
+        for i in range(0, increment_value):
+            new_value = last_non_wildcard_value + i
+            new_key = last_non_wildcard_key + f"({new_value})"
+            new_attributes = attributes.copy()
+            new_attributes['granular_data'] = new_attributes['granular_data'].replace(last_non_wildcard, new_key)
+            new_attributes['position'] = "Current"
+            logger.info(f"Expanded attribute: {new_attributes}")
+            expanded_attributes.append(new_attributes)
+
+        return expanded_attributes
+            
     def is_action_allowed(self, attributes, print_policy=True):
         if not self.status:
             logger.warning("Policy system is DISABLED - allowing action by default")
@@ -249,6 +299,13 @@ class PolicySystem:
         # Force policy logs at the INFO level to make them more visible
         logger.info(f"POLICY CHECK - Attributes: {attributes}")
         
+        if attributes['position'].lower() != 'current':
+            expanded_attributes = self.expand_attributes(attributes)
+            for attr in expanded_attributes:
+                if not self.is_action_allowed(attr, True):
+                    return False
+            return True
+
         for rule in self.policy_rules:
             if print_policy:
                 logger.info(f"POLICY RULE CHECK - Rule: {rule}")

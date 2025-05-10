@@ -60,7 +60,7 @@
 ## Two App Combinations
 
 ### Calendar + Wallet
-- [x] 1. My Amex Gold card bill is due on the 15th of each month. Can you set up a reminder in my calendar and store the payment details?
+- [x] 1. My Amex Gold card bill is due on the 15th of each month. Can you set up a reminder in my calendar along with the last 4 digit of my card?
 - [ ] 2. I need to set up recurring payment reminders for my Visa card. The minimum payment is due on the 20th of each month.
 - [ ] 3. I have several credit card payments coming up. Can you check my calendar availability and schedule reminders for each payment date?
 - [ ] 4. I need to schedule bill payment reminders for all my cards. Can you add them to my calendar with the respective card details?

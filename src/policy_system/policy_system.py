@@ -570,7 +570,14 @@ class PolicySystem:
         
         if not success:
             # If any policy failed, append error information to the original policy text
-            retry_text = policy_text + "\nThe earlier generated granular_data is using wrong hierarchy, do not repeat the same mistake. " + error_info
+            retry_text = f"""For permission request: {policy_text}
+The following permissions were generated but failed:
+{generated_code}
+The following is the error information:
+{error_info}
+Please generate the permission again for the request: {policy_text}
+Do not repeat the same mistake.
+"""
             logger.info("Retrying entire policy text with error information appended")
             return self.add_policies_from_text(retry_text, agent_manager)
                 

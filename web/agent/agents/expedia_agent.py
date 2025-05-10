@@ -37,25 +37,25 @@ class ExpediaAPIAnnotation(APIAnnotationBase):
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
         api_to_granular_data = {
             'search_flights': ('Flight', kwargs.get('airline', '*')),
-            'get_flight_info': ('Flight', kwargs.get('flight_id', '*')),
-            'book_flight': ('Flight', kwargs.get('flight_id', '*')),
+            'get_flight_info': ('Flight', kwargs.get('flight_number', '*')),
+            'book_flight': ('Flight', kwargs.get('flight_number', '*')),
             'search_hotels': ('Hotel', kwargs.get('hotel_name', '*')),
-            'get_hotel_info': ('Hotel', kwargs.get('hotel_id', '*')),
-            'book_hotel': ('Hotel', kwargs.get('hotel_id', '*')),
+            'get_hotel_info': ('Hotel', kwargs.get('hotel_name', '*')),
+            'book_hotel': ('Hotel', kwargs.get('hotel_name', '*')),
             'search_rental_cars': ('CarRental', kwargs.get('car_type', '*')),
-            'get_rental_car_info': ('CarRental', kwargs.get('car_id', '*')),
-            'book_rental_car': ('CarRental', kwargs.get('car_id', '*')),
+            'get_rental_car_info': ('CarRental', kwargs.get('car_name', '*')),
+            'book_rental_car': ('CarRental', kwargs.get('car_name', '*')),
             'search_experience': ('Experience', kwargs.get('experience_name', '*')),
-            'book_experience': ('Experience', kwargs.get('experience_id', '*')),
+            'book_experience': ('Experience', kwargs.get('experience_name', '*')),
             'search_cruise': ('Cruise', kwargs.get('departure_port', '*')),
-            'get_cruise_info': ('Cruise', kwargs.get('cruise_id', '*')),
-            'book_cruise': ('Cruise', kwargs.get('cruise_id', '*')),
+            'get_cruise_info': ('Cruise', kwargs.get('cruise_name', '*')),
+            'book_cruise': ('Cruise', kwargs.get('cruise_name', '*')),
             'pay_for_itenary': ('Payment', kwargs.get('booking_id', '*'))
         }
         label, detail = api_to_granular_data.get(endpoint_name, ('Destination', '*'))
 
         if "cruise" in endpoint_name.lower():
-            label, detail = ('Cruise', kwargs.get('cruise_id', '*'))
+            label, detail = ('Cruise', kwargs.get('cruise_name', '*'))
         
         # Convert None to '*'
         if detail is None:
@@ -154,7 +154,7 @@ class ExpediaAPI:
     @ExpediaAPIAnnotation.annotate
     def get_flight_info(self, *args, **kwargs):
         return generate_dummy_data(
-            api_endpoint="get_flight_info: Get detailed information about a specific flight for a given flight id",
+            api_endpoint="get_flight_info: Get detailed information about a specific flight for a given flight number",
             **kwargs
         )
 
@@ -175,7 +175,7 @@ class ExpediaAPI:
     @ExpediaAPIAnnotation.annotate
     def get_hotel_info(self, *args, **kwargs):
         return generate_dummy_data(
-            api_endpoint="get_hotel_info: Get detailed information about a specific hotel for a given hotel id",
+            api_endpoint="get_hotel_info: Get detailed information about a specific hotel for a given hotel name",
             **kwargs
         )
 
@@ -196,7 +196,7 @@ class ExpediaAPI:
     @ExpediaAPIAnnotation.annotate
     def get_rental_car_info(self, *args, **kwargs):
         return generate_dummy_data(
-            api_endpoint="get_rental_car_info: Get detailed information about a specific rental car for a given rental car id",
+            api_endpoint="get_rental_car_info: Get detailed information about a specific rental car for a given rental car name",
             **kwargs
         )
 
@@ -217,14 +217,14 @@ class ExpediaAPI:
     @ExpediaAPIAnnotation.annotate
     def get_experience_info(self, *args, **kwargs):
         return generate_dummy_data(
-            api_endpoint="get_experience_info: Get detailed information about a specific experience for a given experience id",
+            api_endpoint="get_experience_info: Get detailed information about a specific experience for a given experience name",
             **kwargs
         )
 
     @ExpediaAPIAnnotation.annotate
     def search_cruise(self, *args, **kwargs):
         return generate_dummy_data(
-            api_endpoint="search_cruise, expedia search cruise return basic information of cruises along with cruise id",
+            api_endpoint="search_cruise, expedia search cruise return basic information of cruises along with cruise name",
             **kwargs
         )
 
@@ -238,28 +238,28 @@ class ExpediaAPI:
     @ExpediaAPIAnnotation.annotate
     def get_cruise_info(self, *args, **kwargs):
         return generate_dummy_data(
-            api_endpoint="get_cruise_info: Get detailed information about a specific cruise for a given cruise id",
+            api_endpoint="get_cruise_info: Get detailed information about a specific cruise for a given cruise name",
             **kwargs
         )
 
     @ExpediaAPIAnnotation.annotate
     def get_cruise_addons(self, *args, **kwargs):
         return generate_dummy_data(
-            api_endpoint="get_cruise_addons: Get available add-ons for a specific cruise for a given cruise id",
+            api_endpoint="get_cruise_addons: Get available add-ons for a specific cruise for a given cruise name",
             **kwargs
         )
 
     @ExpediaAPIAnnotation.annotate
     def get_cruise_policies(self, *args, **kwargs):
         return generate_dummy_data(
-            api_endpoint="get_cruise_policies: Get policies for a specific cruise for a given cruise id",
+            api_endpoint="get_cruise_policies: Get policies for a specific cruise for a given cruise name",
             **kwargs
         )
 
     @ExpediaAPIAnnotation.annotate
     def get_cruise_payment_options(self, *args, **kwargs):
         return generate_dummy_data(
-            api_endpoint="get_cruise_payment_options: Get payment options for a specific cruise for a given cruise id",
+            api_endpoint="get_cruise_payment_options: Get payment options for a specific cruise for a given cruise name",
             **kwargs
         )
 
@@ -289,7 +289,7 @@ class ExpediaAgent(BaseAgent):
             policy_system: The policy system to use
         """
         system_message = """
-        You are an Expedia agent. First search for the best flight, hotel, rental car, experience, and cruise. You will get an id for each of them. Use that id to show detailed information for that flight, hotel, rental car, experience, and cruise. Then book using the id you got from the search. Booking will return a booking id. Use that booking id to add guest information if needed or find the payment options. In the end use the booking id to pay for the itinerary.
+        You are an Expedia agent. First search for the best flight, hotel, rental car, experience, and cruise. You will get the exact name for each of them. Use that name to show detailed information for that flight, hotel, rental car, experience, and cruise. Then book using the name you got from the search. Booking will return a booking id. Use that booking id to add guest information if needed or find the payment options. In the end use the booking id to pay for the itinerary.
 
         Use the tool `expedia_search_flights` to search for flights. The tool takes the following parameters:
         - from_location: The origin airport code (e.g., 'SFO')
@@ -298,14 +298,14 @@ class ExpediaAgent(BaseAgent):
         - return_date: The return date in YYYY-MM-DD format (optional)
         - airline: The airline to search for (optional)
         - round_trip: Whether to search for round trip flights (default: True)
-        return the flight id and basic information of the flight
+        return the flight number and basic information of the flight
        
         Use the tool `expedia_search_hotels` to search for hotels. The tool takes the following parameters:
         - location: The location to search for hotels
         - check_in_date: The check-in date in YYYY-MM-DD format
         - check_out_date: The check-out date in YYYY-MM-DD format
         - room_type: The type of room to search for (optional)
-        return the hotel id and basic information of the hotel
+        return the hotel name and basic information of the hotel
 
         Use the tool `expedia_search_rental_cars` to search for rental cars. The tool takes the following parameters:
         - pickup_location: The pickup location
@@ -313,14 +313,14 @@ class ExpediaAgent(BaseAgent):
         - return_date: The return date in YYYY-MM-DD format
         - car_type: The type of car (optional)
         - rental_company: The rental company (optional)
-        return the rental car id and basic information of the rental car
+        return the rental car name and basic information of the rental car
 
         Use the tool `expedia_search_experience` to search for experiences. The tool takes the following parameters:
         - experience_name: The name of the experience
         - location: The location of the experience
         - date: The date of the experience in YYYY-MM-DD format
         - participants: The number of participants (default: 1)
-        return the experience id and basic information of the experience
+        return the experience name and basic information of the experience
 
         Use the tool `expedia_search_cruise` to search for cruises. The tool takes the following parameters:
         - departure_port: The departure port
@@ -328,16 +328,16 @@ class ExpediaAgent(BaseAgent):
         - departure_date: The departure date in YYYY-MM-DD format
         - return_date: The return date in YYYY-MM-DD format
         - cabin_type: The cabin type (optional)
-        return the cruise id and basic information of the cruise
+        return the cruise name and basic information of the cruise
 
         Use the tool `expedia_book_flight` to book a flight. The tool takes the following parameters:
-        - flight_id: The ID of the flight to book
+        - flight_number: The flight number to book
         - passengers: The number of passengers (default: 1)
         - class_type: The class of the flight (e.g., 'economy', 'business', 'first') (default: 'economy')
         return the booking id and basic information of the booking
 
         Use the tool `expedia_book_hotel` to book a hotel. The tool takes the following parameters:
-        - hotel_id: The ID of the hotel to book
+        - hotel_name: The name of the hotel to book
         - location: The location of the hotel
         - check_in_date: The check-in date in YYYY-MM-DD format
         - check_out_date: The check-out date in YYYY-MM-DD format
@@ -345,7 +345,7 @@ class ExpediaAgent(BaseAgent):
         return the booking id and basic information of the booking
 
         Use the tool `expedia_book_rental_car` to rent a car. The tool takes the following parameters:
-        - car_id: The ID of the car to rent
+        - car_name: The name of the car to rent
         - pickup_location: The pickup location
         - pickup_date: The pickup date in YYYY-MM-DD format
         - return_date: The return date in YYYY-MM-DD format
@@ -353,14 +353,14 @@ class ExpediaAgent(BaseAgent):
         return the booking id and basic information of the booking
 
         Use the tool `expedia_book_experience` to book an experience. The tool takes the following parameters:
-        - experience_id: The ID of the experience to book
+        - experience_name: The name of the experience to book
         - location: The location of the experience
         - date: The date of the experience in YYYY-MM-DD format
         - participants: The number of participants (default: 1)
         return the booking id and basic information of the booking
 
         Use the tool `expedia_book_cruise` to book a cruise. The tool takes the following parameters:
-        - cruise_id: The ID of the cruise to book
+        - cruise_name: The name of the cruise to book
         - departure_port: The departure port
         - departure_date: The departure date in YYYY-MM-DD format
         - return_date: The return date in YYYY-MM-DD format
@@ -368,39 +368,39 @@ class ExpediaAgent(BaseAgent):
         return the booking id and basic information of the booking
 
         Use the tool `expedia_get_flight_info` to get flight information. The tool takes the following parameters:
-        - flight_id: The ID of the flight
-        return detailed information about a specific flight for a given flight id
+        - flight_number: The flight number
+        return detailed information about a specific flight for a given flight number
 
         Use the tool `expedia_get_hotel_info` to get hotel information. The tool takes the following parameters:
-        - hotel_id: The ID of the hotel
-        return detailed information about a specific hotel for a given hotel id
+        - hotel_name: The name of the hotel
+        return detailed information about a specific hotel for a given hotel name
 
         Use the tool `expedia_get_rental_car_info` to get rental car information. The tool takes the following parameters:
-        - car_id: The ID of the car
-        return detailed information about a specific rental car for a given rental car id
+        - car_name: The name of the car
+        return detailed information about a specific rental car for a given rental car name
 
         Use the tool `expedia_get_experience_info` to get experience information. The tool takes the following parameters:
-        - experience_id: The ID of the experience
-        return detailed information about a specific experience for a given experience id
+        - experience_name: The name of the experience
+        return detailed information about a specific experience for a given experience name
 
         Use the tool `expedia_get_cruise_info` to get cruise information. The tool takes the following parameters:
-        - cruise_id: The ID of the cruise
-        return detailed information about a specific cruise for a given cruise id
+        - cruise_name: The name of the cruise
+        return detailed information about a specific cruise for a given cruise name
 
         Use the tool `expedia_get_cruise_addons` to get cruise add-ons. The tool takes the following parameters:
-        - cruise_id: The ID of the cruise
-        return the cruise add-ons id and basic information of the cruise add-ons
+        - cruise_name: The name of the cruise
+        return the cruise add-ons name and basic information of the cruise add-ons
 
         Use the tool `expedia_get_cruise_policies` to get cruise policies. The tool takes the following parameters:
-        - cruise_id: The ID of the cruise
-        return the cruise policies for a given cruise id
+        - cruise_name: The name of the cruise
+        return the cruise policies for a given cruise name
 
         Use the tool `expedia_get_cruise_payment_options` to get cruise payment options. The tool takes the following parameters:
-        - cruise_id: The ID of the cruise
-        return the cruise payment options for a given cruise id
+        - cruise_name: The name of the cruise
+        return the cruise payment options for a given cruise name
 
         Use the tool `expedia_pay_for_itenary` to pay for an itinerary. The tool takes the following parameters:
-        - booking_id: The ID of the booking
+        - booking_id: The booking id
         - payment_method: The payment method
         - amount: The amount to pay
         - card_number: The card number
@@ -410,7 +410,7 @@ class ExpediaAgent(BaseAgent):
         return the payment summary for a given booking id
 
         Use the tool `expedia_add_guest_info` to add guest information. The tool takes the following parameters:
-        - booking_id: The ID of the booking
+        - booking_id: The booking id
         - guest_name: The guest name
         - guest_email: The guest email
         - guest_phone: The guest phone
@@ -471,34 +471,34 @@ class ExpediaAgent(BaseAgent):
         result = self.expedia_api.search_flights(from_location=from_location, to_location=to_location, departure_date=departure_date, return_date=return_date, airline=airline, round_trip=round_trip)
         return result
         
-    async def expedia_book_flight(self, flight_id: str, passengers: int = 1, class_type: str = "economy") -> str:
+    async def expedia_book_flight(self, flight_number: str, passengers: int = 1, class_type: str = "economy") -> str:
         """
         Book a flight
         
         Args:
-            flight_id: The ID of the flight to book
+            flight_number: The flight number to book
             passengers: The number of passengers (default: 1)
             class_type: The class of the flight (default: 'economy')
             
         Returns:
             The booking result
         """
-        logger.info(f"Calling ExpediaAPI book_flight with flight_id={flight_id}, passengers={passengers}, class_type={class_type}")
-        result = self.expedia_api.book_flight(flight_id=flight_id, passengers=passengers, class_type=class_type)
+        logger.info(f"Calling ExpediaAPI book_flight with flight_number={flight_number}, passengers={passengers}, class_type={class_type}")
+        result = self.expedia_api.book_flight(flight_number=flight_number, passengers=passengers, class_type=class_type)
         return result
         
-    async def expedia_get_flight_info(self, flight_id: str) -> str:
+    async def expedia_get_flight_info(self, flight_number: str) -> str:
         """
         Get flight information
         
         Args:
-            flight_id: The ID of the flight
+            flight_number: The flight number
             
         Returns:
             The flight information
         """
-        logger.info(f"Calling ExpediaAPI get_flight_info with flight_id={flight_id}")
-        result = self.expedia_api.get_flight_info(flight_id=flight_id)
+        logger.info(f"Calling ExpediaAPI get_flight_info with flight_number={flight_number}")
+        result = self.expedia_api.get_flight_info(flight_number=flight_number)
         return result
     
     async def expedia_search_hotels(self, location: str, check_in_date: str, check_out_date: str, room_type: str = None) -> str:
@@ -518,12 +518,12 @@ class ExpediaAgent(BaseAgent):
         result = self.expedia_api.search_hotels(location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
         return result
         
-    async def expedia_book_hotel(self, hotel_id: str, location: str, check_in_date: str, check_out_date: str, room_type: str = None) -> str:
+    async def expedia_book_hotel(self, hotel_name: str, location: str, check_in_date: str, check_out_date: str, room_type: str = None) -> str:
         """
         Book a hotel
         
         Args:
-            hotel_id: The ID of the hotel to book
+            hotel_name: The name of the hotel to book
             location: The location of the hotel
             check_in_date: The check-in date in YYYY-MM-DD format
             check_out_date: The check-out date in YYYY-MM-DD format
@@ -532,22 +532,22 @@ class ExpediaAgent(BaseAgent):
         Returns:
             The booking result
         """
-        logger.info(f"Calling ExpediaAPI book_hotel with hotel_id={hotel_id}, location={location}, check_in_date={check_in_date}, check_out_date={check_out_date}, room_type={room_type}")
-        result = self.expedia_api.book_hotel(hotel_id=hotel_id, location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
+        logger.info(f"Calling ExpediaAPI book_hotel with hotel_name={hotel_name}, location={location}, check_in_date={check_in_date}, check_out_date={check_out_date}, room_type={room_type}")
+        result = self.expedia_api.book_hotel(hotel_name=hotel_name, location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
         return result
         
-    async def expedia_get_hotel_info(self, hotel_id: str) -> str:
+    async def expedia_get_hotel_info(self, hotel_name: str) -> str:
         """
         Get hotel information
         
         Args:
-            hotel_id: The ID of the hotel
+            hotel_name: The name of the hotel
             
         Returns:
             The hotel information
         """
-        logger.info(f"Calling ExpediaAPI get_hotel_info with hotel_id={hotel_id}")
-        result = self.expedia_api.get_hotel_info(hotel_id=hotel_id)
+        logger.info(f"Calling ExpediaAPI get_hotel_info with hotel_name={hotel_name}")
+        result = self.expedia_api.get_hotel_info(hotel_name=hotel_name)
         return result
         
     async def expedia_search_rental_cars(self, car_type: str, pickup_location: str, pickup_date: str, return_date: str, rental_company: str = None) -> str:
@@ -568,12 +568,12 @@ class ExpediaAgent(BaseAgent):
         result = self.expedia_api.search_rental_cars(car_type=car_type, pickup_location=pickup_location, pickup_date=pickup_date, return_date=return_date, rental_company=rental_company)
         return result
         
-    async def expedia_book_rental_car(self, car_id: str, pickup_location: str, pickup_date: str, return_date: str, rental_company: str = None) -> str:
+    async def expedia_book_rental_car(self, car_name: str, pickup_location: str, pickup_date: str, return_date: str, rental_company: str = None) -> str:
         """
         Book a rental car
         
         Args:
-            car_id: The ID of the car to rent
+            car_name: The name of the car to rent
             pickup_location: The pickup location
             pickup_date: The pickup date in YYYY-MM-DD format
             return_date: The return date in YYYY-MM-DD format
@@ -582,22 +582,22 @@ class ExpediaAgent(BaseAgent):
         Returns:
             The booking result
         """
-        logger.info(f"Calling ExpediaAPI book_rental_car with car_id={car_id}, pickup_location={pickup_location}, pickup_date={pickup_date}, return_date={return_date}, rental_company={rental_company}")
-        result = self.expedia_api.book_rental_car(car_id=car_id, pickup_location=pickup_location, pickup_date=pickup_date, return_date=return_date, rental_company=rental_company)
+        logger.info(f"Calling ExpediaAPI book_rental_car with car_name={car_name}, pickup_location={pickup_location}, pickup_date={pickup_date}, return_date={return_date}, rental_company={rental_company}")
+        result = self.expedia_api.book_rental_car(car_name=car_name, pickup_location=pickup_location, pickup_date=pickup_date, return_date=return_date, rental_company=rental_company)
         return result
     
-    async def expedia_get_rental_car_info(self, car_id: str) -> str:
+    async def expedia_get_rental_car_info(self, car_name: str) -> str:
         """
         Get rental car information
         
         Args:
-            car_id: The ID of the car
+            car_name: The name of the car
             
         Returns:
             The rental car information
         """
-        logger.info(f"Calling ExpediaAPI get_rental_car_info with car_id={car_id}")
-        result = self.expedia_api.get_rental_car_info(car_id=car_id)
+        logger.info(f"Calling ExpediaAPI get_rental_car_info with car_name={car_name}")
+        result = self.expedia_api.get_rental_car_info(car_name=car_name)
         return result
     
     async def expedia_search_experience(self, experience_name: str, location: str, date: str, participants: int = 1) -> str:
@@ -617,12 +617,12 @@ class ExpediaAgent(BaseAgent):
         result = self.expedia_api.search_experience(experience_name=experience_name, location=location, date=date, participants=participants)
         return result
     
-    async def expedia_book_experience(self, experience_id: str, location: str, date: str, participants: int = 1) -> str:
+    async def expedia_book_experience(self, experience_name: str, location: str, date: str, participants: int = 1) -> str:
         """
         Book an experience
         
         Args:
-            experience_id: The ID of the experience to book
+            experience_name: The name of the experience to book
             location: The location of the experience
             date: The date of the experience in YYYY-MM-DD format
             participants: The number of participants
@@ -630,22 +630,22 @@ class ExpediaAgent(BaseAgent):
         Returns:
             The booking result
         """
-        logger.info(f"Calling ExpediaAPI book_experience with experience_id={experience_id}, location={location}, date={date}, participants={participants}")
-        result = self.expedia_api.book_experience(experience_id=experience_id, location=location, date=date, participants=participants)
+        logger.info(f"Calling ExpediaAPI book_experience with experience_name={experience_name}, location={location}, date={date}, participants={participants}")
+        result = self.expedia_api.book_experience(experience_name=experience_name, location=location, date=date, participants=participants)
         return result
 
-    async def expedia_get_experience_info(self, experience_id: str) -> str:
+    async def expedia_get_experience_info(self, experience_name: str) -> str:
         """
         Get experience information
         
         Args:
-            experience_id: The ID of the experience to get information for
+            experience_name: The name of the experience to get information for
             
         Returns:
             The experience information
         """
-        logger.info(f"Calling ExpediaAPI get_experience_info with experience_id={experience_id}")
-        result = self.expedia_api.get_experience_info(experience_id=experience_id)
+        logger.info(f"Calling ExpediaAPI get_experience_info with experience_name={experience_name}")
+        result = self.expedia_api.get_experience_info(experience_name=experience_name)
         return result
 
     async def expedia_search_cruise(self, departure_port: str, destination: str, departure_date: str, return_date: str, cabin_type: str = None) -> str:
@@ -666,12 +666,12 @@ class ExpediaAgent(BaseAgent):
         result = self.expedia_api.search_cruise(departure_port=departure_port, destination=destination, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
         return result
     
-    async def expedia_book_cruise(self, cruise_id: str, departure_port: str, departure_date: str, return_date: str, cabin_type: str = None) -> str:
+    async def expedia_book_cruise(self, cruise_name: str, departure_port: str, departure_date: str, return_date: str, cabin_type: str = None) -> str:
         """
         Book a cruise
         
         Args:
-            cruise_id: The ID of the cruise
+            cruise_name: The name of the cruise
             departure_port: The departure port
             departure_date: The departure date in YYYY-MM-DD format
             return_date: The return date in YYYY-MM-DD format
@@ -680,64 +680,64 @@ class ExpediaAgent(BaseAgent):
         Returns:
             The booking result
         """
-        logger.info(f"Calling ExpediaAPI book_cruise with cruise_id={cruise_id}, departure_port={departure_port}, departure_date={departure_date}, return_date={return_date}, cabin_type={cabin_type}")
-        result = self.expedia_api.book_cruise(cruise_id=cruise_id, departure_port=departure_port, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
+        logger.info(f"Calling ExpediaAPI book_cruise with cruise_name={cruise_name}, departure_port={departure_port}, departure_date={departure_date}, return_date={return_date}, cabin_type={cabin_type}")
+        result = self.expedia_api.book_cruise(cruise_name=cruise_name, departure_port=departure_port, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
         return result
         
-    async def expedia_get_cruise_info(self, cruise_id: str) -> str:
+    async def expedia_get_cruise_info(self, cruise_name: str) -> str:
         """
         Get cruise information
         
         Args:
-            cruise_id: The ID of the cruise to get information for 
+            cruise_name: The name of the cruise to get information for 
             
         Returns:
             The cruise information
         """
-        logger.info(f"Calling ExpediaAPI get_cruise_info with cruise_id={cruise_id}")
-        result = self.expedia_api.get_cruise_info(cruise_id=cruise_id)
+        logger.info(f"Calling ExpediaAPI get_cruise_info with cruise_name={cruise_name}")
+        result = self.expedia_api.get_cruise_info(cruise_name=cruise_name)
         return result
     
-    async def expedia_get_cruise_addons(self, cruise_id: str) -> str:
+    async def expedia_get_cruise_addons(self, cruise_name: str) -> str:
         """
         Get cruise add-ons
         
         Args:
-            cruise_id: The ID of the cruise
+            cruise_name: The name of the cruise to get add-ons for
             
         Returns:
             The cruise add-ons
         """
-        logger.info(f"Calling ExpediaAPI get_cruise_addons with cruise_id={cruise_id}")
-        result = self.expedia_api.get_cruise_addons(cruise_id=cruise_id)
+        logger.info(f"Calling ExpediaAPI get_cruise_addons with cruise_name={cruise_name}")
+        result = self.expedia_api.get_cruise_addons(cruise_name=cruise_name)
         return result
         
-    async def expedia_get_cruise_policies(self, cruise_id: str) -> str:
+    async def expedia_get_cruise_policies(self, cruise_name: str) -> str:
         """
         Get cruise policies
         
         Args:
-            cruise_id: The ID of the cruise
+            cruise_name: The name of the cruise to get policies for
             
         Returns:
             The cruise policies
         """
-        logger.info(f"Calling ExpediaAPI get_cruise_policies with cruise_id={cruise_id}")
-        result = self.expedia_api.get_cruise_policies(cruise_id=cruise_id)
+        logger.info(f"Calling ExpediaAPI get_cruise_policies with cruise_name={cruise_name}")
+        result = self.expedia_api.get_cruise_policies(cruise_name=cruise_name)
         return result
         
-    async def expedia_get_cruise_payment_options(self, cruise_id: str) -> str:
+    async def expedia_get_cruise_payment_options(self, cruise_name: str) -> str:
         """
         Get cruise payment options
         
         Args:
-            cruise_id: The ID of the cruise
+            cruise_name: The name of the cruise to get payment options for
             
         Returns:
             The cruise payment options
         """
-        logger.info(f"Calling ExpediaAPI get_cruise_payment_options with cruise_id={cruise_id}")
-        result = self.expedia_api.get_cruise_payment_options(cruise_id=cruise_id)
+        logger.info(f"Calling ExpediaAPI get_cruise_payment_options with cruise_name={cruise_name}")
+        result = self.expedia_api.get_cruise_payment_options(cruise_name=cruise_name)
         return result
         
     async def expedia_pay_for_itenary(self, booking_id: str, payment_method: str, amount: float, card_number: str, card_expiry: str, card_cvv: str, billing_address: str) -> str:

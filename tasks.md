@@ -62,8 +62,10 @@
 ### Calendar + Wallet
 - [x] 1. My Amex Gold card bill is due on the 15th of each month. Can you set up a reminder in my calendar along with the last 4 digit of my card?
 - [ ] 2. I need to set up recurring payment reminders for my Visa card. The minimum payment is due on the 20th of each month.
+<mark> The wallet API do not have endpoints for minimum payment information </mark>
 - [ ] 3. I have several credit card payments coming up. Can you check my calendar availability and schedule reminders for each payment date?
-- [ ] 4. I need to schedule bill payment reminders for all my cards. Can you add them to my calendar with the respective card details?
+<mark> The wallet API do not have endpoints for minimum payment information </mark>
+- [x] 4. I need to schedule bill payment reminders for all my cards. Can you add them to my calendar with the respective card details?
 - [ ] 5. I want to plan my credit card payment schedule for this month. Can you check my calendar and set up reminders for each payment?
 - [ ] 6. My credit card rewards are expiring next month. Can you set a reminder in my calendar and store the rewards details?
 - [ ] 7. I need to set up automatic payments for my cards. Can you schedule reminders to verify the setup in my calendar?

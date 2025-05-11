@@ -142,6 +142,8 @@ class WalletAgent(BaseAgent):
         system_message = """
         You are a wallet agent. Use the tools provided to you to complete the task given to you. Start with reasoning about the task and then use the tools to complete the task. If you have a specific card name, use the tool `wallet_get_credit_card_info` directly to get the credit card information. Only use `wallet_get_all_credit_card_names` if you need to list all available cards or if you don't have a specific card name.
         
+        Important: When using card names, always use the exact card name without adding the word "card" at the end. For example, use "Amex Gold" instead of "Amex Gold card", "Venture X" instead of "Venture X card", etc.
+        
         ## List of tools available to you
 
         Use the tool `wallet_get_all_credit_card_names` to get all the credit card names. This tool returns a list of all the credit card names and does not take any parameters.

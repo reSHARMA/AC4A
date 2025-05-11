@@ -24,6 +24,7 @@ class PolicySystem:
     def __init__(self):
         self.policy_rules = []
         self.attribute_definitions = {}
+        self.attribute_schema = {}
         self.status = True
         self.prompt = False
         logger.debug("PolicySystem initialized")
@@ -125,7 +126,13 @@ class PolicySystem:
                         logger.info(f"🆕 Created new attribute definition for '{attr_type}'")
                 else:
                     logger.warning(f"⛔ Attribute '{attr_type}' is not allowed and will be ignored")
-        
+
+        if hasattr(api_instance, 'get_attributes_schema'):
+            logger.info("🔍 Extracting attributes schema from API instance")
+            attributes_schema = api_instance.get_attributes_schema()
+            logger.info(f"📊 Found {len(attributes_schema)} attribute types: {list(attributes_schema.keys())}")
+            self.attribute_schema.update(attributes_schema)
+
         logger.info(f"✅ API REGISTRATION COMPLETE: {api_class.__name__}")
         return api_instance
 
@@ -549,6 +556,9 @@ class PolicySystem:
     def export_attributes(self):
         return self.attribute_definitions
 
+    def export_attributes_schema(self):
+        return self.attribute_schema
+
     def remove_policy(self, policy_rule):
         """Remove a policy from the policy system based on its composite key"""
         logger.info(f"Attempting to remove policy: {policy_rule}")
@@ -594,8 +604,12 @@ class PolicySystem:
                 all_data += f"{tree.get_tree_string()}\n"
             all_data += "</ALL DATA>"
 
+        all_data_schema = "<ALL DATA SCHEMA>\n"
+        all_data_schema += str(self.attribute_schema)
+        all_data_schema += "</ALL DATA SCHEMA>"
+
         # Generate policy code
-        generated_code = call_openai_api(POLICY_TRANSLATION + all_data, policy_text)
+        generated_code = call_openai_api(POLICY_TRANSLATION + all_data + all_data_schema, policy_text)
         logger.error(f"[policy_system.py] Generated code: {generated_code}")
         # Extract code blocks from the response
         import re

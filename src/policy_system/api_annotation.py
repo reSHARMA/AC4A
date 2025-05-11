@@ -4,12 +4,16 @@ from config import WILDCARD
 from web.utils.custom_logger import send_custom_log
 
 class APIAnnotationBase:
-    def __init__(self, namespace, attributes):
+    def __init__(self, namespace, attributes, attributes_schema):
         self.namespace = namespace
         self.attributes = attributes
+        self.attributes_schema = attributes_schema
 
     def export_attributes(self):
         return self.attributes
+
+    def export_attributes_schema(self):
+        return self.attributes_schema
 
     @staticmethod
     def annotate(endpoint_func):
@@ -25,6 +29,12 @@ class APIAnnotationBase:
     def export(endpoint_func):
         def wrapper(self, *args, **kwargs):
             wrapper.attributes = self.annotation.export_attributes()
+            return endpoint_func(self, *args, **kwargs)
+        return wrapper
+
+    def schema(endpoint_func):
+        def wrapper(self, *args, **kwargs):
+            wrapper.attributes_schema = self.annotation.export_attributes_schema()
             return endpoint_func(self, *args, **kwargs)
         return wrapper
 

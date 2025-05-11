@@ -12,6 +12,36 @@ logger = logging.getLogger(__name__)
 
 class ContactManagerAPIAnnotation(APIAnnotationBase):
     def __init__(self):
+        attributes_schema = {
+            'ContactManager:Contact': {
+                'description': 'The name of the contact, must be the name of the person',
+                'examples': ['Ron Swanson', 'Leslie Knope', 'Tom Haverford']
+            },
+            'ContactManager:ContactPhone': {
+                'description': 'The phone number of the contact, must be a 10 digit number',
+                'examples': ['2061234567', '7321234567']
+            },
+            'ContactManager:ContactAddress': {
+                'description': 'The address of the contact, must be a valid address',
+                'examples': ['123 Main St, Anytown, USA', '123 Main St, Anytown, USA']
+            },
+            'ContactManager:ContactEmail': {
+                'description': 'The email of the contact, must be a valid email address',
+                'examples': ['ron@swanson.com', 'leslie@knope.com', 'tom@haverford.com']
+            },
+            'ContactManager:ContactRelation': {
+                'description': 'The relation of the contact, must be a valid relation with the user',
+                'examples': ['spouse', 'child', 'parent', 'friend', 'business partner', 'other']
+            },
+            'ContactManager:ContactBirthday': {
+                'description': 'The birthday of the contact, must be in the format YYYY-MM-DD',
+                'examples': ['1980-01-01', '1980-01-01']
+            },
+            'ContactManager:ContactNotes': {
+                'description': 'The notes of the contact, must be a valid note',
+                'examples': ['Ron is a great boss', 'Leslie is a great friend', 'Tom is a great business partner']
+            }
+        }
         super().__init__("ContactManager", {
             'granular_data': [
                 AttributeTree('ContactManager:Contact', [
@@ -31,7 +61,7 @@ class ContactManagerAPIAnnotation(APIAnnotationBase):
                 AttributeTree('Previous', [AttributeTree('Current')]),
                 AttributeTree('Next', [AttributeTree('Current')])
             ]
-        })
+        }, attributes_schema)
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
         api_to_granular_data = {
@@ -74,6 +104,10 @@ class ContactManagerAPI:
     @ContactManagerAPIAnnotation.export
     def get_attributes(self):
         return self.annotation.attributes
+
+    @ContactManagerAPIAnnotation.schema
+    def get_attributes_schema(self):
+        return self.annotation.attributes_schema
 
     @ContactManagerAPIAnnotation.annotate
     def add_contact(self, *args, **kwargs):

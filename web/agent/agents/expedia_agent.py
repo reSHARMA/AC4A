@@ -12,6 +12,36 @@ logger = logging.getLogger(__name__)
 
 class ExpediaAPIAnnotation(APIAnnotationBase):
     def __init__(self):
+        attributes_schema = {
+            'Expedia:Destination': {
+                'description': 'The destination of the travel, must be a valid destination, can be a city, state, country etc',
+                'examples': ['New York', 'Los Angeles', 'San Francisco']
+            }, 
+            'Expedia:Flight': {
+                'description': 'The flight number of the flight, must be a valid flight number',
+                'examples': ['AA123', 'UA456', 'DL789']
+            },
+            'Expedia:Hotel': {
+                'description': 'The name of the hotel, must be a valid hotel name',
+                'examples': ['Courtyard by Marriott', 'Hilton Garden Inn', 'Hyatt Regency', 'Collegetown Suites', 'Holiday Inn Express']
+            },
+            'Expedia:CarRental': {
+                'description': 'The name of the car to rent, must be a valid car name',
+                'examples': ['Toyota Camry', 'Honda Accord', 'Ford Fiesta']
+            },
+            'Expedia:Experience': {
+                'description': 'The name of the experience, must be a valid experience name',
+                'examples': ['Theater', 'Cruise', 'Museum', 'Zoo', 'Amusement Park', 'Spas', 'Restaurants', 'Shopping']
+            },
+            'Expedia:Cruise': {
+                'description': 'The name of the cruise',
+                'examples': ['Carnival', 'Royal Caribbean', 'Norwegian Cruise Line']
+            },
+            'Expedia:Payment': {
+                'description': 'Represents the ability to pay for the booking, must always be *',
+                'examples': ['*']
+            }
+        }
         super().__init__("Expedia", {
             'granular_data': [
                 AttributeTree(f'Expedia:Destination', [
@@ -32,30 +62,27 @@ class ExpediaAPIAnnotation(APIAnnotationBase):
                 AttributeTree('Previous', [AttributeTree('Current')]),
                 AttributeTree('Next', [AttributeTree('Current')])
             ]
-        })
+        }, attributes_schema)
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
         api_to_granular_data = {
-            'search_flights': ('Flight', kwargs.get('airline', '*')),
+            'search_flights': ('Flight', '*'),
             'get_flight_info': ('Flight', kwargs.get('flight_number', '*')),
             'book_flight': ('Flight', kwargs.get('flight_number', '*')),
-            'search_hotels': ('Hotel', kwargs.get('hotel_name', '*')),
+            'search_hotels': ('Hotel', '*'),
             'get_hotel_info': ('Hotel', kwargs.get('hotel_name', '*')),
             'book_hotel': ('Hotel', kwargs.get('hotel_name', '*')),
-            'search_rental_cars': ('CarRental', kwargs.get('car_type', '*')),
+            'search_rental_cars': ('CarRental', '*'),
             'get_rental_car_info': ('CarRental', kwargs.get('car_name', '*')),
             'book_rental_car': ('CarRental', kwargs.get('car_name', '*')),
-            'search_experience': ('Experience', kwargs.get('experience_name', '*')),
+            'search_experience': ('Experience', '*'),
             'book_experience': ('Experience', kwargs.get('experience_name', '*')),
-            'search_cruise': ('Cruise', kwargs.get('departure_port', '*')),
+            'search_cruise': ('Cruise', '*'),
             'get_cruise_info': ('Cruise', kwargs.get('cruise_name', '*')),
             'book_cruise': ('Cruise', kwargs.get('cruise_name', '*')),
             'pay_for_itenary': ('Payment', kwargs.get('booking_id', '*'))
         }
         label, detail = api_to_granular_data.get(endpoint_name, ('Destination', '*'))
-
-        if "cruise" in endpoint_name.lower():
-            label, detail = ('Cruise', kwargs.get('cruise_name', '*'))
         
         # Convert None to '*'
         if detail is None:
@@ -136,6 +163,10 @@ class ExpediaAPI:
     @ExpediaAPIAnnotation.export
     def get_attributes(self):
         return self.annotation.attributes
+
+    @ExpediaAPIAnnotation.schema
+    def get_attributes_schema(self):
+        return self.annotation.attributes_schema
 
     @ExpediaAPIAnnotation.annotate
     def search_flights(self, *args, **kwargs):

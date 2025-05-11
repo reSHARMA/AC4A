@@ -39,6 +39,9 @@ class AgentManager:
         # Store attribute trees
         self.attribute_trees = []
 
+        # Store attribute schema
+        self.attribute_schema = {}
+
     def initialize_agents(self) -> Dict[str, Any]:
         """Initialize all agents with the model client"""
             
@@ -90,11 +93,21 @@ class AgentManager:
             
         return self.attribute_trees
     
+    def get_attribute_schema(self) -> Dict[str, Any]:
+        """Get the attribute schema"""
+        return self.attribute_schema
+
     def _update_attribute_trees(self):
         """Update the attribute trees from the policy system"""
         logger.info("Updating attribute trees from policy system")
         logger.info(f"Policy system status: {'enabled' if self.policy_system.status else 'disabled'}")
         
+        # Get attribute schema
+        attribute_schema = self.policy_system.export_attributes_schema()
+        logger.info(f"Exported attributes schema: {attribute_schema.keys()}")
+        self.attribute_schema = attribute_schema
+        
+        # Get attribute definitions
         attribute_definitions = self.policy_system.export_attributes()
         logger.info(f"Exported attributes: {attribute_definitions.keys()}")
         

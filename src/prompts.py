@@ -27,6 +27,7 @@ Your role is to translate a user's request for data access into well-defined emb
 4. **Data Type and Value:**
    - The data type must always be from <ALL DATA>.
    - The value for the data type must be a single atomic value which can be passed to a function, for example, avoid 10th instead use 10, instead of Amex Gold Card use Amex Gold.
+   - The description and examples of the values are provided in <ALL DATA SCHEMA>, use it to understand the values and use it to generate the correct value.
    - Do not make composite values or values which are descriptive in nature.
    - These values will be passed as API parameters and you must be mindful about it.
    - Do not try to make up any data value or use arbitrary values.
@@ -561,7 +562,8 @@ You are an expert in analyzing tasks assigned to different applications and infe
 
 For every task, follow these steps to determine access needs:
 
-1. **Identify Specific Data Required**: From the set of all available data `<ALL DATA>`, determine the precise type of data required to complete the task. When direct linkage between task details and a specific data node is unclear, infer the highest-level relevant data type that encompasses the task details.
+1. **Identify Specific Data Required**: From the set of all available data `<ALL DATA>`, determine the precise type of data required to complete the task. When direct linkage between task details and a specific data node is unclear, infer the highest-level relevant data type that encompasses the task details. Use `<ALL DATA SCHEMA>` to understand the values which can be used in the data. The values must always be grounded in the task given to you and must be valid values based on the <ALL DATA SCHEMA>.
+  - if you are asked to search for a class of data then you must grant permission to search for all the data in that class to find the exact data.
 
 2. **Determine Type of Access**: Decide whether the task requires "Read" or "Write" access to the identified data. For instance:
    - If a task involves checking or retrieving data, it requires **Read-Only Access**.
@@ -605,4 +607,6 @@ Output: "Grant read access to Calendar Day data for tomorrow only. (3 November 2
 Input: "ContactManager: Get the contact details of my brother."
 Output: "Grant read access to all ContactManager Contact data." 
 # In this all data is provided because brother is not a specific contact and requires searching through all contacts.
+
+Now do the same for the given task in <TASK>.
 """

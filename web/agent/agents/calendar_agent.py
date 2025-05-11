@@ -13,6 +13,25 @@ logger = logging.getLogger(__name__)
 
 class CalendarAPIAnnotation(APIAnnotationBase):
     def __init__(self):
+        attributes_schema = {
+            'Calendar:Year': {
+                'description': 'The year of the calendar',
+                'examples': ['2025', '2026', '2027']
+            },
+            'Calendar:Month': {
+                'description': 'The month of the calendar',
+                'examples': ['January', 'February', 'December']
+            },
+            'Calendar:Day': {
+                'description': 'The day of the calendar must be a number between 1 and 31',
+                'examples': ['1', '2', '31']
+            },
+            'Calendar:Hour': {
+                'description': 'The hour of the calendar must be a number between 0 and 23',
+                'examples': ['0', '1', '23']
+            }
+        }
+
         super().__init__("Calendar", {
             'granular_data': [AttributeTree(f'Calendar:Year', [
                 AttributeTree(f'Calendar:Month', [
@@ -29,7 +48,7 @@ class CalendarAPIAnnotation(APIAnnotationBase):
                 AttributeTree('Previous', [AttributeTree('Current')]),
                 AttributeTree('Next', [AttributeTree('Current')])
             ]
-        })
+        }, attributes_schema)
 
     def get_hierarchy(self, start_time, duration, use_wildcard):
         end_time = start_time + duration
@@ -137,6 +156,10 @@ class CalendarAPI:
     @CalendarAPIAnnotation.export
     def get_attributes(self):
         return self.annotation.attributes
+
+    @CalendarAPIAnnotation.schema
+    def get_attributes_schema(self):
+        return self.annotation.attributes_schema
 
     @CalendarAPIAnnotation.annotate
     def reserve(self, *args, **kwargs):

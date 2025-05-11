@@ -11,6 +11,24 @@ from config import WILDCARD
 logger = logging.getLogger(__name__)
 
 class WalletAPIAnnotation(APIAnnotationBase):
+    attributes_schema = {
+        'Wallet:CreditCard': {
+            'description': 'The name of the credit card',
+            'examples': ['Venture X', 'Amex Gold', 'Chase Sapphire']
+        }, 
+        'Wallet:CreditCardType': {
+            'description': 'The type of the credit card, payment network',
+            'examples': ['Visa', 'Mastercard', 'Amex']
+        },
+        'Wallet:CreditCardNumber': {
+            'description': 'The number of the credit card, must be 16 digits',
+            'examples': ['1234567890123456', '1234567890123456']
+        },
+        'Wallet:CreditCardPin': {
+            'description': 'The pin of the credit card, must be 3 for visa and mastercard or 4 for amex',
+            'examples': ['123', '456', '1234']
+        },
+    }
     def __init__(self):
         super().__init__("Wallet", {
             'granular_data': [
@@ -28,7 +46,7 @@ class WalletAPIAnnotation(APIAnnotationBase):
                 AttributeTree('Previous', [AttributeTree('Current')]),
                 AttributeTree('Next', [AttributeTree('Current')])
             ]
-        })
+        }, self.attributes_schema)
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
         api_to_granular_data = {
@@ -71,6 +89,10 @@ class WalletAPI:
     @WalletAPIAnnotation.export
     def get_attributes(self):
         return self.annotation.attributes
+
+    @WalletAPIAnnotation.schema
+    def get_attributes_schema(self):
+        return self.annotation.attributes_schema
 
     @WalletAPIAnnotation.annotate
     def add_credit_card(self, *args, **kwargs):

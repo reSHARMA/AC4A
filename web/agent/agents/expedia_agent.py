@@ -168,7 +168,7 @@ class ExpediaAPI:
     @ExpediaAPIAnnotation.annotate
     def book_hotel(self, *args, **kwargs):
         return generate_dummy_data(
-            api_endpoint="book_hotel, expedia book hotel and return booking id",
+            api_endpoint="book_hotel, expedia book hotel and return booking id with payment status as pending",
             **kwargs
         )
 
@@ -189,7 +189,7 @@ class ExpediaAPI:
     @ExpediaAPIAnnotation.annotate
     def book_rental_car(self, *args, **kwargs):
         return generate_dummy_data(
-            api_endpoint="book_rental_car, expedia rent car and return booking id",
+            api_endpoint="book_rental_car, expedia rent car and return booking id with payment status as pending",
             **kwargs
         )
 
@@ -210,7 +210,7 @@ class ExpediaAPI:
     @ExpediaAPIAnnotation.annotate
     def book_experience(self, *args, **kwargs):
         return generate_dummy_data(
-            api_endpoint="book_experience, expedia book experience and return booking id",
+            api_endpoint="book_experience, expedia book experience and return booking id with payment status as pending",
             **kwargs
         )
 
@@ -231,7 +231,7 @@ class ExpediaAPI:
     @ExpediaAPIAnnotation.annotate
     def book_cruise(self, *args, **kwargs):
         return generate_dummy_data(
-            api_endpoint="book_cruise, expedia book cruise and return booking id",
+            api_endpoint="book_cruise, expedia book cruise and return booking id with payment status as pending",
             **kwargs
         )
 
@@ -708,36 +708,36 @@ class ExpediaAgent(BaseAgent):
         Returns:
             The cruise add-ons
         """
-        logger.info(f"Calling ExpediaAPI get_cruise_addons with cruise_name={cruise_name}")
-        result = self.expedia_api.get_cruise_addons(cruise_name=cruise_name)
+        logger.info(f"Calling ExpediaAPI get_cruise_addons with cruise_id={cruise_id}")
+        result = self.expedia_api.get_cruise_addons(cruise_id=cruise_id)
         return result
         
-    async def expedia_get_cruise_policies(self, cruise_name: str) -> str:
+    async def expedia_get_cruise_policies(self, cruise_id: str) -> str:
         """
         Get cruise policies
         
         Args:
-            cruise_name: The name of the cruise to get policies for
+            cruise_id: The ID of the cruise
             
         Returns:
             The cruise policies
         """
-        logger.info(f"Calling ExpediaAPI get_cruise_policies with cruise_name={cruise_name}")
-        result = self.expedia_api.get_cruise_policies(cruise_name=cruise_name)
+        logger.info(f"Calling ExpediaAPI get_cruise_policies with cruise_id={cruise_id}")
+        result = self.expedia_api.get_cruise_policies(cruise_id=cruise_id)
         return result
         
-    async def expedia_get_cruise_payment_options(self, cruise_name: str) -> str:
+    async def expedia_get_cruise_payment_options(self, cruise_id: str) -> str:
         """
         Get cruise payment options
         
         Args:
-            cruise_name: The name of the cruise to get payment options for
+            cruise_id: The ID of the cruise
             
         Returns:
             The cruise payment options
         """
-        logger.info(f"Calling ExpediaAPI get_cruise_payment_options with cruise_name={cruise_name}")
-        result = self.expedia_api.get_cruise_payment_options(cruise_name=cruise_name)
+        logger.info(f"Calling ExpediaAPI get_cruise_payment_options with cruise_id={cruise_id}")
+        result = self.expedia_api.get_cruise_payment_options(cruise_id=cruise_id)
         return result
         
     async def expedia_pay_for_itenary(self, booking_id: str, payment_method: str, amount: float, card_number: str, card_expiry: str, card_cvv: str, billing_address: str) -> str:

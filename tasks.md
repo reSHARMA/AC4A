@@ -140,7 +140,7 @@
 - [ ] 2. I'm planning a business trip to London with several meetings. I need to schedule the meetings, book travel arrangements, and pay with my business card. Can you help me organize everything?
 - [ ] 3. I'm planning a vacation to Hawaii. I need to check my vacation dates, book flights and activities, and pay with my personal card. Can you help me plan this trip?
 - [ ] 4. I want to book a cruise vacation. I need to check my calendar availability, book the cruise and add-ons, and pay with my stored card. Can you help me with this?
-- [ ] 5. I'm planning a multi-city business trip to New York, Chicago, and Los Angeles. I need to schedule meetings in each city, book flights and hotels, and pay with my corporate card. Can you help me coordinate this?
+- [x] 5. I'm planning a multi-city business trip to New York, Chicago, and Los Angeles in December. I need to schedule meetings in each city, book flights and hotels, and pay with my corporate card and go with the cheapest options. Search, book and pay using my Amex Gold Card; I'm flexible with the dates. Add each booking in my calendar.
 - [x] 6. Can you book cruise to alaska for July based on the constraints on my calendar? Book and pay using my venture x card and add it to my calendar.
 
 ### Calendar + Wallet + Contact Manager

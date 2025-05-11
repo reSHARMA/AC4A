@@ -66,7 +66,7 @@
 - [ ] 3. I have several credit card payments coming up. Can you check my calendar availability and schedule reminders for each payment date?
 <mark> The wallet API do not have endpoints for minimum payment information </mark>
 - [x] 4. I need to schedule bill payment reminders for all my cards. Can you add them to my calendar with the respective card details?
-- [ ] 5. I want to plan my credit card payment schedule for this month. Can you check my calendar and set up reminders for each payment?
+- [x] 5. I want to plan my credit card payment schedule for this month. Can you check my calendar and set up reminders for each payment?
 - [ ] 6. My credit card rewards are expiring next month. Can you set a reminder in my calendar and store the rewards details?
 - [ ] 7. I need to set up automatic payments for my cards. Can you schedule reminders to verify the setup in my calendar?
 - [ ] 8. I want to review my credit card statements monthly. Can you schedule a recurring meeting in my calendar?
@@ -141,6 +141,7 @@
 - [ ] 3. I'm planning a vacation to Hawaii. I need to check my vacation dates, book flights and activities, and pay with my personal card. Can you help me plan this trip?
 - [ ] 4. I want to book a cruise vacation. I need to check my calendar availability, book the cruise and add-ons, and pay with my stored card. Can you help me with this?
 - [ ] 5. I'm planning a multi-city business trip to New York, Chicago, and Los Angeles. I need to schedule meetings in each city, book flights and hotels, and pay with my corporate card. Can you help me coordinate this?
+- [x] 6. Can you book cruise to alaska for July based on the constraints on my calendar? Book and pay using my venture x card and add it to my calendar.
 
 ### Calendar + Wallet + Contact Manager
 - [ ] 1. I need to plan and track group expenses for our team project. I need to schedule payment meetings, track shared expenses, and manage contact payments. Can you help me organize this?

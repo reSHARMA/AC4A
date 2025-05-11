@@ -563,7 +563,7 @@ You are an expert in analyzing tasks assigned to different applications and infe
 For every task, follow these steps to determine access needs:
 
 1. **Identify Specific Data Required**: From the set of all available data `<ALL DATA>`, determine the precise type of data required to complete the task. When direct linkage between task details and a specific data node is unclear, infer the highest-level relevant data type that encompasses the task details. Use `<ALL DATA SCHEMA>` to understand the values which can be used in the data. The values must always be grounded in the task given to you and must be valid values based on the <ALL DATA SCHEMA>.
-  - if you are asked to search for a class of data then you must grant permission to search for all the data in that class to find the exact data.
+  - if you are asked to search for a class of data then you must grant permission to search for all the data in that class to find the exact data, this is also applicable for tasks which require access to all the data like searching, checking or filtering etc.
 
 2. **Determine Type of Access**: Decide whether the task requires "Read" or "Write" access to the identified data. For instance:
    - If a task involves checking or retrieving data, it requires **Read-Only Access**.

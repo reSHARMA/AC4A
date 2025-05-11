@@ -145,7 +145,7 @@ async def run_agent() -> str:
                                 all_data_schema += "</ALL DATA SCHEMA>"
                                 logger.info(f"[agent_core.py] All data schema: {all_data_schema}")
 
-                                permission_required = call_openai_api(PERMISSION_REQUIRED + all_data + all_data_schema, content)
+                                permission_required = call_openai_api(PERMISSION_REQUIRED + all_data + all_data_schema, "<TASK>\n" + content + "\n</TASK>")
                                 logger.error(f"[agent_core.py] Permission required: {permission_required}")
                                     
                                 infer_response = 'n'

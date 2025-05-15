@@ -22,6 +22,7 @@ class PlannerAgent(BaseAgent):
         Expedia: A travel booking application with APIs for searching, booking and paying for flights, hotels, rental cars, experiences like cruises.
         Wallet: A wallet application with saved cards and with APIs for adding, removing, updating and getting credit card information.
         ContactManager: A contact manager application with APIs to add, remove, update and get contact information.
+        PasswordManager: A password manager application with APIs to add, remove, update and get password information for various services and users.
         User: The user application only for asking the user for input and data.
 
         Think deeply and break the task into sub tasks for the application.

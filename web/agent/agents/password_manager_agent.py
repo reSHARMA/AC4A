@@ -154,7 +154,7 @@ class PasswordManagerAgent(BaseAgent):
         Use the tool `list_all_saved_password_users` to get all the saved password users for the given service name. The tool takes the following parameters:
         - service_name: The name of the service to get the password for, example "gmail".
         and returns a list of all the saved password users for the given service name. Example output: ["xyz@gmail.com", "user123", "@Ron"].
-        Should be used when you need to see all users that have saved passwords for a specific service. If you have a specific service name, use this tool directly instead of listing all services.
+        Should be used when you need to see all users that have saved passwords for a specific service. If you have a specific service name, always use this tool directly instead of listing all services.
 
         Use the tool `get_password` to get the password for the given service name and user name. The tool takes the following parameters:
         - service_name: The name of the service to get the password for, example "gmail".

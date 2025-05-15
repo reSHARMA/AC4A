@@ -9,6 +9,7 @@ from .agents.wallet_agent import WalletAgent
 from .agents.expedia_agent import ExpediaAgent
 from .agents.contact_manager_agent import ContactManagerAgent
 from .agents.password_manager_agent import PasswordManagerAgent
+from .agents.web_browser_agent import WebBrowserAgent
 from .agents.planner_agent import PlannerAgent
 from .agents.user_agent import UserAgent
 from .model_client import setup_model_client
@@ -60,6 +61,7 @@ class AgentManager:
         self.agents['expedia'] = ExpediaAgent(self.model_client, self.policy_system).create_agent()
         self.agents['contact_manager'] = ContactManagerAgent(self.model_client, self.policy_system).create_agent()
         self.agents['password_manager'] = PasswordManagerAgent(self.model_client, self.policy_system).create_agent()
+        self.agents['web_browser'] = WebBrowserAgent(self.model_client, self.policy_system).create_agent()
         # Update attribute trees
         self._update_attribute_trees()
         

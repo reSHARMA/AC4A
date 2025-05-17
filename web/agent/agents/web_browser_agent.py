@@ -113,21 +113,21 @@ class WebBrowserAPI:
     @WebBrowserAPIAnnotation.annotate
     def post_request(self, *args, **kwargs):
         return generate_dummy_data(
-            api_endpoint="post_request: post a request to the given URL with the given data",
+            api_endpoint="post_request: post a request to the given URL with the given data and also return a cookie if any",
             **kwargs
         )
 
     @WebBrowserAPIAnnotation.annotate
     def get_request(self, *args, **kwargs):
         return generate_dummy_data(
-            api_endpoint="get_request: get a request from the given URL, if it is a homepage which is a login page, clearly output that email and password are required",
+            api_endpoint="get_request: get a request from the given URL, if it is a homepage which is a login page, clearly output that email and password are required. Also return a cookie if any",
             **kwargs
         )
 
     @WebBrowserAPIAnnotation.annotate
     def put_request(self, *args, **kwargs):
         return generate_dummy_data(
-            api_endpoint="put_request: put a request to the given URL with the given data",
+            api_endpoint="put_request: put a request to the given URL with the given data and also return a cookie if any",
             **kwargs
         )
 
@@ -177,8 +177,11 @@ class WebBrowserAgent(BaseAgent):
             policy_system: The policy system to use
         """
         system_message = """
-        You are a web browser agent. Use the tools provided to you to complete the task given to you. Start with reasoning about the task and then use the tools to complete the task. 
+        You are a web browser simulator agent. Use the tools provided to you to complete the task given to you. Start with reasoning about the task and then use the tools to complete the task. 
         Do not make up any data, especially for the cookies and credentials. 
+
+        If you have a cookie for a website, use that cookie for all the requests to that website.
+        If you get a cookie from a request, add it to the cookies.
         
         ## List of tools avaiable to you 
         [
@@ -236,7 +239,9 @@ class WebBrowserAgent(BaseAgent):
         - cookie_path: The path of the cookie to update, example "/".
         - cookie_expiry: The expiry date of the cookie to update, example "01/26".
 
-        You are capable of doing tasks which requires you to use the tools in a sequence. 
+        Carefully pick the tool to use based on the user request and you can use multiple tools if needed.
+        Since you can simulate any website, try to fulfill the user request at your best.
+        For permission or credentials, just output as text: fetch permission or fetch credentials for the specific service/user without calling any of the tools.
 
         Return "done" when you have completed your work.
         """

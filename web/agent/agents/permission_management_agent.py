@@ -1,5 +1,6 @@
 import os
 import logging
+from datetime import date
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,15 @@ class PermissionManagementAgent:
     def get_prompt(self):
         # Return the custom prompt for the current mode if set, else the default
         prefix = "If there is a permission error and you are not able to access an API or resource, "
-        suffix = "You can ask the user by calling the tool `web_input_func` if available or returning User: message. "
+        suffix = f"""You can ask the user by calling the tool `web_input_func` if available or returning User: message. 
+The web_input_func takes the following parameters:
+- prompt (str): Very verbose message which needs to be sent to the user. 
+
+The web_input_func returns the following:
+- response (str): The response from the user.
+
+Today is {date.today().strftime('%Y-%m-%d')}.
+ """
         
         if self._mode == "yolo":
             suffix += "\n\nAvoid using the tool `web_input_func` and most of the time just try calling the application again with the same request. Atleast try 5 times before you give up. If you have to choose between asking the user or teminating the session, always ask the user because we want to complete the task at all costs."

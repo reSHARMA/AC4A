@@ -1,4 +1,6 @@
-POLICY_TRANSLATION = """
+from datetime import date, timedelta
+
+POLICY_TRANSLATION = f"""
 You are an expert data access policy generator.
 
 Your role is to translate a user's request for data access into well-defined embedded DSL policies in Python. Each policy specifies precise permissions based on the request, avoiding redundancies or conflicts with existing policies.
@@ -50,11 +52,11 @@ Below are examples of valid policy formats and reasoning based on sample request
 
 **Generated Policy:**
 ```python
-policy_system.add_policy({
+policy_system.add_policy({{
     "granular_data": "Calendar:Year(2025)::Calendar:Month(December)::Calendar:Day(15)",
     "data_access": "Read",
     "position": "Current"
-})
+}})
 ```
 
 #### Example 2:
@@ -66,16 +68,16 @@ Since we prefer multiple policies over a single policy with a wide range, we wil
 
 **Generated Policy:**
 ```python
-policy_system.add_policy({
+policy_system.add_policy({{
     "granular_data": "Calendar:Month(November)",
     "data_access": "Read",
     "position": "Current"
-})
-policy_system.add_policy({
+}})
+policy_system.add_policy({{
     "granular_data": "Calendar:Month(December)",
     "data_access": "Read",
     "position": "Current"
-})
+}})
 ```
 
 #### Example 3:
@@ -85,11 +87,11 @@ policy_system.add_policy({
 
 **Generated Policy:**
 ```python
-policy_system.add_policy({
+policy_system.add_policy({{
     "granular_data": "Calendar:Month(July)",
     "data_access": "Write",
     "position": "Current"
-})
+}})
 ```
 
 #### Example 4:
@@ -99,11 +101,11 @@ policy_system.add_policy({
 
 **Generated Policy:**
 ```python
-policy_system.add_policy({
+policy_system.add_policy({{
     "granular_data": "Wallet:CreditCard(Alaska Airline)",
     "data_access": "Read",
     "position": "Current"
-})
+}})
 ```
 
 #### Example 5:
@@ -114,16 +116,16 @@ Since we prefer multiple policies over a single policy with a wide range, we wil
 
 **Generated Policy:**
 ```python
-policy_system.add_policy({
+policy_system.add_policy({{
     "granular_data": "Calendar:Year(2025)::Calendar:Month(July)::Calendar:Day(10)",
     "data_access": "Read",
     "position": "Current"
-})
-policy_system.add_policy({
+}})
+policy_system.add_policy({{
     "granular_data": "Calendar:Year(2025)::Calendar:Month(July)::Calendar:Day(11)",
     "data_access": "Read",
     "position": "Current"
-})
+}})
 # ... repeat for all days from 12th to 16th
 ```
 ### Additional Guidelines
@@ -146,12 +148,14 @@ policy_system.add_policy({
    - If the data does not have a value, then the value should be *, example Calendar:Month(*) which will allow access to all months.
 
 5. **Prefer multiple policies over a single policy with a wide range:**
-   - If the request is for data that spans multiple values, prefer to create multiple policies with more granular ranges over a single policy with a wide range.
+   - If the request is for data that spans multiple values, prefer to create multiple policies with more granular ranges over a single policy with a wide range with position as current.
    - Example: If the request is for data from July 10th to July 20th, prefer to either create a policy for complete July month or create 11 policies for each day in July between 10th and 20th.
   
 5. **Output Structure:**
    - First, provide a brief **reasoning** for each generated policy, summarizing how it satisfies the request.
    - Then, output the policy in a **formatted Python code block**.
+
+Today is {date.today().strftime('%Y-%m-%d')}.
 """
 
 POLICY_GENERATOR_WILDCARD_V2 = """
@@ -557,7 +561,7 @@ policy_system.add_policy({
 Do you allow read access to all the calendar year data?
 """
 
-PERMISSION_REQUIRED = """
+PERMISSION_REQUIRED = f"""
 You are an expert in analyzing tasks assigned to different applications and inferring what resources, access, and permissions are required to complete those tasks.
 
 For every task, follow these steps to determine access needs:
@@ -584,9 +588,10 @@ For every task, follow these steps to determine access needs:
 
 ### Important Constraints:
 1. If there is ambiguity in the data value, grant access to the relevant high-level data.
-2. Avoid generating redundant permissions — permissions apply to sub-nodes automatically.
-3. Do not create permissions for tasks that are non-data-related or do not require explicit access.
-4. If no permissions need to be generated for a task, return an empty string `""`.
+2. Use precise data values whenever possible, example, instead of next month, use the exact month name, similarly for next day.
+3. Avoid generating redundant permissions — permissions apply to sub-nodes automatically.
+4. Do not create permissions for tasks that are non-data-related or do not require explicit access.
+5. If no permissions need to be generated for a task, return an empty string `""`.
 
 ### Examples:
 Input: "Calendar: Check the user's availability in December to plan a vacation to Seattle."
@@ -602,11 +607,13 @@ Input: "Wallet: Use the Alaska Airline credit card to pay $2399.99 for the confi
 Output: "Grant read access to Wallet Credit Card data for Alaska Airline credit card only."
 
 Input: "Calendar: Show my availability for tomorrow."
-Output: "Grant read access to Calendar Day data for tomorrow only. (3 November 2025)"
+Output: "Grant read access to Calendar Day data for {(date.today() + timedelta(days=1)).strftime('%Y-%m-%d')} only."
 
 Input: "ContactManager: Get the contact details of my brother."
 Output: "Grant read access to all ContactManager Contact data." 
 # In this all data is provided because brother is not a specific contact and requires searching through all contacts.
+
+Today is {date.today().strftime('%Y-%m-%d')}.
 
 Now do the same for the given task in <TASK>.
 """

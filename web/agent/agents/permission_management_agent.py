@@ -44,5 +44,5 @@ class PermissionManagementAgent:
         suffix = "You can ask the user by calling the tool `web_input_func` if available or returning User: message. "
         
         if self._mode == "yolo":
-            suffix += "\n\nAvoid using the tool `web_input_func` and most of the time just try calling the application again with the same request. ATleast try 5 times before you give up."
+            suffix += "\n\nAvoid using the tool `web_input_func` and most of the time just try calling the application again with the same request. Atleast try 5 times before you give up. If you have to choose between asking the user or teminating the session, always ask the user because we want to complete the task at all costs."
         return prefix + self._custom_prompts.get(self._mode, self.DEFAULT_PROMPTS[self._mode]) + suffix

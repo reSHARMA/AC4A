@@ -448,9 +448,6 @@ class ExpediaAgent(BaseAgent):
         - guest_address: The guest address (optional)
         return the booking id and basic information of the booking after adding the guest information
 
-        use `web_input_func` tool to ask the user for user input, like confirmation of the booking details, etc.
-        it takes a single parameter which is the question to ask the user.
-        
         Return "done" when your work is completed.
         """
         

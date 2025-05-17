@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 class BaseAgent():
     """Base class for all agents"""
     
-    def __init__(self, name, system_message, tools, model_client):
+    def __init__(self, name, system_message, tools, model_client, skip_permission_management=False):
         """
         Initialize the base agent
         
@@ -23,8 +23,9 @@ class BaseAgent():
         self.tools = tools
         self.model_client = model_client
         self.agent = None
-        self.permission_management_agent = PermissionManagementAgent(mode="ask")
-        self.system_message += f"\n\n{self.permission_management_agent.get_prompt()}"
+        if not skip_permission_management:
+            self.permission_management_agent = PermissionManagementAgent(mode="ask")
+            self.system_message += f"\n\n{self.permission_management_agent.get_prompt()}"
         
     def create_agent(self):
         """

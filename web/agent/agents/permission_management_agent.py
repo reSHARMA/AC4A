@@ -42,12 +42,8 @@ class PermissionManagementAgent:
     def get_prompt(self):
         # Return the custom prompt for the current mode if set, else the default
         prefix = "If there is a permission error and you are not able to access an API or resource, "
-        suffix = f"""You can ask the user by calling the tool `web_input_func` if available or returning User: message. 
-The web_input_func takes the following parameters:
-- prompt (str): Very verbose message which needs to be sent to the user. 
-
-The web_input_func returns the following:
-- response (str): The response from the user.
+        suffix = f"""Use the tool `web_input_func` to ask the user for input. This tool takes a single parameter which is the question to ask the user of type string.
+        The tool will return the user's response as a string.
 
 Today is {date.today().strftime('%Y-%m-%d')}.
  """

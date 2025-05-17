@@ -36,7 +36,7 @@ class UserAgent(BaseAgent):
         
         tools = [web_input_func]
         
-        super().__init__("User", system_message, tools, model_client)
+        super().__init__("User", system_message, tools, model_client, skip_permission_management=True)
         
     def get_user_message(self, prompt: str) -> str:
         """

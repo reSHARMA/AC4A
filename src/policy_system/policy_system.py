@@ -251,7 +251,9 @@ class PolicySystem:
     def expand_attributes(self, attributes):
         increment = attributes['position'].lower().startswith('next') 
         logger.info(f"Increment: {increment}")
-        increment_value = attributes['position'].split('(')[1].rstrip(')')
+        increment_value = 1
+        if '(' in attributes['position']:
+            increment_value = attributes['position'].split('(')[1].rstrip(')')
         logger.info(f"Increment value: {increment_value}")
         
         # Convert increment_value to integer early

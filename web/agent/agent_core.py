@@ -148,22 +148,26 @@ async def run_agent() -> str:
                                 permission_required = call_openai_api(PERMISSION_REQUIRED + all_data + all_data_schema, "<TASK>\n" + content + "\n</TASK>")
                                 logger.error(f"[agent_core.py] Permission required: {permission_required}")
                                     
-                                infer_response = 'n'
-                                if mode == 'infer':
-                                    temp_policy_system = PolicySystem()
-                                    for permission in permission_required.split("\n"):
-                                        temp_policy_system.add_policies_from_text(permission, agent_manager)
-                                    prompts = temp_policy_system.get_all_policy_prompts()
-                                    logger.info(f"[agent_core.py] Prompts: {prompts}")
-                                    agent_message_queue.put("\n".join(prompts))
-                                    infer_response = web_input_func("Do you approve? [y/n]")
+                                def is_empty_permission_required(permission_required: str) -> bool:
+                                    return permission_required == "" or permission_required == "``````" or permission_required == "```\n```"
+                                
+                                if not is_empty_permission_required(permission_required):
+                                    infer_response = 'n'
+                                    if mode == 'infer':
+                                        temp_policy_system = PolicySystem()
+                                        for permission in permission_required.split("\n"):
+                                            temp_policy_system.add_policies_from_text(permission, agent_manager)
+                                        prompts = temp_policy_system.get_all_policy_prompts()
+                                        logger.info(f"[agent_core.py] Prompts: {prompts}")
+                                        agent_message_queue.put("\n".join(prompts))
+                                        infer_response = web_input_func("Do you approve? [y/n]")
 
-                                if mode == 'yolo' or (mode == 'infer' and infer_response == 'y'):
-                                    for permission in permission_required.split("\n"):
-                                        success = agent_manager.policy_system.add_policies_from_text(permission, agent_manager)
-                                        if not success:
-                                            logger.info(f"[agent_core.py] Failed to add permission: {permission}")
-                                emit_policy_update()
+                                    if mode == 'yolo' or (mode == 'infer' and infer_response == 'y'):
+                                        for permission in permission_required.split("\n"):
+                                            success = agent_manager.policy_system.add_policies_from_text(permission, agent_manager)
+                                            if not success:
+                                                logger.info(f"[agent_core.py] Failed to add permission: {permission}")
+                                    emit_policy_update()
 
                             # Clean up markdown formatting
                             content = re.sub(r'\*\*|\*|__|\[|\]|\(|\)|`|#', '', content)

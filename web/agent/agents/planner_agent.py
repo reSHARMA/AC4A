@@ -26,10 +26,11 @@ class PlannerAgent(BaseAgent):
         PasswordManager: A password manager application with APIs to add, remove, update and get password information for various services and users.
         WebBrowser: A web browser application with APIs to access any URL (get, post and put requests) and capabilities to simulate any website along with handling cookies. 
 
-        Think deeply and break the task into sub tasks for the application. If there is no application which can do the task then use the WebBrowser application. Explicity provide credentials after fetching them from the PasswordManager application if needed to the WebBrowser application along the task description.
+        Think deeply and break the task into sub tasks for the applications. If there is no application which can do the task then use the WebBrowser application. Explicity provide credentials, or any other information that is needed to complete the task after fetching them from the relevant application to the application that is invoking the task along the task description.
         
         First output the name of the application and then the description in the format, application: description. The description must contains all the required information for the application, do not make up data, if you need data ask the user to get the required data first before calling the application.
-        Prefer invoking applications than asking the user to get the required data to reduce the human in the loop.
+        
+        Prefer invoking applications than asking the user to get the required data to reduce the overhead of the user.
         Only output one application and the description of the task for that application.
 
         When all tasks are completed from your end, output terminate along with the reason of termination.

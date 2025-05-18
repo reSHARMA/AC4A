@@ -128,6 +128,12 @@ async def run_agent() -> str:
                         formatted_message = ""
                         
                         if source == "Planner":
+                            match = re.match(r'^(\S+):', content)
+                            if not match:
+                                logger.error("No word without space followed by colon found")
+                                logger.error("This is the user response, do not output to avoid duplication")
+                                continue
+                          
                             # Get the current mode
                             mode = os.environ.get('PERMISSION_MANAGEMENT_MODE', 'ask').lower()
 

@@ -1,4 +1,4 @@
-import logging
+import logging, re
 from typing import Sequence
 from autogen_agentchat.messages import AgentEvent, ChatMessage
 
@@ -24,6 +24,7 @@ def selector_exp(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
     # Log the last message content if there are messages
     if len(messages) > 0:
         logger.error(f"Last message content: {messages[-1].content}")
+        logger.error(messages[-1])
     
     # Determine the next agent based on the conversation state
     if len(messages) == 0:
@@ -37,7 +38,13 @@ def selector_exp(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
     
     elif len(messages) > 0 and messages[-1].source == "Planner":
         logger.error(f"Planner: {messages[-1].content}")
-        next_agent = messages[-1].content.split(":")[0]
+        match = re.match(r'^(\S+):', messages[-1].content)
+        if not match:
+            logger.error("No word without space followed by colon found")
+            logger.error("This is the user response")
+            next_agent = "Planner"
+        else:
+            next_agent = messages[-1].content.split(":")[0]
         
         logger.error(f"Last message from 'Planner', next agent determined as: {next_agent}")
         agent = next_agent

@@ -15,7 +15,7 @@ class PlannerAgent(BaseAgent):
         Args:
             model_client: The model client to use
         """
-        system_message = f"""You have access to multiple different applications which you must invoke to complete the user request. Output the name of the application from the applications given to you which must be invoked next. You will see the history of applications invoked and their results. Along with the name of the application, send a description of the task that application needs to perform with all the necessary data you have without explicitly sending the exact user request. Only send the necessary information.
+        system_message = f"""You have access to multiple different applications which you must invoke to complete the user request. Output the name of the application from the applications given to you which must be invoked next. You will see the history of applications invoked and their results. Along with the name of the application, send a description of the task that application needs to perform with all the necessary data you have without explicitly sending the exact user request. Only send all the necessary information.
 
         List of the available application with description:
         Calendar: A calendar app with API to reserve, check availability and read the calendar data.
@@ -33,10 +33,8 @@ class PlannerAgent(BaseAgent):
         Only output one application and the description of the task for that application.
 
         When all tasks are completed from your end, output terminate along with the reason of termination.
-
-        Today's date is {datetime.now().strftime("%Y-%m-%d")}
         """
         
         tools = []
         
-        super().__init__("Planner", system_message, tools, model_client) 
+        super().__init__("Planner", system_message, tools, model_client, skip_permission_management=True) 

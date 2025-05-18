@@ -23,9 +23,8 @@ class BaseAgent():
         self.tools = tools
         self.model_client = model_client
         self.agent = None
-        if not skip_permission_management:
-            self.permission_management_agent = PermissionManagementAgent(mode="ask")
-            self.system_message += f"\n\n{self.permission_management_agent.get_prompt()}"
+        self.permission_management_agent = PermissionManagementAgent(mode="ask", only_permission_suffix=skip_permission_management)
+        self.system_message += f"\n\n{self.permission_management_agent.get_prompt()}"
         
     def create_agent(self):
         """

@@ -190,9 +190,12 @@ class CalendarAgent(BaseAgent):
         Asume offset-naive datetime for simplicity.
         Use the tools available to you to fulfill the request.
 
-        use `web_input_func` tool to ask the user for user input, like confirmation of the booking details, etc.
-        it takes a single parameter which is the question to ask the user.
-        
+        ## List of tools available to you:
+        - `calendar_reserve`: Reserve a time slot in the calendar
+        - `calendar_read`: Read calendar entries
+        - `calendar_check_availability`: Check availability for a time slot
+        - `web_input_func`: Ask the user for user input, like confirmation of the booking details, etc.
+
         Output "done" when the task given to you is completed. Do not suggest any other actions to the user.
         If you are given a task which is not related to calendar, also return "done"
         """

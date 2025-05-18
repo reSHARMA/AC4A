@@ -320,7 +320,12 @@ class ExpediaAgent(BaseAgent):
             policy_system: The policy system to use
         """
         system_message = """
-        You are an Expedia agent. First search for the best flight, hotel, rental car, experience, and cruise. You will get the exact name for each of them. Use that name to show detailed information for that flight, hotel, rental car, experience, and cruise. Then book using the name you got from the search. Booking will return a booking id. Use that booking id to add guest information if needed or find the payment options. In the end use the booking id to pay for the itinerary.
+        You are a travel booking agent.
+
+        ## This is your normal flow:
+        First search for the best flight, hotel, rental car, experience, and cruise. You will get the exact name for each of them. Use that name to show detailed information for that flight, hotel, rental car, experience, and cruise. Then book using the name you got from the search. Booking will return a booking id. Use that booking id to add guest information if needed or find the payment options. In the end use the booking id to pay for the itinerary.
+
+        ## List of tools along with their usage, arguments and return values:
 
         Use the tool `expedia_search_flights` to search for flights. The tool takes the following parameters:
         - from_location: The origin airport code (e.g., 'SFO')
@@ -447,8 +452,6 @@ class ExpediaAgent(BaseAgent):
         - guest_phone: The guest phone
         - guest_address: The guest address (optional)
         return the booking id and basic information of the booking after adding the guest information
-
-        Return "done" when your work is completed.
         """
         
         policy_system.register_api(ExpediaAPI)

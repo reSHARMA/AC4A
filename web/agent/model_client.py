@@ -6,6 +6,7 @@ from autogen_core.models import ChatCompletionClient
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_ext.models.openai import AzureOpenAIChatCompletionClient
 from azure.identity import DefaultAzureCredential, ChainedTokenCredential, AzureCliCredential, get_bearer_token_provider
+from .logging_model_client import LoggingModelClient
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ def setup_model_client():
     openai_api_key = os.getenv('OPENAI_API_KEY')
     if openai_api_key:
         logger.info("Using OpenAI configuration")
-        return OpenAIChatCompletionClient(
+        base_client = OpenAIChatCompletionClient(
             model="gpt-4o-2024-11-20",
             api_key=openai_api_key
         )
@@ -69,10 +70,28 @@ def setup_model_client():
         }
 
         # Create the Azure OpenAI client using autogen's AzureOpenAIChatCompletionClient
-        return AzureOpenAIChatCompletionClient(
+        base_client = AzureOpenAIChatCompletionClient(
             model=deployment,
             azure_endpoint=endpoint,
             api_version=api_version,
             azure_ad_token_provider=credential,
             model_info=model_info
-        ) 
+        )
+    
+    # Create the logging wrapper
+    logging_client = LoggingModelClient(base_client)
+    
+    # Try to set up autogen configuration if available
+    try:
+        import importlib.util
+        if importlib.util.find_spec("autogen_core") is not None:
+            from autogen_core import config_list
+            if config_list and len(config_list) > 0:
+                config_list[0]["model"] = logging_client
+                logger.info("Successfully configured autogen with logging client")
+        else:
+            logger.info("autogen_core module not found, skipping autogen configuration")
+    except Exception as e:
+        logger.warning(f"Could not configure autogen: {str(e)}")
+    
+    return logging_client 

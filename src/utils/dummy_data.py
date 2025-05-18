@@ -4,9 +4,14 @@ from azure.identity import AzureCliCredential, DefaultAzureCredential, get_beare
 from dotenv import load_dotenv
 from config import debug_print
 import re
+import logging
+from web.utils.openai_logger import setup_openai_logging
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Set up OpenAI logger
+openai_logger = setup_openai_logging()
 
 history = ""
 
@@ -30,11 +35,30 @@ def call_openai_api(system: str, prompt: str) -> str:
             if system:
                 messages.append({"role": "system", "content": system})
             messages.append({"role": "user", "content": prompt})
+            
+            # Log the API call
+            openai_logger.debug("Making OpenAI API call", extra={
+                'openai_data': {
+                    'model': "gpt-4o-2024-11-20",
+                    'messages': messages,
+                    'temperature': 1
+                }
+            })
+            
             completion = client.chat.completions.create(
                 messages=messages,
                 model="gpt-4o-2024-11-20",
                 temperature=1,
             )
+            
+            # Log the response
+            openai_logger.debug("Received OpenAI API response", extra={
+                'openai_data': {
+                    'response': completion.choices[0].message.content,
+                    'usage': completion.usage._asdict() if hasattr(completion, 'usage') else None
+                }
+            })
+            
             return completion.choices[0].message.content
         else:
             # Fallback to Azure OpenAI client
@@ -66,13 +90,40 @@ def call_openai_api(system: str, prompt: str) -> str:
                 messages.append({"role": "system", "content": system})
             messages.append({"role": "user", "content": prompt})
             
+            # Log the Azure OpenAI API call
+            openai_logger.debug("Making Azure OpenAI API call", extra={
+                'openai_data': {
+                    'model': model_name,
+                    'messages': messages,
+                    'temperature': 1,
+                    'endpoint': endpoint,
+                    'api_version': api_version
+                }
+            })
+            
             completion = client.chat.completions.create(
                 model=model_name,
                 messages=messages,
                 temperature=1,
             )
+            
+            # Log the Azure OpenAI response
+            openai_logger.debug("Received Azure OpenAI API response", extra={
+                'openai_data': {
+                    'response': completion.choices[0].message.content,
+                    'usage': {
+                        'prompt_tokens': getattr(completion.usage, 'prompt_tokens', 0),
+                        'completion_tokens': getattr(completion.usage, 'completion_tokens', 0),
+                        'total_tokens': getattr(completion.usage, 'total_tokens', 0)
+                    },
+                    'finish_reason': completion.choices[0].finish_reason
+                }
+            })
+            
             return completion.choices[0].message.content
     except Exception as e:
+        # Log any errors
+        openai_logger.error(f"Error in OpenAI API call: {str(e)}", exc_info=True)
         debug_print(f"An error occurred while calling the API: {e}")
         return ""
 

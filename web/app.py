@@ -19,6 +19,9 @@ import logging
 from datetime import datetime, timedelta
 import time
 
+# Import autogen logging
+from autogen_agentchat import EVENT_LOGGER_NAME, TRACE_LOGGER_NAME
+
 # Import from our new modular components
 from web.agent.session import initialize_agent_session, reset_agent_session
 from web.agent.queues import (
@@ -52,14 +55,26 @@ logging.basicConfig(
     ]
 )
 
+# Configure autogen agentchat logging
+# For trace logging
+trace_logger = logging.getLogger(TRACE_LOGGER_NAME)
+trace_logger.addHandler(logging.StreamHandler())
+trace_logger.setLevel(logging.DEBUG)
+
+# For structured message logging
+event_logger = logging.getLogger(EVENT_LOGGER_NAME)
+event_logger.addHandler(logging.StreamHandler())
+event_logger.setLevel(logging.DEBUG)
+
 # Set log levels for specific modules
 logging.getLogger('engineio').setLevel(logging.ERROR)
 logging.getLogger('socketio').setLevel(logging.ERROR)
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
-logging.getLogger('autogen').setLevel(logging.ERROR)
-logging.getLogger('autogen_core').setLevel(logging.ERROR)
-logging.getLogger('autogen_agentchat').setLevel(logging.INFO)
-logging.getLogger('autogen_runtime').setLevel(logging.ERROR)
+logging.getLogger('autogen').setLevel(logging.DEBUG)
+logging.getLogger('autogen_core').setLevel(logging.DEBUG)
+logging.getLogger('autogen_agentchat').setLevel(logging.DEBUG)
+logging.getLogger('autogen_runtime').setLevel(logging.DEBUG)
+logging.getLogger('OpenAI').setLevel(logging.DEBUG)
 
 # Get logger for this module
 logger = logging.getLogger(__name__)

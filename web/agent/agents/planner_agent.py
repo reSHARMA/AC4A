@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 from .base_agent import BaseAgent
+from ..web_input import get_user_input
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -24,17 +25,16 @@ class PlannerAgent(BaseAgent):
         ContactManager: A contact manager application with APIs to add, remove, update and get contact information.
         PasswordManager: A password manager application with APIs to add, remove, update and get password information for various services and users.
         WebBrowser: A web browser application with APIs to access any URL (get, post and put requests) and capabilities to simulate any website along with handling cookies. 
-        User: The user application only for asking the user for input and data.
 
         Think deeply and break the task into sub tasks for the application. If there is no application which can do the task then use the WebBrowser application. Explicity provide credentials after fetching them from the PasswordManager application if needed to the WebBrowser application along the task description.
         
-        First output the name of the application and then the description in the format, application: description. The description must contains all the required information for the application, do not make up data, if you need data invoke the User application to get the required data first before calling the application.
-        Prefer invoking applications other than User application to reduce the human in the loop.
+        First output the name of the application and then the description in the format, application: description. The description must contains all the required information for the application, do not make up data, if you need data ask the user to get the required data first before calling the application.
+        Prefer invoking applications than asking the user to get the required data to reduce the human in the loop.
         Only output one application and the description of the task for that application.
 
         When all tasks are completed from your end, output terminate along with the reason of termination.
         """
         
-        tools = []
+        tools = [get_user_input]
         
         super().__init__("Planner", system_message, tools, model_client, skip_permission_management=True) 

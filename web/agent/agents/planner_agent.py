@@ -24,6 +24,7 @@ class PlannerAgent(BaseAgent):
         Wallet: A wallet application with saved cards and with APIs for adding, removing, updating and getting credit card information.
         ContactManager: A contact manager application with APIs to add, remove, update and get contact information.
         PasswordManager: A password manager application with APIs to add, remove, update and get password information for various services and users.
+        User: User proxy agent acting as a messenger to ask the user for input, comfirmation if there are choices to be made, etc.
         WebBrowser: A web browser application with APIs to access any URL (get, post and put requests) and capabilities to simulate any website along with handling cookies. 
 
         Think deeply and break the task into sub tasks for the applications. If there is no application which can do the task then use the WebBrowser application. Explicity provide credentials, or any other information that is needed to complete the task after fetching them from the relevant application to the application that is invoking the task along the task description.
@@ -36,6 +37,6 @@ class PlannerAgent(BaseAgent):
         When all tasks are completed from your end, output terminate along with the reason of termination.
         """
         
-        tools = [get_user_input]
+        tools = []
         
         super().__init__("Planner", system_message, tools, model_client, skip_permission_suffix=True) 

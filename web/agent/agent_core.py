@@ -28,6 +28,48 @@ logger = logging.getLogger(__name__)
 # Store the group chat instance
 agent_group_chat = None
 
+def generate_permission(content: str) -> str:
+    # Get the current mode
+    mode = os.environ.get('PERMISSION_MANAGEMENT_MODE', 'ask').lower()
+
+    if mode in ['infer', 'yolo']:
+        all_data = "<ALL DATA>\n"
+        # Get and print attribute trees
+        attribute_trees = agent_manager.get_attribute_trees()
+        for i, tree in enumerate(attribute_trees):
+            all_data += f"{tree.get_tree_string()}\n"
+        all_data += "</ALL DATA>"
+        logger.info(f"[agent_core.py] All data: {all_data}")
+
+        all_data_schema = "<ALL DATA SCHEMA>\n"
+        all_data_schema += str(agent_manager.get_attribute_schema())
+        all_data_schema += "</ALL DATA SCHEMA>"
+        logger.info(f"[agent_core.py] All data schema: {all_data_schema}")
+
+        permission_required = call_openai_api(PERMISSION_REQUIRED + all_data + all_data_schema, "<TASK>\n" + content + "\n</TASK>")
+        logger.error(f"[agent_core.py] Permission required: {permission_required}")
+            
+        def is_empty_permission_required(permission_required: str) -> bool:
+            return permission_required == "" or permission_required == "``````" or permission_required == "```\n```"
+        
+        if not is_empty_permission_required(permission_required):
+            infer_response = 'n'
+            if mode == 'infer':
+                temp_policy_system = PolicySystem()
+                for permission in permission_required.split("\n"):
+                    temp_policy_system.add_policies_from_text(permission, agent_manager)
+                prompts = temp_policy_system.get_all_policy_prompts()
+                logger.info(f"[agent_core.py] Prompts: {prompts}")
+                agent_message_queue.put("\n".join(prompts))
+                infer_response = get_user_input("Do you approve? [y/n]")
+
+            if mode == 'yolo' or (mode == 'infer' and infer_response == 'y'):
+                for permission in permission_required.split("\n"):
+                    success = agent_manager.policy_system.add_policies_from_text(permission, agent_manager)
+                    if not success:
+                        logger.info(f"[agent_core.py] Failed to add permission: {permission}")
+            emit_policy_update()
+
 async def run_agent() -> str:
     """Run the agent"""
     global agent_group_chat, agent_message_queue
@@ -118,6 +160,7 @@ async def run_agent() -> str:
                         # Skip user messages to prevent duplication
                         if source == "User":
                             logger.info(f"[agent_core.py] Skipping user message to prevent duplication: {content}")
+                            generate_permission(content)
                             continue
                         
                         if message.type == "ToolCallExecutionEvent" or message.type == "ToolCallRequestEvent":
@@ -133,48 +176,9 @@ async def run_agent() -> str:
                                 logger.error("No word without space followed by colon found")
                                 logger.error("This is the user response, do not output to avoid duplication")
                                 continue
-                          
-                            # Get the current mode
-                            mode = os.environ.get('PERMISSION_MANAGEMENT_MODE', 'ask').lower()
-
-                            if mode in ['infer', 'yolo']:
-                                all_data = "<ALL DATA>\n"
-                                # Get and print attribute trees
-                                attribute_trees = agent_manager.get_attribute_trees()
-                                for i, tree in enumerate(attribute_trees):
-                                    all_data += f"{tree.get_tree_string()}\n"
-                                all_data += "</ALL DATA>"
-                                logger.info(f"[agent_core.py] All data: {all_data}")
-
-                                all_data_schema = "<ALL DATA SCHEMA>\n"
-                                all_data_schema += str(agent_manager.get_attribute_schema())
-                                all_data_schema += "</ALL DATA SCHEMA>"
-                                logger.info(f"[agent_core.py] All data schema: {all_data_schema}")
-
-                                permission_required = call_openai_api(PERMISSION_REQUIRED + all_data + all_data_schema, "<TASK>\n" + content + "\n</TASK>")
-                                logger.error(f"[agent_core.py] Permission required: {permission_required}")
-                                    
-                                def is_empty_permission_required(permission_required: str) -> bool:
-                                    return permission_required == "" or permission_required == "``````" or permission_required == "```\n```"
-                                
-                                if not is_empty_permission_required(permission_required):
-                                    infer_response = 'n'
-                                    if mode == 'infer':
-                                        temp_policy_system = PolicySystem()
-                                        for permission in permission_required.split("\n"):
-                                            temp_policy_system.add_policies_from_text(permission, agent_manager)
-                                        prompts = temp_policy_system.get_all_policy_prompts()
-                                        logger.info(f"[agent_core.py] Prompts: {prompts}")
-                                        agent_message_queue.put("\n".join(prompts))
-                                        infer_response = get_user_input("Do you approve? [y/n]")
-
-                                    if mode == 'yolo' or (mode == 'infer' and infer_response == 'y'):
-                                        for permission in permission_required.split("\n"):
-                                            success = agent_manager.policy_system.add_policies_from_text(permission, agent_manager)
-                                            if not success:
-                                                logger.info(f"[agent_core.py] Failed to add permission: {permission}")
-                                    emit_policy_update()
-
+                            
+                            generate_permission(content)
+                            
                             # Clean up markdown formatting
                             content = re.sub(r'\*\*|\*|__|\[|\]|\(|\)|`|#', '', content)
                             

@@ -37,4 +37,4 @@ class PlannerAgent(BaseAgent):
         
         tools = [get_user_input]
         
-        super().__init__("Planner", system_message, tools, model_client, skip_permission_management=True) 
+        super().__init__("Planner", system_message, tools, model_client, skip_permission_suffix=True) 

@@ -23,7 +23,7 @@ Example, "Input - User: Ask the user for which card must be used for payment, yo
         
         tools = [get_user_input]
         
-        super().__init__("User", system_message, tools, model_client, skip_permission_management=True)
+        super().__init__("User", system_message, tools, model_client, skip_input_tool_description=True, skip_permission_suffix=True)
         
     def get_user_message(self, prompt: str) -> str:
         """

@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from .base_agent import BaseAgent
-from ..web_input import web_input_func
+from ..web_input import get_user_input
 from src.policy_system.api_annotation import APIAnnotationBase
 from src.utils.attribute_tree import AttributeTree
 from src.utils.dummy_data import generate_dummy_data
@@ -185,7 +185,7 @@ class WalletAgent(BaseAgent):
             self.wallet_add_credit_card,
             self.wallet_remove_credit_card,
             self.wallet_update_credit_card,
-            web_input_func
+            get_user_input
         ]
         
         super().__init__("Wallet", system_message, tools, model_client)

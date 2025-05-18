@@ -1,6 +1,7 @@
 import queue
 import logging
 import time
+from typing import Annotated
 from .queues import (
     input_request_queue, 
     input_response_queue, 
@@ -13,8 +14,9 @@ from .queues import (
 # Set up logging
 logger = logging.getLogger(__name__)
 
-def web_input_func(message: str) -> str:
-    """Function to handle web input"""
+def get_user_input(message: Annotated[str, "The message that will be sent to the user"]) -> str:
+    """Function to send a message to the user for input. This message can be a question or approval request. It can also be empty in the cases when the message is not known for example at the start of the conversation.
+    """
     global last_input_request, input_request_queue, input_response_queue, agent_initialized
     
     if message == "":

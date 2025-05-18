@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 from .base_agent import BaseAgent
-from ..web_input import web_input_func
+from ..web_input import get_user_input
 from src.policy_system.api_annotation import APIAnnotationBase
 from src.utils.attribute_tree import AttributeTree
 from src.utils.dummy_data import generate_dummy_data
@@ -478,7 +478,7 @@ class ExpediaAgent(BaseAgent):
             self.expedia_get_cruise_payment_options,
             self.expedia_pay_for_itenary,
             self.expedia_add_guest_info,
-            web_input_func
+            get_user_input
         ]
         
         super().__init__("Expedia", system_message, tools, model_client)

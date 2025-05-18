@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 from .base_agent import BaseAgent
-from ..web_input import web_input_func
+from ..web_input import get_user_input
 from src.policy_system.api_annotation import APIAnnotationBase
 from src.utils.attribute_tree import AttributeTree
 from src.utils.dummy_data import generate_dummy_data
@@ -194,7 +194,7 @@ class CalendarAgent(BaseAgent):
         - `calendar_reserve`: Reserve a time slot in the calendar
         - `calendar_read`: Read calendar entries
         - `calendar_check_availability`: Check availability for a time slot
-        - `web_input_func`: Ask the user for user input, like confirmation of the booking details, etc.
+        - `get_user_input`: Ask the user for user input, like confirmation of the booking details, etc.
 
         Output "done" when the task given to you is completed. Do not suggest any other actions to the user.
         If you are given a task which is not related to calendar, also return "done"
@@ -206,7 +206,7 @@ class CalendarAgent(BaseAgent):
             self.calendar_reserve,
             self.calendar_read,
             self.calendar_check_availability,
-            web_input_func
+            get_user_input
         ]
         
         super().__init__("Calendar", system_message, tools, model_client)

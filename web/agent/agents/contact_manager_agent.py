@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from .base_agent import BaseAgent
-from ..web_input import web_input_func
+from ..web_input import get_user_input
 from src.policy_system.api_annotation import APIAnnotationBase
 from src.utils.attribute_tree import AttributeTree
 from src.utils.dummy_data import generate_dummy_data
@@ -170,7 +170,7 @@ class ContactManagerAgent(BaseAgent):
 
         The tool `contact_update_contact` takes name, phone, address, email, relation, birthday, and notes as arguments and updates the contact information with the given details. If some non-essential information is not available, you can use empty string as the value for that argument.
 
-        use `web_input_func` tool to ask the user for input and clarify the information if needed.
+        use `get_user_input` tool to ask the user for input and clarify the information if needed.
 
         Return "done" when your work is completed.
         """
@@ -184,7 +184,7 @@ class ContactManagerAgent(BaseAgent):
             self.contact_update_contact,
             self.contact_get_contact_info,
             self.contact_get_names_by_relation,
-            web_input_func
+            get_user_input
         ]
         
         super().__init__("ContactManager", system_message, tools, model_client)

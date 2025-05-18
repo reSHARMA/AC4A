@@ -13,7 +13,7 @@ from autogen_agentchat.conditions import TextMentionTermination
 from autogen_agentchat.messages import AgentEvent, ChatMessage
 
 from .model_client import setup_model_client
-from .web_input import web_input_func
+from .web_input import get_user_input
 from .selector import selector_exp
 from .queues import agent_message_queue, set_agent_session_active
 from .agent_manager import agent_manager
@@ -160,7 +160,7 @@ async def run_agent() -> str:
                                         prompts = temp_policy_system.get_all_policy_prompts()
                                         logger.info(f"[agent_core.py] Prompts: {prompts}")
                                         agent_message_queue.put("\n".join(prompts))
-                                        infer_response = web_input_func("Do you approve? [y/n]")
+                                        infer_response = get_user_input("Do you approve? [y/n]")
 
                                     if mode == 'yolo' or (mode == 'infer' and infer_response == 'y'):
                                         for permission in permission_required.split("\n"):

@@ -45,14 +45,14 @@ class PermissionManagementAgent:
         prefix = "If there is a permission error and you are not able to access an API or resource, "
         suffix = f"Today is {date.today().strftime('%Y-%m-%d')}.\n"
         if not self.only_permission_suffix:
-            suffix += f"""Use the tool `web_input_func` to ask the user for input, comfirmation if there are choices to be made, etc. This tool takes a single string argument that is the message to relay to the user. It will return the user's response as a string.
+            suffix += f"""Use the tool `get_user_input` to ask the user for input, comfirmation if there are choices to be made, etc. This tool takes a single string argument that is the message to relay to the user. It will return the user's response as a string.
 
 You will be given a task to complete. You must complete the task using the tools provided to you. 
 Ask for more information if needed but never generate an empty tool call or an empty message. 
-You must always try to use the tool to complete the task. If not possible you must output a message preferably using the `web_input_func` tool else output a text message.
+You must always try to use the tool to complete the task. If not possible you must output a message preferably using the `get_user_input` tool else output a text message.
 Return "done" when your work is completed.
  """
         
         if self._mode == "yolo":
-            suffix += "\n\nYou are working in an autonomous mode. Only ask the user or use `web_input_func` when you are not able to complete the task or if there is a choice to be made. You must first try calling the application again with the same request before asking the user. Atleast try 5 times before you give up. If you have to choose between asking the user or teminating the session, always ask the user because we want to complete the task at all costs."
+            suffix += "\n\nYou are working in an autonomous mode. Only ask the user or use `get_user_input` when you are not able to complete the task or if there is a choice to be made. You must first try calling the application again with the same request before asking the user. Atleast try 5 times before you give up. If you have to choose between asking the user or teminating the session, always ask the user because we want to complete the task at all costs."
         return prefix + self._custom_prompts.get(self._mode, self.DEFAULT_PROMPTS[self._mode]) + suffix

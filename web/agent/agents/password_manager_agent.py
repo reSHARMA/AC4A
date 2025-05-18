@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from .base_agent import BaseAgent
-from ..web_input import web_input_func
+from ..web_input import get_user_input
 from src.policy_system.api_annotation import APIAnnotationBase
 from src.utils.attribute_tree import AttributeTree
 from src.utils.dummy_data import generate_dummy_data
@@ -194,7 +194,7 @@ class PasswordManagerAgent(BaseAgent):
             self.password_manager_add_password,
             self.password_manager_remove_password,
             self.password_manager_update_password,
-            web_input_func
+            get_user_input
         ]
         
         super().__init__("PasswordManager", system_message, tools, model_client)

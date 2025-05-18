@@ -13,28 +13,28 @@ from .queues import (
 # Set up logging
 logger = logging.getLogger(__name__)
 
-def web_input_func(prompt: str) -> str:
+def web_input_func(message: str) -> str:
     """Function to handle web input"""
     global last_input_request, input_request_queue, input_response_queue, agent_initialized
     
-    if prompt == "":
-        prompt = "Hi, how can I help you today?"
+    if message == "":
+        message = "Hi, how can I help you today?"
     # If this is the same prompt as the last one, don't ask again
-    if prompt == last_input_request:
-        logger.info(f"Duplicate input request detected: {prompt}")
+    if message == last_input_request:
+        logger.info(f"Duplicate input request detected: {message}")
         return "No response received. Please try again."
     
-    logger.info(f"Web input function called with prompt: {prompt}")
+    logger.info(f"Web input function called with prompt: {message}")
     
     # Set the waiting flag
     set_agent_waiting_for_input(True)
     
     # Store the last input request
-    last_input_request = prompt
+    last_input_request = message
     
     # Put the prompt in the input request queue
-    input_request_queue.put(prompt)
-    logger.info(f"Added prompt to input request queue: {prompt}")
+    input_request_queue.put(message)
+    logger.info(f"Added prompt to input request queue: {message}")
     
     # Wait for a response from the web UI
     try:

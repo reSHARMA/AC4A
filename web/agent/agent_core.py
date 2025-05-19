@@ -160,7 +160,11 @@ async def run_agent() -> str:
                         # Skip user messages to prevent duplication
                         if source == "User":
                             logger.info(f"[agent_core.py] Skipping user message to prevent duplication: {content}")
-                            generate_permission(content)
+                            if isinstance(content, str):
+                                generate_permission(content)
+                            elif isinstance(content, list):
+                                content = content[0].content
+                                generate_permission(content)
                             continue
                         
                         if message.type == "ToolCallExecutionEvent" or message.type == "ToolCallRequestEvent":

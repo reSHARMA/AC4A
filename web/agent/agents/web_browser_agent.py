@@ -6,6 +6,7 @@ from src.policy_system.api_annotation import APIAnnotationBase
 from src.utils.attribute_tree import AttributeTree
 from src.utils.dummy_data import generate_dummy_data
 from config import WILDCARD
+from typing import Annotated
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -183,67 +184,10 @@ class WebBrowserAgent(BaseAgent):
         If you have a cookie for a website, use that cookie for all the requests to that website.
         If you get a cookie from a request, add it to the cookies.
         
-        ## List of tools avaiable to you 
-        [
-            "post_request",
-            "get_request",
-            "put_request",
-            "add_cookie",
-            "remove_cookie",
-            "get_cookies",
-            "update_cookie",
-            "get_all_cookies"
-        ]
-
-        ## Description of the tools available to you
-        - post_request: post a request to the given URL with the given data
-        - get_request: get a request from the given URL
-        - put_request: put a request to the given URL with the given data
-        - add_cookie: add a cookie to the given URL
-        - remove_cookie: remove a cookie from the given URL
-        - get_cookies: get all the cookies from the given URL
-        - update_cookie: update a cookie from the given URL
-        - get_all_cookies: get all the cookies
-
-        Use the tool `post_request` to post a request to the given URL with the given data. The tool takes the following parameters:
-        - url: The URL to post the request to, example "https://www.google.com".
-        - data: The data to post to the given URL, example "{\"key\": \"value\"}".
-        - cookies: The cookies to include in the request, example "{\"JSESSIONID\": \"1234567890\"}".
-        Use the tool `get_request` to get a request from the given URL. The tool takes the following parameters:
-        - url: The URL to get the request from, example "https://www.google.com".
-        - cookies: The cookies to include in the request, example "{\"JSESSIONID\": \"1234567890\"}".
-        Use the tool `put_request` to put a request to the given URL with the given data. The tool takes the following parameters:
-        - url: The URL to put the request to, example "https://www.google.com".
-        - data: The data to put to the given URL, example "{\"key\": \"value\"}".
-        - cookies: The cookies to include in the request, example "{\"JSESSIONID\": \"1234567890\"}".
-
-        Use the tool `get_all_cookies` to get all the cookies. The tool takes no parameters.
-
-        Use the tool `add_cookie` to add a cookie to the given URL. The tool takes the following parameters:
-        - cookie_name: The name of the cookie to add, example "JSESSIONID".
-        - cookie_value: The value of the cookie to add, example "1234567890".
-        - cookie_domain: The domain of the cookie to add, example "google.com".
-        - cookie_path: The path of the cookie to add, example "/".
-        - cookie_expiry: The expiry date of the cookie to add, example "01/26".
-
-        Use the tool `remove_cookie` to remove a cookie from the given URL. The tool takes the following parameters:
-        - cookie_name: The name of the cookie to remove, example "JSESSIONID".
-
-        Use the tool `get_cookies` to get all the cookies from the given URL. The tool takes the following parameters:
-        - url: The URL to get the cookies from, example "https://www.google.com".
-
-        Use the tool `update_cookie` to update a cookie from the given URL. The tool takes the following parameters:
-        - cookie_name: The name of the cookie to update, example "JSESSIONID".
-        - cookie_value: The value of the cookie to update, example "1234567890".
-        - cookie_domain: The domain of the cookie to update, example "google.com".
-        - cookie_path: The path of the cookie to update, example "/".
-        - cookie_expiry: The expiry date of the cookie to update, example "01/26".
-
         Carefully pick the tool to use based on the user request and you can use multiple tools if needed.
         Since you can simulate any website, try to fulfill the user request at your best.
         For permission or credentials, just output as text: fetch permission or fetch credentials for the specific service/user without calling any of the tools.
 
-        Return "done" when you have completed your work.
         """
         
         policy_system.register_api(WebBrowserAPI)
@@ -263,115 +207,50 @@ class WebBrowserAgent(BaseAgent):
         
         super().__init__("WebBrowser", system_message, tools, model_client)
         
-    async def web_browser_post_request(self, url: str, data: str, cookies: str) -> str:
-        """
-        Post a request to the given URL with the given data
-        
-        Args:
-            url: The URL to post the request to, example "https://www.google.com".
-            data: The data to post to the given URL, example "{\"key\": \"value\"}".
-            cookies: The cookies to include in the request, example "{\"JSESSIONID\": \"1234567890\"}".
-            
-        Returns:
-            The result of the operation
-        """
+    async def web_browser_post_request(self, url: Annotated[str, "The URL to post the request to, example 'https://www.google.com'"], data: Annotated[str, "The data to post to the given URL, example '{\"key\": \"value\"}'"], cookies: Annotated[str, "The cookies to include in the request, example '{\"JSESSIONID\": \"1234567890\"}'"]) -> str:
+        """Post a request to the given URL with the given data to send data to the server along with the cookies. It only sends data to the server and does not return anything."""
         logger.info(f"Calling WebBrowserAPI post_request with url={url}, data={data}, cookies={cookies}")
         result = self.web_browser_api.post_request(url=url, data=data, cookies=cookies)
         return result
         
-    async def web_browser_get_request(self, url: str, cookies: str) -> str:
-        """
-        Get a request from the given URL
-        
-        Args:
-            url: The URL to get the request from, example "https://www.google.com".
-            cookies: The cookies to include in the request, example "{\"JSESSIONID\": \"1234567890\"}".
-            
-        Returns:
-            The result of the operation
-        """
+    async def web_browser_get_request(self, url: Annotated[str, "The URL to get the request from, example 'https://www.google.com'"], cookies: Annotated[str, "The cookies to include in the request, example '{\"JSESSIONID\": \"1234567890\"}'"]) -> str:
+        """Get a request from the given URL and return the response. It only gets data from the server and does not send any data to the server."""
         logger.info(f"Calling WebBrowserAPI get_request with url={url}, cookies={cookies}")
         result = self.web_browser_api.get_request(url=url, cookies=cookies)
         return result
         
-    async def web_browser_put_request(self, url: str, data: str, cookies: str) -> str:
-        """
-        Put a request to the given URL with the given data
-        
-        Args:
-            url: The URL to put the request to, example "https://www.google.com".
-            data: The data to put to the given URL, example "{\"key\": \"value\"}".
-            cookies: The cookies to include in the request, example "{\"JSESSIONID\": \"1234567890\"}".
-            
-        Returns:
-            The result of the operation
-        """
+    async def web_browser_put_request(self, url: Annotated[str, "The URL to put the request to, example 'https://www.google.com'"], data: Annotated[str, "The data to put to the given URL, example '{\"key\": \"value\"}'"], cookies: Annotated[str, "The cookies to include in the request, example '{\"JSESSIONID\": \"1234567890\"}'"]) -> str:
+        """Put a request to the given URL with the given data to send data to the server along with the cookies. It only sends data to the server and does not return anything."""
         logger.info(f"Calling WebBrowserAPI put_request with url={url}, data={data}, cookies={cookies}")
         result = self.web_browser_api.put_request(url=url, data=data, cookies=cookies)
         return result
         
-    async def web_browser_add_cookie(self, cookie_name: str, cookie_value: str, cookie_domain: str, cookie_path: str, cookie_expiry: str) -> str:
-        """
-        Add a cookie to the given URL
-        
-        Args:
-            cookie_name: The name of the cookie to add, example "JSESSIONID".
-            cookie_value: The value of the cookie to add, example "1234567890".
-            cookie_domain: The domain of the cookie to add, example "google.com".
-            cookie_path: The path of the cookie to add, example "/".
-            cookie_expiry: The expiry date of the cookie to add, example "01/26".
-            
-        Returns:
-            The result of the operation
-        """
+    async def web_browser_add_cookie(self, cookie_name: Annotated[str, "The name of the cookie to add, example 'JSESSIONID'"], cookie_value: Annotated[str, "The value of the cookie to add, example '1234567890'"], cookie_domain: Annotated[str, "The domain of the cookie to add, example 'google.com'"], cookie_path: Annotated[str, "The path of the cookie to add, example '/'"], cookie_expiry: Annotated[str, "The expiry date of the cookie to add, example '01/26'"] ) -> str:
+        """Add a cookie to the given URL, this is saved locally in the browser"""
         logger.info(f"Calling WebBrowserAPI add_cookie with cookie_name={cookie_name}, cookie_value={cookie_value}, cookie_domain={cookie_domain}, cookie_path={cookie_path}, cookie_expiry={cookie_expiry}")
         result = self.web_browser_api.add_cookie(cookie_name=cookie_name, cookie_value=cookie_value, cookie_domain=cookie_domain, cookie_path=cookie_path, cookie_expiry=cookie_expiry)
         return result 
 
-    async def web_browser_remove_cookie(self, cookie_name: str) -> str:
-        """
-        Remove a cookie from the given URL
-        
-        Args:
-            cookie_name: The name of the cookie to remove, example "JSESSIONID".
-            
-        Returns:
-            The result of the operation
-        """
+    async def web_browser_remove_cookie(self, cookie_name: Annotated[str, "The name of the cookie to remove, example 'JSESSIONID'"] ) -> str:
+        """Remove a cookie from the given URL"""
         logger.info(f"Calling WebBrowserAPI remove_cookie with cookie_name={cookie_name}")
         result = self.web_browser_api.remove_cookie(cookie_name=cookie_name)
         return result
 
-    async def web_browser_get_cookies(self, url: str) -> str:
-        """
-        Get all the cookies from the given URL
-        """
+    async def web_browser_get_cookies(self, url: Annotated[str, "The URL to get the cookies from, example 'https://www.google.com'"] ) -> str:
+        """Get all the cookies from the given URL"""
         logger.info(f"Calling WebBrowserAPI get_cookies with url={url}")
         result = self.web_browser_api.get_cookies(url=url)
         return result
 
-    async def web_browser_update_cookie(self, cookie_name: str, cookie_value: str, cookie_domain: str, cookie_path: str, cookie_expiry: str) -> str:
-        """
-        Update a cookie from the given URL
-        
-        Args:
-            cookie_name: The name of the cookie to update, example "JSESSIONID".
-            cookie_value: The value of the cookie to update, example "1234567890".
-            cookie_domain: The domain of the cookie to update, example "google.com".
-            cookie_path: The path of the cookie to update, example "/".
-            cookie_expiry: The expiry date of the cookie to update, example "01/26".
-            
-        Returns:
-            The result of the operation
-        """
+    async def web_browser_update_cookie(self, cookie_name: Annotated[str, "The name of the cookie to update, example 'JSESSIONID'"], cookie_value: Annotated[str, "The value of the cookie to update, example '1234567890'"], cookie_domain: Annotated[str, "The domain of the cookie to update, example 'google.com'"], cookie_path: Annotated[str, "The path of the cookie to update, example '/'"], cookie_expiry: Annotated[str, "The expiry date of the cookie to update, example '01/26'"] ) -> str:
+        """Update a cookie from the given URL, for a given cookie name the value must be provided for the fields which needs to be updated. Rest of the fields can be empty."""
         logger.info(f"Calling WebBrowserAPI update_cookie with cookie_name={cookie_name}, cookie_value={cookie_value}, cookie_domain={cookie_domain}, cookie_path={cookie_path}, cookie_expiry={cookie_expiry}")
         result = self.web_browser_api.update_cookie(cookie_name=cookie_name, cookie_value=cookie_value, cookie_domain=cookie_domain, cookie_path=cookie_path, cookie_expiry=cookie_expiry)
         return result
 
     async def web_browser_get_all_cookies(self) -> str:
-        """
-        Get all the cookies
-        """
+        """Get all the cookies from the browser"""
         logger.info("Calling WebBrowserAPI get_all_cookies")
         result = self.web_browser_api.get_all_cookies()
         return result

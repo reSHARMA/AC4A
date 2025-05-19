@@ -164,7 +164,7 @@ async def run_agent() -> str:
                             logger.info(f"[agent_core.py] Skipping user message to prevent duplication: {content}")
                             if isinstance(content, str):
                                 generate_permission(content)
-                            elif isinstance(content, list):
+                            elif isinstance(content, list) and content[0].type == "FunctionExecutionResult":
                                 content = content[0].content
                                 generate_permission(content)
                             continue

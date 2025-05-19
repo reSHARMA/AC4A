@@ -6,6 +6,7 @@ from src.policy_system.api_annotation import APIAnnotationBase
 from src.utils.attribute_tree import AttributeTree
 from src.utils.dummy_data import generate_dummy_data
 from config import WILDCARD
+from typing import Annotated
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -144,36 +145,6 @@ class WalletAgent(BaseAgent):
         
         Important: When using card names, always use the exact card name without adding the word "card" at the end. For example, use "Amex Gold" instead of "Amex Gold card", "Venture X" instead of "Venture X card", etc.
         
-        ## List of tools available to you
-
-        Use the tool `wallet_get_all_credit_card_names` to get all the credit card names. This tool returns a list of all the credit card names and does not take any parameters.
-
-        Use the tool `wallet_get_credit_card_info` to get the credit card information of individual cards. The tool takes the following parameters:
-        - card_name: The name of the card to get the information for, example "Venture X".
-        and returns the card type, card number, card expiry date, card pin, and the billing zip code for the given card name. 
-
-        Use the tool `wallet_add_credit_card` to add a credit card to the wallet. The tool takes the following parameters:
-        - card_name: The name of the card to add, example "Venture X".
-        - card_type: The type of the card, example "Visa".
-        - card_number: The card number, example "1234567890123456".
-        - card_expiry: The card expiry date as MM/YY, example "01/26".
-        - card_pin: The card pin, example "123".
-        - billing_zip_code: The billing zip code, example "12345".
-
-        Use the tool `wallet_remove_credit_card` to remove a credit card from the wallet. The tool takes the following parameters:
-        - card_name: The name of the card to remove, example "Venture X".
-
-        Use the tool `wallet_update_credit_card` to update a credit card in the wallet. The tool takes the following parameters:
-        - card_name: The name of the card to update, example "Venture X".
-        - card_type: The type of the card, example "Visa".
-        - card_number: The card number, example "1234567890123456".
-        - card_expiry: The card expiry date as MM/YY, example "01/26".
-        - card_pin: The card pin, example "123".
-        - billing_zip_code: The billing zip code, example "12345".
-
-        You are capable of doing tasks which requires you to use the tools in a sequence. 
-
-        Return "done" when you have completed your work.
         """
         
         policy_system.register_api(WalletAPI)
@@ -190,72 +161,32 @@ class WalletAgent(BaseAgent):
         
         super().__init__("Wallet", system_message, tools, model_client)
         
-    async def wallet_add_credit_card(self, card_name: str, card_type: str, card_number: str, card_pin: str) -> str:
-        """
-        Add a credit card to the wallet
-        
-        Args:
-            card_name: The name of the card
-            card_type: The type of the card
-            card_number: The card number
-            card_pin: The card PIN
-            
-        Returns:
-            The result of the operation
-        """
+    async def wallet_add_credit_card(self, card_name: Annotated[str, "The name of the card, example 'Venture X'"], card_type: Annotated[str, "The type of the card, example 'Visa'"], card_number: Annotated[str, "The card number, example '1234567890123456'"], card_pin: Annotated[str, "The card PIN, example '123'"], billing_zip_code: Annotated[str, "The billing zip code, example '12345'"] = None) -> str:
+        """Add a credit card to the wallet with all the required information"""
         logger.info(f"Calling WalletAPI add_credit_card with card_name={card_name}, card_type={card_type}, card_number={card_number}, card_pin={card_pin}")
         result = self.wallet_api.add_credit_card(card_name=card_name, card_type=card_type, card_number=card_number, card_pin=card_pin)
         return result
         
-    async def wallet_remove_credit_card(self, card_name: str) -> str:
-        """
-        Remove a credit card from the wallet
-        
-        Args:
-            card_name: The name of the card
-            
-        Returns:
-            The result of the operation
-        """
+    async def wallet_remove_credit_card(self, card_name: Annotated[str, "The name of the card, example 'Venture X'"] = None) -> str:
+        """Remove a credit card from the wallet with the given card name"""
         logger.info(f"Calling WalletAPI remove_credit_card with card_name={card_name}")
         result = self.wallet_api.remove_credit_card(card_name=card_name)
         return result
         
-    async def wallet_update_credit_card(self, card_name: str, card_type: str = None, card_number: str = None, card_pin: str = None) -> str:
-        """
-        Update a credit card in the wallet
-        
-        Args:
-            card_name: The name of the card
-            card_type: The type of the card
-            card_number: The card number
-            card_pin: The card PIN
-            
-        Returns:
-            The result of the operation
-        """
+    async def wallet_update_credit_card(self, card_name: Annotated[str, "The name of the card, example 'Venture X'"], card_type: Annotated[str, "The type of the card, example 'Visa'"] = None, card_number: Annotated[str, "The card number, example '1234567890123456'"] = None, card_pin: Annotated[str, "The card PIN, example '123'"] = None, billing_zip_code: Annotated[str, "The billing zip code, example '12345'"] = None) -> str:
+        """Update a credit card in the wallet with the given card name and the values for the fields which need to be updated everthing else can be left empty."""
         logger.info(f"Calling WalletAPI update_credit_card with card_name={card_name}, card_type={card_type}, card_number={card_number}, card_pin={card_pin}")
         result = self.wallet_api.update_credit_card(card_name=card_name, card_type=card_type, card_number=card_number, card_pin=card_pin)
         return result
         
-    async def wallet_get_credit_card_info(self, card_name: str) -> str:
-        """
-        Get credit card information
-        
-        Args:
-            card_name: The name of the card
-            
-        Returns:
-            The credit card information
-        """
+    async def wallet_get_credit_card_info(self, card_name: Annotated[str, "The name of the card, example 'Venture X'"] = None) -> str:
+        """Get credit card information with the given card name"""
         logger.info(f"Calling WalletAPI get_credit_card_info with card_name={card_name}")
         result = self.wallet_api.get_credit_card_info(card_name=card_name)
         return result 
 
     async def wallet_get_all_credit_card_names(self) -> str:
-        """
-        Get all the credit card names
-        """
+        """Get all the credit card names, must only be used if you don't have a specific card name"""
         logger.info("Calling WalletAPI get_all_credit_card_names")
         result = self.wallet_api.get_all_credit_card_names()
         return result

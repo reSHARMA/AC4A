@@ -6,6 +6,7 @@ from src.policy_system.api_annotation import APIAnnotationBase
 from src.utils.attribute_tree import AttributeTree
 from src.utils.dummy_data import generate_dummy_data
 from config import WILDCARD
+from typing import Annotated
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -322,136 +323,10 @@ class ExpediaAgent(BaseAgent):
         system_message = """
         You are a travel booking agent.
 
-        ## This is your normal flow:
+        ## This is your general flow:
         First search for the best flight, hotel, rental car, experience, and cruise. You will get the exact name for each of them. Use that name to show detailed information for that flight, hotel, rental car, experience, and cruise. Then book using the name you got from the search. Booking will return a booking id. Use that booking id to add guest information if needed or find the payment options. In the end use the booking id to pay for the itinerary.
 
-        ## List of tools along with their usage, arguments and return values:
 
-        Use the tool `expedia_search_flights` to search for flights. The tool takes the following parameters:
-        - from_location: The origin airport code (e.g., 'SFO')
-        - to_location: The destination airport code (e.g., 'JFK')
-        - departure_date: The departure date in YYYY-MM-DD format
-        - return_date: The return date in YYYY-MM-DD format (optional)
-        - airline: The airline to search for (optional)
-        - round_trip: Whether to search for round trip flights (default: True)
-        return the flight number and basic information of the flight
-       
-        Use the tool `expedia_search_hotels` to search for hotels. The tool takes the following parameters:
-        - location: The location to search for hotels
-        - check_in_date: The check-in date in YYYY-MM-DD format
-        - check_out_date: The check-out date in YYYY-MM-DD format
-        - room_type: The type of room to search for (optional)
-        return the hotel name and basic information of the hotel
-
-        Use the tool `expedia_search_rental_cars` to search for rental cars. The tool takes the following parameters:
-        - pickup_location: The pickup location
-        - pickup_date: The pickup date in YYYY-MM-DD format
-        - return_date: The return date in YYYY-MM-DD format
-        - car_type: The type of car (optional)
-        - rental_company: The rental company (optional)
-        return the rental car name and basic information of the rental car
-
-        Use the tool `expedia_search_experience` to search for experiences. The tool takes the following parameters:
-        - experience_name: The name of the experience
-        - location: The location of the experience
-        - date: The date of the experience in YYYY-MM-DD format
-        - participants: The number of participants (default: 1)
-        return the experience name and basic information of the experience
-
-        Use the tool `expedia_search_cruise` to search for cruises. The tool takes the following parameters:
-        - departure_port: The departure port
-        - destination: The destination
-        - departure_date: The departure date in YYYY-MM-DD format
-        - return_date: The return date in YYYY-MM-DD format
-        - cabin_type: The cabin type (optional)
-        return the cruise name and basic information of the cruise
-
-        Use the tool `expedia_book_flight` to book a flight. The tool takes the following parameters:
-        - flight_number: The flight number to book
-        - passengers: The number of passengers (default: 1)
-        - class_type: The class of the flight (e.g., 'economy', 'business', 'first') (default: 'economy')
-        return the booking id and basic information of the booking
-
-        Use the tool `expedia_book_hotel` to book a hotel. The tool takes the following parameters:
-        - hotel_name: The name of the hotel to book
-        - location: The location of the hotel
-        - check_in_date: The check-in date in YYYY-MM-DD format
-        - check_out_date: The check-out date in YYYY-MM-DD format
-        - room_type: The type of room to book (optional)
-        return the booking id and basic information of the booking
-
-        Use the tool `expedia_book_rental_car` to rent a car. The tool takes the following parameters:
-        - car_name: The name of the car to rent
-        - pickup_location: The pickup location
-        - pickup_date: The pickup date in YYYY-MM-DD format
-        - return_date: The return date in YYYY-MM-DD format
-        - rental_company: The rental company (optional)
-        return the booking id and basic information of the booking
-
-        Use the tool `expedia_book_experience` to book an experience. The tool takes the following parameters:
-        - experience_name: The name of the experience to book
-        - location: The location of the experience
-        - date: The date of the experience in YYYY-MM-DD format
-        - participants: The number of participants (default: 1)
-        return the booking id and basic information of the booking
-
-        Use the tool `expedia_book_cruise` to book a cruise. The tool takes the following parameters:
-        - cruise_name: The name of the cruise to book
-        - departure_port: The departure port
-        - departure_date: The departure date in YYYY-MM-DD format
-        - return_date: The return date in YYYY-MM-DD format
-        - cabin_type: The cabin type (optional)
-        return the booking id and basic information of the booking
-
-        Use the tool `expedia_get_flight_info` to get flight information. The tool takes the following parameters:
-        - flight_number: The flight number
-        return detailed information about a specific flight for a given flight number
-
-        Use the tool `expedia_get_hotel_info` to get hotel information. The tool takes the following parameters:
-        - hotel_name: The name of the hotel
-        return detailed information about a specific hotel for a given hotel name
-
-        Use the tool `expedia_get_rental_car_info` to get rental car information. The tool takes the following parameters:
-        - car_name: The name of the car
-        return detailed information about a specific rental car for a given rental car name
-
-        Use the tool `expedia_get_experience_info` to get experience information. The tool takes the following parameters:
-        - experience_name: The name of the experience
-        return detailed information about a specific experience for a given experience name
-
-        Use the tool `expedia_get_cruise_info` to get cruise information. The tool takes the following parameters:
-        - cruise_name: The name of the cruise
-        return detailed information about a specific cruise for a given cruise name
-
-        Use the tool `expedia_get_cruise_addons` to get cruise add-ons. The tool takes the following parameters:
-        - cruise_name: The name of the cruise
-        return the cruise add-ons name and basic information of the cruise add-ons
-
-        Use the tool `expedia_get_cruise_policies` to get cruise policies. The tool takes the following parameters:
-        - cruise_name: The name of the cruise
-        return the cruise policies for a given cruise name
-
-        Use the tool `expedia_get_cruise_payment_options` to get cruise payment options. The tool takes the following parameters:
-        - cruise_name: The name of the cruise
-        return the cruise payment options for a given cruise name
-
-        Use the tool `expedia_pay_for_itenary` to pay for an itinerary. The tool takes the following parameters:
-        - booking_id: The booking id
-        - payment_method: The payment method
-        - amount: The amount to pay
-        - card_number: The card number
-        - card_expiry: The card expiry date
-        - card_cvv: The card CVV
-        - billing_address: The billing address
-        return the payment summary for a given booking id
-
-        Use the tool `expedia_add_guest_info` to add guest information. The tool takes the following parameters:
-        - booking_id: The booking id
-        - guest_name: The guest name
-        - guest_email: The guest email
-        - guest_phone: The guest phone
-        - guest_address: The guest address (optional)
-        return the booking id and basic information of the booking after adding the guest information
         """
         
         policy_system.register_api(ExpediaAPI)
@@ -483,328 +358,122 @@ class ExpediaAgent(BaseAgent):
         
         super().__init__("Expedia", system_message, tools, model_client)
         
-    async def expedia_search_flights(self, from_location: str, to_location: str, departure_date: str, return_date: str = None, airline: str = None, round_trip: bool = True) -> str:
-        """
-        Search for flights
-        
-        Args:
-            from_location: The origin airport code
-            to_location: The destination airport code
-            departure_date: The departure date in YYYY-MM-DD format
-            return_date: The return date in YYYY-MM-DD format
-            airline: The airline to search for (optional)
-            round_trip: Whether to search for round trip flights (default: True)
-            
-        Returns:
-            The search results
-        """
+    async def expedia_search_flights(self, from_location: Annotated[str, "airport_code"], to_location: Annotated[str, "airport_code"], departure_date: Annotated[str, "date as YYYY-MM-DD"], return_date: Annotated[str, "date as YYYY-MM-DD"] = None, airline: Annotated[str, "airline name (optional)"] = None, round_trip: Annotated[bool, "boolean (default: True)"] = True) -> str:
+        """Search for flights from a given origin to a given destination on a given departure date and return the flight number and basic information of the flight"""
         logger.info(f"Calling ExpediaAPI search_flights with from_location={from_location}, to_location={to_location}, departure_date={departure_date}, return_date={return_date}, airline={airline}, round_trip={round_trip}")
         result = self.expedia_api.search_flights(from_location=from_location, to_location=to_location, departure_date=departure_date, return_date=return_date, airline=airline, round_trip=round_trip)
         return result
         
-    async def expedia_book_flight(self, flight_number: str, passengers: int = 1, class_type: str = "economy") -> str:
-        """
-        Book a flight
-        
-        Args:
-            flight_number: The flight number to book
-            passengers: The number of passengers (default: 1)
-            class_type: The class of the flight (default: 'economy')
-            
-        Returns:
-            The booking result
-        """
+    async def expedia_book_flight(self, flight_number: Annotated[str, "flight number"], passengers: Annotated[int, "number of passengers (default: 1)"], class_type: Annotated[str, "class of the flight (default: 'economy')"]) -> str:
+        """Book a flight with a given flight number, number of passengers, and class of the flight and return the booking id and basic information of the booking"""
         logger.info(f"Calling ExpediaAPI book_flight with flight_number={flight_number}, passengers={passengers}, class_type={class_type}")
         result = self.expedia_api.book_flight(flight_number=flight_number, passengers=passengers, class_type=class_type)
         return result
         
-    async def expedia_get_flight_info(self, flight_number: str) -> str:
-        """
-        Get flight information
-        
-        Args:
-            flight_number: The flight number
-            
-        Returns:
-            The flight information
-        """
+    async def expedia_get_flight_info(self, flight_number: Annotated[str, "flight number"]) -> str:
+        """Get flight information for a given flight number and return detailed information about a specific flight for a given flight number"""
         logger.info(f"Calling ExpediaAPI get_flight_info with flight_number={flight_number}")
         result = self.expedia_api.get_flight_info(flight_number=flight_number)
         return result
     
-    async def expedia_search_hotels(self, location: str, check_in_date: str, check_out_date: str, room_type: str = None) -> str:
-        """
-        Search for hotels
-        
-        Args:
-            location: The location to search for hotels
-            check_in_date: The check-in date in YYYY-MM-DD format
-            check_out_date: The check-out date in YYYY-MM-DD format
-            room_type: The type of room to search for (optional)
-            
-        Returns:
-            The search results
-        """
+    async def expedia_search_hotels(self, location: Annotated[str, "location to search for hotels"], check_in_date: Annotated[str, "date as YYYY-MM-DD"], check_out_date: Annotated[str, "date as YYYY-MM-DD"], room_type: Annotated[str, "room type (optional)"] = None) -> str:
+        """Search for hotels in a given location on a given check-in date and check-out date. Return the hotel name and basic information of the hotel."""
         logger.info(f"Calling ExpediaAPI search_hotels with location={location}, check_in_date={check_in_date}, check_out_date={check_out_date}, room_type={room_type}")
         result = self.expedia_api.search_hotels(location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
         return result
         
-    async def expedia_book_hotel(self, hotel_name: str, location: str, check_in_date: str, check_out_date: str, room_type: str = None) -> str:
-        """
-        Book a hotel
-        
-        Args:
-            hotel_name: The name of the hotel to book
-            location: The location of the hotel
-            check_in_date: The check-in date in YYYY-MM-DD format
-            check_out_date: The check-out date in YYYY-MM-DD format
-            room_type: The type of room to book (optional)
-            
-        Returns:
-            The booking result
-        """
+    async def expedia_book_hotel(self, hotel_name: Annotated[str, "name of the hotel to book"], location: Annotated[str, "location of the hotel"], check_in_date: Annotated[str, "check-in date as YYYY-MM-DD"], check_out_date: Annotated[str, "check-out date as YYYY-MM-DD"], room_type: Annotated[str, "room type (optional)"] = None) -> str:
+        """Book a hotel with a given hotel name, location, check-in date, check-out date, and room type and return the booking id and basic information of the booking"""
         logger.info(f"Calling ExpediaAPI book_hotel with hotel_name={hotel_name}, location={location}, check_in_date={check_in_date}, check_out_date={check_out_date}, room_type={room_type}")
         result = self.expedia_api.book_hotel(hotel_name=hotel_name, location=location, check_in_date=check_in_date, check_out_date=check_out_date, room_type=room_type)
         return result
         
-    async def expedia_get_hotel_info(self, hotel_name: str) -> str:
-        """
-        Get hotel information
-        
-        Args:
-            hotel_name: The name of the hotel
-            
-        Returns:
-            The hotel information
-        """
+    async def expedia_get_hotel_info(self, hotel_name: Annotated[str, "name of the hotel"]) -> str:
+        """Get hotel information for a given hotel name and return detailed information about a specific hotel for a given hotel name"""
         logger.info(f"Calling ExpediaAPI get_hotel_info with hotel_name={hotel_name}")
         result = self.expedia_api.get_hotel_info(hotel_name=hotel_name)
         return result
         
-    async def expedia_search_rental_cars(self, car_type: str, pickup_location: str, pickup_date: str, return_date: str, rental_company: str = None) -> str:
-        """
-        Search for rental cars
-        
-        Args:
-            car_type: The type of car to rent
-            pickup_location: The pickup location
-            pickup_date: The pickup date in YYYY-MM-DD format
-            return_date: The return date in YYYY-MM-DD format
-            rental_company: The rental company (optional)
-            
-        Returns:
-            The rental result
-        """
+    async def expedia_search_rental_cars(self, car_type: Annotated[str, "type of car to rent"], pickup_location: Annotated[str, "pickup location"], pickup_date: Annotated[str, "pickup date as YYYY-MM-DD"], return_date: Annotated[str, "return date as YYYY-MM-DD"], rental_company: Annotated[str, "rental company (optional)"] = None) -> str:
+        """Search for rental cars in a given pickup location on a given pickup date and return date and return the rental car name and basic information of the rental car"""
         logger.info(f"Calling ExpediaAPI search_rental_cars with car_type={car_type}, pickup_location={pickup_location}, pickup_date={pickup_date}, return_date={return_date}, rental_company={rental_company}")
         result = self.expedia_api.search_rental_cars(car_type=car_type, pickup_location=pickup_location, pickup_date=pickup_date, return_date=return_date, rental_company=rental_company)
         return result
         
-    async def expedia_book_rental_car(self, car_name: str, pickup_location: str, pickup_date: str, return_date: str, rental_company: str = None) -> str:
-        """
-        Book a rental car
-        
-        Args:
-            car_name: The name of the car to rent
-            pickup_location: The pickup location
-            pickup_date: The pickup date in YYYY-MM-DD format
-            return_date: The return date in YYYY-MM-DD format
-            rental_company: The rental company (optional)
-            
-        Returns:
-            The booking result
-        """
+    async def expedia_book_rental_car(self, car_name: Annotated[str, "name of the car to rent"], pickup_location: Annotated[str, "pickup location"], pickup_date: Annotated[str, "pickup date as YYYY-MM-DD"], return_date: Annotated[str, "return date as YYYY-MM-DD"], rental_company: Annotated[str, "rental company (optional)"] = None) -> str:
+        """Book a rental car with a given car name, pickup location, pickup date, return date, and rental company and return the booking id and basic information of the booking"""
         logger.info(f"Calling ExpediaAPI book_rental_car with car_name={car_name}, pickup_location={pickup_location}, pickup_date={pickup_date}, return_date={return_date}, rental_company={rental_company}")
         result = self.expedia_api.book_rental_car(car_name=car_name, pickup_location=pickup_location, pickup_date=pickup_date, return_date=return_date, rental_company=rental_company)
         return result
     
-    async def expedia_get_rental_car_info(self, car_name: str) -> str:
-        """
-        Get rental car information
-        
-        Args:
-            car_name: The name of the car
-            
-        Returns:
-            The rental car information
-        """
+    async def expedia_get_rental_car_info(self, car_name: Annotated[str, "name of the car"]) -> str:
+        """Get rental car information for a given car name and return detailed information about a specific rental car for a given rental car name"""
         logger.info(f"Calling ExpediaAPI get_rental_car_info with car_name={car_name}")
         result = self.expedia_api.get_rental_car_info(car_name=car_name)
         return result
     
-    async def expedia_search_experience(self, experience_name: str, location: str, date: str, participants: int = 1) -> str:
-        """
-        Search for experiences
-        
-        Args:
-            experience_name: The name of the experience to search for
-            location: The location of the experience
-            date: The date of the experience in YYYY-MM-DD format
-            participants: The number of participants (default: 1)
-            
-        Returns:
-            The search results  
-        """
+    async def expedia_search_experience(self, experience_name: Annotated[str, "name of the experience to search for"], location: Annotated[str, "location of the experience"], date: Annotated[str, "date as YYYY-MM-DD"], participants: Annotated[int, "number of participants (default: 1)"] = 1) -> str:
+        """Search for experiences in a given location on a given date. Return the experience name and basic information of the experience."""
         logger.info(f"Calling ExpediaAPI search_experience with experience_name={experience_name}, location={location}, date={date}, participants={participants}")
         result = self.expedia_api.search_experience(experience_name=experience_name, location=location, date=date, participants=participants)
         return result
     
-    async def expedia_book_experience(self, experience_name: str, location: str, date: str, participants: int = 1) -> str:
-        """
-        Book an experience
-        
-        Args:
-            experience_name: The name of the experience to book
-            location: The location of the experience
-            date: The date of the experience in YYYY-MM-DD format
-            participants: The number of participants
-            
-        Returns:
-            The booking result
-        """
+    async def expedia_book_experience(self, experience_name: Annotated[str, "name of the experience to book"], location: Annotated[str, "location of the experience"], date: Annotated[str, "date as YYYY-MM-DD"], participants: Annotated[int, "number of participants (default: 1)"] = 1) -> str:
+        """Book an experience with a given experience name, location, date, and number of participants and return the booking id and basic information of the booking"""
         logger.info(f"Calling ExpediaAPI book_experience with experience_name={experience_name}, location={location}, date={date}, participants={participants}")
         result = self.expedia_api.book_experience(experience_name=experience_name, location=location, date=date, participants=participants)
         return result
 
-    async def expedia_get_experience_info(self, experience_name: str) -> str:
-        """
-        Get experience information
-        
-        Args:
-            experience_name: The name of the experience to get information for
-            
-        Returns:
-            The experience information
-        """
+    async def expedia_get_experience_info(self, experience_name: Annotated[str, "name of the experience to get information for"]) -> str:
+        """Get experience information for a given experience name and return detailed information about a specific experience for a given experience name"""
         logger.info(f"Calling ExpediaAPI get_experience_info with experience_name={experience_name}")
         result = self.expedia_api.get_experience_info(experience_name=experience_name)
         return result
 
-    async def expedia_search_cruise(self, departure_port: str, destination: str, departure_date: str, return_date: str, cabin_type: str = None) -> str:
-        """
-        Search for cruises
-        
-        Args:
-            departure_port: The departure port
-            destination: The destination
-            departure_date: The departure date in YYYY-MM-DD format
-            return_date: The return date in YYYY-MM-DD format
-            cabin_type: The cabin type (optional)
-            
-        Returns:
-            The search results
-        """
+    async def expedia_search_cruise(self, departure_port: Annotated[str, "departure port"], destination: Annotated[str, "destination"], departure_date: Annotated[str, "departure date as YYYY-MM-DD"], return_date: Annotated[str, "return date as YYYY-MM-DD"], cabin_type: Annotated[str, "cabin type (optional)"] = None) -> str:
+        """Search for cruises from a given departure port to a given destination on a given departure date. Return the cruise name and basic information of the cruise."""
         logger.info(f"Calling ExpediaAPI search_cruise with departure_port={departure_port}, destination={destination}, departure_date={departure_date}, return_date={return_date}, cabin_type={cabin_type}")
         result = self.expedia_api.search_cruise(departure_port=departure_port, destination=destination, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
         return result
     
-    async def expedia_book_cruise(self, cruise_name: str, departure_port: str, departure_date: str, return_date: str, cabin_type: str = None) -> str:
-        """
-        Book a cruise
-        
-        Args:
-            cruise_name: The name of the cruise
-            departure_port: The departure port
-            departure_date: The departure date in YYYY-MM-DD format
-            return_date: The return date in YYYY-MM-DD format
-            cabin_type: The cabin type (optional)
-            
-        Returns:
-            The booking result
-        """
+    async def expedia_book_cruise(self, cruise_name: Annotated[str, "name of the cruise to book"], departure_port: Annotated[str, "departure port"], departure_date: Annotated[str, "departure date as YYYY-MM-DD"], return_date: Annotated[str, "return date as YYYY-MM-DD"], cabin_type: Annotated[str, "cabin type (optional)"] = None) -> str:
+        """Book a cruise with a given cruise name, departure port, departure date, return date, and cabin type and return the booking id and basic information of the booking"""
         logger.info(f"Calling ExpediaAPI book_cruise with cruise_name={cruise_name}, departure_port={departure_port}, departure_date={departure_date}, return_date={return_date}, cabin_type={cabin_type}")
         result = self.expedia_api.book_cruise(cruise_name=cruise_name, departure_port=departure_port, departure_date=departure_date, return_date=return_date, cabin_type=cabin_type)
         return result
         
-    async def expedia_get_cruise_info(self, cruise_name: str) -> str:
-        """
-        Get cruise information
-        
-        Args:
-            cruise_name: The name of the cruise to get information for 
-            
-        Returns:
-            The cruise information
-        """
+    async def expedia_get_cruise_info(self, cruise_name: Annotated[str, "name of the cruise to get information for"]) -> str:
+        """Get cruise information for a given cruise name and return detailed information about a specific cruise for a given cruise name"""
         logger.info(f"Calling ExpediaAPI get_cruise_info with cruise_name={cruise_name}")
         result = self.expedia_api.get_cruise_info(cruise_name=cruise_name)
         return result
     
-    async def expedia_get_cruise_addons(self, cruise_name: str) -> str:
-        """
-        Get cruise add-ons
-        
-        Args:
-            cruise_name: The name of the cruise to get add-ons for
-            
-        Returns:
-            The cruise add-ons
-        """
+    async def expedia_get_cruise_addons(self, cruise_name: Annotated[str, "name of the cruise to get add-ons information for"]) -> str:
+        """Get cruise add-ons available for a given cruise name and return the cruise add-ons name and basic information of the cruise add-ons"""
         logger.info(f"Calling ExpediaAPI get_cruise_addons with cruise_name={cruise_name}")
         result = self.expedia_api.get_cruise_addons(cruise_name=cruise_name)
         return result
         
-    async def expedia_get_cruise_policies(self, cruise_name: str) -> str:
-        """
-        Get cruise policies
-        
-        Args:
-            cruise_name: The name of the cruise
-            
-        Returns:
-            The cruise policies
-        """
+    async def expedia_get_cruise_policies(self, cruise_name: Annotated[str, "name of the cruise to get policies for"]) -> str:
+        """Get cruise policies for a given cruise name and return the cruise policies like cancellation policy, refund policy, etc."""
         logger.info(f"Calling ExpediaAPI get_cruise_policies with cruise_name={cruise_name}")
         result = self.expedia_api.get_cruise_policies(cruise_name=cruise_name)
         return result
         
-    async def expedia_get_cruise_payment_options(self, cruise_name: str) -> str:
-        """
-        Get cruise payment options
-        
-        Args:
-            cruise_name: The name of the cruise
-            
-        Returns:
-            The cruise payment options
-        """
+    async def expedia_get_cruise_payment_options(self, cruise_name: Annotated[str, "name of the cruise to get payment options for"]) -> str:
+        """Get cruise payment options for a given cruise name and return the cruise payment options like credit card, debit card, etc."""
         logger.info(f"Calling ExpediaAPI get_cruise_payment_options with cruise_name={cruise_name}")
         result = self.expedia_api.get_cruise_payment_options(cruise_name=cruise_name)
         return result
         
-    async def expedia_pay_for_itenary(self, booking_id: str, payment_method: str, amount: float, card_number: str, card_expiry: str, card_cvv: str, billing_address: str) -> str:
-        """
-        Pay for an itinerary
-        
-        Args:
-            booking_id: The ID of the booking
-            payment_method: The payment method
-            amount: The amount to pay
-            card_number: The card number
-            card_expiry: The card expiry date
-            card_cvv: The card CVV
-            billing_address: The billing address
-            
-        Returns:
-            The payment result
-        """
+    async def expedia_pay_for_itenary(self, booking_id: Annotated[str, "booking id"], payment_method: Annotated[str, "payment method"], amount: Annotated[float, "amount to pay"], card_number: Annotated[str, "card number"], card_expiry: Annotated[str, "card expiry date"], card_cvv: Annotated[str, "card CVV"], billing_address: Annotated[str, "billing address"]) -> str:
+        """Pay for an itinerary with a given booking id, payment method, amount, card number, card expiry date, card CVV, and billing address and return the payment result"""
         logger.info(f"Calling ExpediaAPI pay_for_itenary with booking_id={booking_id}, payment_method={payment_method}, amount={amount}, card_number={card_number}, card_expiry={card_expiry}, card_cvv={card_cvv}, billing_address={billing_address}")
         result = self.expedia_api.pay_for_itenary(booking_id=booking_id, payment_method=payment_method, amount=amount, card_number=card_number, card_expiry=card_expiry, card_cvv=card_cvv, billing_address=billing_address)
         return result
         
-    async def expedia_add_guest_info(self, booking_id: str, guest_name: str, guest_email: str, guest_phone: str, guest_address: str = None) -> str:
-        """
-        Add guest information
-        
-        Args:
-            booking_id: The ID of the booking
-            guest_name: The guest name
-            guest_email: The guest email
-            guest_phone: The guest phone
-            guest_address: The guest address (optional)
-            
-        Returns:
-            The result of adding guest information
-        """
+    async def expedia_add_guest_info(self, booking_id: Annotated[str, "booking id"], guest_name: Annotated[str, "guest name"], guest_email: Annotated[str, "guest email"], guest_phone: Annotated[str, "guest phone"], guest_address: Annotated[str, "guest address (optional)"] = None) -> str:
+        """Add guest information to a booking with a given booking id, guest name, guest email, guest phone, and guest address and return the result of adding guest information"""
         logger.info(f"Calling ExpediaAPI add_guest_info with booking_id={booking_id}, guest_name={guest_name}, guest_email={guest_email}, guest_phone={guest_phone}, guest_address={guest_address}")
         result = self.expedia_api.add_guest_info(booking_id=booking_id, guest_name=guest_name, guest_email=guest_email, guest_phone=guest_phone, guest_address=guest_address)
         return result 

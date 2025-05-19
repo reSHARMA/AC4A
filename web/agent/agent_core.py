@@ -29,6 +29,8 @@ logger = logging.getLogger(__name__)
 agent_group_chat = None
 
 def generate_permission(content: str) -> str:
+    if str(content) == "":
+        return  
     # Get the current mode
     mode = os.environ.get('PERMISSION_MANAGEMENT_MODE', 'ask').lower()
 

@@ -6,6 +6,7 @@ from src.policy_system.api_annotation import APIAnnotationBase
 from src.utils.attribute_tree import AttributeTree
 from src.utils.dummy_data import generate_dummy_data
 from config import WILDCARD
+from typing import Annotated
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -188,13 +189,6 @@ class CalendarAgent(BaseAgent):
         system_message = """
         You are a calendar agent.
         Asume offset-naive datetime for simplicity.
-        Use the tools available to you to fulfill the request.
-
-        ## List of tools available to you:
-        - `calendar_reserve`: Reserve a time slot in the calendar
-        - `calendar_read`: Read calendar entries
-        - `calendar_check_availability`: Check availability for a time slot
-        - `get_user_input`: Ask the user for user input, like confirmation of the booking details, etc.
 
         Output "done" when the task given to you is completed. Do not suggest any other actions to the user.
         If you are given a task which is not related to calendar, also return "done"
@@ -211,47 +205,25 @@ class CalendarAgent(BaseAgent):
         
         super().__init__("Calendar", system_message, tools, model_client)
         
-    async def calendar_reserve(self, start_time: datetime, duration: timedelta, description: str) -> str:
+    async def calendar_reserve(self, start_time: Annotated[datetime, "The start time of the reservation as offset-naive datetime"], duration: Annotated[timedelta, "The duration of the reservation as timedelta"], description: Annotated[str, "The description of the reservation, can also be empty"]) -> str:
         """
         Reserve a time slot in the calendar
-        
-        Args:
-            start_time: The start time of the reservation
-            duration: The duration of the reservation
-            description: The description of the reservation
-            
-        Returns:
-            The result of the reservation
         """
         logger.info(f"Calling CalendarAPI reserve with start_time={start_time}, duration={duration}, description={description}")
         result = self.calendar_api.reserve(start_time=start_time, duration=duration, description=description)
         return result
         
-    async def calendar_read(self, start_time: datetime, duration: timedelta) -> str:
+    async def calendar_read(self, start_time: Annotated[datetime, "The start time of data to be read as offset-naive datetime"], duration: Annotated[timedelta, "The duration of the reading as timedelta"]) -> str:
         """
         Read calendar entries
-        
-        Args:
-            start_time: The start time to read from
-            duration: The duration to read for
-            
-        Returns:
-            The calendar entries
         """
         logger.info(f"Calling CalendarAPI read with start_time={start_time}, duration={duration}")
         result = self.calendar_api.read(start_time=start_time, duration=duration)
         return result
         
-    async def calendar_check_availability(self, start_time: datetime, duration: timedelta) -> str:
+    async def calendar_check_availability(self, start_time: Annotated[datetime, "The start time of the availability check as offset-naive datetime"], duration: Annotated[timedelta, "The duration of the availability check as timedelta"]) -> str:
         """
         Check availability for a time slot
-        
-        Args:
-            start_time: The start time to check
-            duration: The duration to check for
-            
-        Returns:
-            The availability status
         """
         logger.info(f"Calling CalendarAPI check_available with start_time={start_time}, duration={duration}")
         result = self.calendar_api.check_available(start_time=start_time, duration=duration)

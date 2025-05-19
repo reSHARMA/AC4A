@@ -55,7 +55,11 @@ def call_openai_api(system: str, prompt: str) -> str:
             openai_logger.debug("Received OpenAI API response", extra={
                 'openai_data': {
                     'response': completion.choices[0].message.content,
-                    'usage': completion.usage._asdict() if hasattr(completion, 'usage') else None
+                    'usage': {
+                        'prompt_tokens': getattr(completion.usage, 'prompt_tokens', 0),
+                        'completion_tokens': getattr(completion.usage, 'completion_tokens', 0),
+                        'total_tokens': getattr(completion.usage, 'total_tokens', 0)
+                    } if hasattr(completion, 'usage') else None
                 }
             })
             

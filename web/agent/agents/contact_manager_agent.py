@@ -6,6 +6,7 @@ from src.policy_system.api_annotation import APIAnnotationBase
 from src.utils.attribute_tree import AttributeTree
 from src.utils.dummy_data import generate_dummy_data
 from config import WILDCARD
+from typing import Annotated
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -155,25 +156,7 @@ class ContactManagerAgent(BaseAgent):
             model_client: The model client to use
             policy_system: The policy system to use
         """
-        system_message = """
-        You are a contact manager agent.
-
-        The name of the user is Ron Swanson whose information is already stored in the contact manager.
-
-        The tool `contact_get_contact_info` takes name as an argument and returns all the contact information, including phone, address, email, relation, birthday, and notes for the given name.
-
-        The tool `contact_get_names_by_relation` takes relation as an argument and returns the names of all the contacts with the given relation.
-
-        The tool `contact_add_contact` takes name, phone, address, email, relation, birthday, and notes as arguments and adds a new contact with the given details. If some non-essential information is not available, you can use empty string as the value for that argument.
-
-        The tool `contact_remove_contact` takes name as an argument and removes the contact with the given name.
-
-        The tool `contact_update_contact` takes name, phone, address, email, relation, birthday, and notes as arguments and updates the contact information with the given details. If some non-essential information is not available, you can use empty string as the value for that argument.
-
-        use `get_user_input` tool to ask the user for input and clarify the information if needed.
-
-        Return "done" when your work is completed.
-        """
+        system_message = """You are a contact manager agent. The name of the user who is interacting with you is Ron Swanson and its Ron's contacts you are managing. Return "done" when your work is completed."""
         
         policy_system.register_api(ContactManagerAPI)
         self.contact_manager_api = ContactManagerAPI(policy_system)
@@ -189,84 +172,32 @@ class ContactManagerAgent(BaseAgent):
         
         super().__init__("ContactManager", system_message, tools, model_client)
         
-    async def contact_add_contact(self, name: str, phone: str, address: str, email: str, relation: str, birthday: str = None, notes: str = None) -> str:
-        """
-        Add a contact
-        
-        Args:
-            name: The name of the contact
-            phone: The phone number of the contact
-            address: The address of the contact
-            email: The email of the contact
-            relation: The relation of the contact
-            birthday: The birthday of the contact
-            notes: Notes about the contact
-            
-        Returns:
-            The result of the operation
-        """
+    async def contact_add_contact(self, name: Annotated[str, "The name of the contact, must be the name of the person"], phone: Annotated[str, "The phone number of the contact, must be a 10 digit number"], address: Annotated[str, "The address of the contact, can be empty"], email: Annotated[str, "The email of the contact, can be empty"], relation: Annotated[str, "The relation of the contact with the user, can be 'spouse', 'child', 'parent', 'friend', 'business partner', 'other' etc. or empty"], birthday: Annotated[str, "The birthday of the contact (YYYY-MM-DD) or empty"], notes: Annotated[str, "The notes about the contact, can be empty"]) -> str:
+        """Add a new contact with the given details. The name and phone are required, rest all are optional."""
         logger.info(f"Calling ContactManagerAPI add_contact with name={name}, phone={phone}, address={address}, email={email}, relation={relation}, birthday={birthday}, notes={notes}")
         result = self.contact_manager_api.add_contact(name=name, phone=phone, address=address, email=email, relation=relation, birthday=birthday, notes=notes)
         return result
         
-    async def contact_remove_contact(self, name: str) -> str:
-        """
-        Remove a contact
-        
-        Args:
-            name: The name of the contact
-            
-        Returns:
-            The result of the operation
-        """
+    async def contact_remove_contact(self, name: Annotated[str, "The name of the contact, must be the name of the person"]) -> str:
+        """Remove the contact with the given name."""
         logger.info(f"Calling ContactManagerAPI remove_contact with name={name}")
         result = self.contact_manager_api.remove_contact(name=name)
         return result
         
-    async def contact_update_contact(self, name: str, phone: str = None, address: str = None, email: str = None, relation: str = None, birthday: str = None, notes: str = None) -> str:
-        """
-        Update a contact
-        
-        Args:
-            name: The name of the contact
-            phone: The phone number of the contact
-            address: The address of the contact
-            email: The email of the contact
-            relation: The relation of the contact
-            birthday: The birthday of the contact
-            notes: Notes about the contact
-            
-        Returns:
-            The result of the operation
-        """
+    async def contact_update_contact(self, name: Annotated[str, "The name of the contact, must be the name of the person"], phone: Annotated[str, "The phone number of the contact, can also be empty"], address: Annotated[str, "The address of the contact, can also be empty"], email: Annotated[str, "The email of the contact, can also be empty"], relation: Annotated[str, "The relation of the contact, can also be empty"], birthday: Annotated[str, "The birthday of the contact, can also be empty"], notes: Annotated[str, "The notes of the contact, can also be empty"]) -> str:
+        """Update the contact information with the given details. The name is required and rest all are optional. The data which needs to be updated must have a non-empty value. If you just want to update one field, use empty string for the rest."""
         logger.info(f"Calling ContactManagerAPI update_contact with name={name}, phone={phone}, address={address}, email={email}, relation={relation}, birthday={birthday}, notes={notes}")
         result = self.contact_manager_api.update_contact(name=name, phone=phone, address=address, email=email, relation=relation, birthday=birthday, notes=notes)
         return result
         
-    async def contact_get_contact_info(self, name: str) -> str:
-        """
-        Get contact information
-        
-        Args:
-            name: The name of the contact
-            
-        Returns:
-            The contact information
-        """
+    async def contact_get_contact_info(self, name: Annotated[str, "The name of the contact, must be the name of the person"]) -> str:
+        """Get the contact information for the given name including phone, address, email, relation, birthday, and notes."""
         logger.info(f"Calling ContactManagerAPI get_contact_info with name={name}")
         result = self.contact_manager_api.get_contact_info(name=name)
         return result
         
-    async def contact_get_names_by_relation(self, relation: str) -> str:
-        """
-        Get names of contacts by relation
-        
-        Args:
-            relation: The relation to filter by
-            
-        Returns:
-            The names of contacts with the given relation
-        """
+    async def contact_get_names_by_relation(self, relation: Annotated[str, "The relation of the contact, can be 'spouse', 'child', 'parent', 'friend', 'business partner', 'other' etc."]) -> str:
+        """Get the names of the contacts with the given relation. For example, if the relation is 'co-worker', you should return the names of all the contacts with the relation 'co-worker'."""
         logger.info(f"Calling ContactManagerAPI get_names_by_relation with relation={relation}")
         result = self.contact_manager_api.get_names_by_relation(relation=relation)
         return result 

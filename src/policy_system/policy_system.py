@@ -53,14 +53,14 @@ class PolicySystem:
             policy_text = mode + "\n"
             for policy in self.policy_rules:
                 policy_text = policy_text + ', '.join(f"{key}: {value}" for key, value in policy.items()) + "\n"
-            response = call_openai_api(POLICY_TEXT, policy_text)
+            response = call_openai_api(POLICY_TEXT, policy_text, "perm")
             return response
         else:
             policy_text = f"""
             {mode}
             {', '.join(f"{key}: {value}" for key, value in policy.items())}
             """
-            response = call_openai_api(POLICY_TEXT, policy_text)
+            response = call_openai_api(POLICY_TEXT, policy_text, "perm")
             return response
 
     def register_api(self, api_class):
@@ -611,7 +611,7 @@ class PolicySystem:
         all_data_schema += "</ALL DATA SCHEMA>"
 
         # Generate policy code
-        generated_code = call_openai_api(POLICY_TRANSLATION + all_data + all_data_schema, policy_text)
+        generated_code = call_openai_api(POLICY_TRANSLATION + all_data + all_data_schema, policy_text, "perm")
         logger.error(f"[policy_system.py] Generated code: {generated_code}")
         # Extract code blocks from the response
         import re

@@ -21,7 +21,7 @@ def setup_model_client():
     if openai_api_key:
         logger.info("Using OpenAI configuration")
         base_client = OpenAIChatCompletionClient(
-            model="gpt-4o-2024-11-20",
+            model=f"{os.getenv('CHAT_MODEL')}-{os.getenv('CHAT_MODEL_DATE')}",
             api_key=openai_api_key
         )
     else:
@@ -30,7 +30,7 @@ def setup_model_client():
         endpoint = os.getenv('AZURE_OPENAI_ENDPOINT')
         api_version = os.getenv('AZURE_OPENAI_API_VERSION')
         scope = os.getenv('AZURE_OPENAI_TOKEN_SCOPES')
-        deployment = os.getenv('AZURE_OPENAI_DEPLOYMENT')
+        deployment = f"{os.getenv('CHAT_MODEL')}_{os.getenv('CHAT_MODEL_DATE')}"
         
         if not all([endpoint, api_version, scope, deployment]):
             logger.error("Missing required Azure OpenAI configuration")

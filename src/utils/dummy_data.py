@@ -15,7 +15,7 @@ openai_logger = setup_openai_logging()
 
 history = ""
 
-def call_openai_api(system: str, prompt: str) -> str:
+def call_openai_api(system: str, prompt: str, mode: str) -> str:
     """
     Calls the OpenAI API with the given prompt and returns the response.
     If OpenAI API key is unavailable, falls back to Azure OpenAI client.
@@ -36,10 +36,16 @@ def call_openai_api(system: str, prompt: str) -> str:
                 messages.append({"role": "system", "content": system})
             messages.append({"role": "user", "content": prompt})
             
+            model = "gpt-4o-2024-11-20"
+            if mode == "perm":
+                model = f"{os.getenv('PERM_MODEL')}-{os.getenv('PERM_MODEL_DATE')}"
+            elif mode == "app":
+                model = f"{os.getenv('APP_BACKEND_MODEL')}-{os.getenv('APP_BACKEND_MODEL_DATE')}"
+
             # Log the API call
             openai_logger.debug("Making OpenAI API call", extra={
                 'openai_data': {
-                    'model': "gpt-4o-2024-11-20",
+                    'model': model,
                     'messages': messages,
                     'temperature': 1
                 }
@@ -47,7 +53,7 @@ def call_openai_api(system: str, prompt: str) -> str:
             
             completion = client.chat.completions.create(
                 messages=messages,
-                model="gpt-4o-2024-11-20",
+                model=model,
                 temperature=1,
             )
             
@@ -82,6 +88,10 @@ def call_openai_api(system: str, prompt: str) -> str:
             api_version = os.getenv('AZURE_OPENAI_API_VERSION')
             model_name = os.getenv('AZURE_OPENAI_DEPLOYMENT')
             endpoint = os.getenv('AZURE_OPENAI_ENDPOINT')
+            if mode == "perm":
+                model_name = f"{os.getenv('PERM_MODEL')}_{os.getenv('PERM_MODEL_DATE')}"
+            elif mode == "app":
+                model_name = f"{os.getenv('APP_BACKEND_MODEL')}_{os.getenv('APP_BACKEND_MODEL_DATE')}"
 
             client = AzureOpenAI(
                 azure_endpoint=endpoint,
@@ -159,11 +169,11 @@ def generate_dummy_data(api_endpoint: str, **kwargs) -> dict:
 
     debug_print("Dummy data for API endpoint:", api_endpoint)
     # Use the separate function to call the OpenAI API
-    dummy_data = call_openai_api("", prompt)
+    dummy_data = call_openai_api("", prompt, "app")
     
     summary_prompt = f"""You will be given a json output from an API endpoint {api_endpoint}. Generate a summary of the data returned by the API endpoint '{api_endpoint}' such that it can be presented to the user. 
 Keep the summary concise and informative."""   
-    summary = call_openai_api(summary_prompt, dummy_data)
+    summary = call_openai_api(summary_prompt, dummy_data, "app")
 
     history += summary + "\n" 
 

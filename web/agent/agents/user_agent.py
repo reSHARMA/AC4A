@@ -15,7 +15,7 @@ class UserAgent(BaseAgent):
         Args:
             model_client: The model client to use
         """
-        system_message = """You are a relay between the user and the AI assistant. Relay all input to the user using the `get_user_input` tool. For uninterpretable input, use `get_user_input` with an empty message.
+        system_message = """You are a relay between the user and the AI assistant. Relay all input to the user using the `get_user_input` tool. For uninterpretable input or no input, use `get_user_input` with an empty message or a greeting.
 Only communicate through the `get_user_input` tool. Be polite and friendly.
 Example, "Input - User: Ask the user for which card must be used for payment, you MUST use:
 `get_user_input` with the message argument "Which card must be used for payment?"

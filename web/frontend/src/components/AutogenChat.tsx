@@ -3,6 +3,7 @@ import { Socket } from 'socket.io-client'
 import styles from './Chat.module.css'
 import { createSocketConnection, emitMessage, listenForMessages } from '../utils/socketUtils'
 import ReactMarkdown from 'react-markdown'
+import { Switch, FormControl, FormLabel, HStack, useColorModeValue } from '@chakra-ui/react'
 
 interface Message {
   role: string
@@ -19,6 +20,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
   const [isConnected, setIsConnected] = useState(false)
   const [isWaitingForInput, setIsWaitingForInput] = useState(false)
   const [inputPrompt, setInputPrompt] = useState('')
+  const [isVideoMode, setIsVideoMode] = useState(false)
   const socketRef = useRef<Socket | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -120,41 +122,64 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
 
   return (
     <div className={styles.chatContainer} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div className={styles.messagesContainer} style={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 200px)' }}>
-        {messages.length === 0 ? (
-          <div className={styles.message}>
-            <div className={styles.messageHeader}>System</div>
-            <div>System is initializing...</div>
-          </div>
-        ) : (
-          messages.map((message, index) => (
-            <div
-              key={index}
-              className={`${styles.message} ${
-                message.role === 'user' ? styles.userMessage : styles.assistantMessage
-              }`}
-            >
-              <div className={styles.messageHeader}>
-                {message.role === 'user' ? 'You' : 'Assistant'}
-              </div>
-              {message.role === 'user' ? (
-                <div>{message.content}</div>
-              ) : (
-                <ReactMarkdown>{message.content}</ReactMarkdown>
-              )}
-            </div>
-          ))
-        )}
-        {isAssistantTyping && (
-          <div className={styles.typingIndicator}>
-            Assistant is typing
-            <span className={styles.typingDot}></span>
-            <span className={styles.typingDot}></span>
-            <span className={styles.typingDot}></span>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+        <FormControl display="flex" alignItems="center" width="auto">
+          <HStack spacing={2}>
+            <FormLabel htmlFor="video-toggle" mb="0" fontSize="sm" color={useColorModeValue('gray.600', 'gray.300')}>
+              {isVideoMode ? 'Browser Mode' : 'Chat Mode'}
+            </FormLabel>
+            <Switch
+              id="video-toggle"
+              isChecked={isVideoMode}
+              onChange={() => setIsVideoMode(!isVideoMode)}
+              colorScheme="blue"
+              size="md"
+            />
+          </HStack>
+        </FormControl>
       </div>
+
+      {isVideoMode ? (
+        <div style={{ flex: 1, background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+          Video Feed Will Appear Here
+        </div>
+      ) : (
+        <div className={styles.messagesContainer} style={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 200px)' }}>
+          {messages.length === 0 ? (
+            <div className={styles.message}>
+              <div className={styles.messageHeader}>System</div>
+              <div>System is initializing...</div>
+            </div>
+          ) : (
+            messages.map((message, index) => (
+              <div
+                key={index}
+                className={`${styles.message} ${
+                  message.role === 'user' ? styles.userMessage : styles.assistantMessage
+                }`}
+              >
+                <div className={styles.messageHeader}>
+                  {message.role === 'user' ? 'You' : 'Assistant'}
+                </div>
+                {message.role === 'user' ? (
+                  <div>{message.content}</div>
+                ) : (
+                  <ReactMarkdown>{message.content}</ReactMarkdown>
+                )}
+              </div>
+            ))
+          )}
+          {isAssistantTyping && (
+            <div className={styles.typingIndicator}>
+              Assistant is typing
+              <span className={styles.typingDot}></span>
+              <span className={styles.typingDot}></span>
+              <span className={styles.typingDot}></span>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      )}
       
       <div className={styles.inputContainer} style={{ position: 'sticky', bottom: 0, background: 'white', padding: '1rem 0' }}>
         {isWaitingForInput && (

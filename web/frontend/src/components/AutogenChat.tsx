@@ -21,10 +21,20 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
   const [isWaitingForInput, setIsWaitingForInput] = useState(false)
   const [inputPrompt, setInputPrompt] = useState('')
   const [isVideoMode, setIsVideoMode] = useState(false)
+  const [videoMessages, setVideoMessages] = useState<Message[]>([])
   const socketRef = useRef<Socket | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [isAssistantTyping, setIsAssistantTyping] = useState(false)
+
+  // Function to add message to the appropriate queue
+  const addMessage = (message: Message) => {
+    if (isVideoMode) {
+      setVideoMessages(prev => [...prev, message])
+    } else {
+      setMessages(prev => [...prev, message])
+    }
+  }
 
   useEffect(() => {
     // Create socket connection with debugging
@@ -41,53 +51,70 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
     })
     
     // Listen for input requests from the agent
-    socketRef.current.on('input_request', (data: { prompt: string }) => {
+    socketRef.current.on('input_request', (data: { prompt: string, isVideoMode: boolean }) => {
       console.log('Received input request:', data)
-      setIsWaitingForInput(true)
-      setInputPrompt(data.prompt)
-      setIsAssistantTyping(false)
-      
-      // Add the prompt as a system message
-      setMessages(prev => [...prev, { role: 'System', content: data.prompt }])
-      
-      // Focus the input field
-      if (inputRef.current) {
-        inputRef.current.focus()
+      // Only handle input requests for the current mode
+      if (data.isVideoMode === isVideoMode) {
+        setIsWaitingForInput(true)
+        setInputPrompt(data.prompt)
+        setIsAssistantTyping(false)
+        
+        // Add the prompt as a system message to the current mode's queue
+        const systemMessage = { role: 'System', content: data.prompt }
+        addMessage(systemMessage)
+        
+        // Focus the input field
+        if (inputRef.current) {
+          inputRef.current.focus()
+        }
       }
     })
     
     // Listen for system_ready event from backend
     socketRef.current.on('system_ready', () => {
-      setMessages(prev => [...prev, { role: 'System', content: 'System is ready' }])
+      const systemMessage = { role: 'System', content: 'System is ready' }
+      addMessage(systemMessage)
     })
     
     // Listen for different message types
-    listenForMessages(socketRef.current, 'agent_message', (message: Message) => {
-      setMessages(prev => [...prev, message])
-      // Check if message starts with "Chat Session Ended"
-      if (message.content.startsWith('Chat Session Ended')) {
-        setIsAssistantTyping(false)
+    listenForMessages(socketRef.current, 'agent_message', (message: Message & { isVideoMode?: boolean }) => {
+      // Only handle messages for the current mode
+      if (message.isVideoMode === isVideoMode) {
+        addMessage(message)
+        // Check if message starts with "Chat Session Ended"
+        if (message.content.startsWith('Chat Session Ended')) {
+          setIsAssistantTyping(false)
+        }
       }
     })
     
-    listenForMessages(socketRef.current, 'user_message', (message: Message) => {
-      setMessages(prev => [...prev, message])
+    listenForMessages(socketRef.current, 'user_message', (message: Message & { isVideoMode?: boolean }) => {
+      // Only handle messages for the current mode
+      if (message.isVideoMode === isVideoMode) {
+        addMessage(message)
+      }
     })
     
-    listenForMessages(socketRef.current, 'system_message', (message: Message) => {
-      setMessages(prev => [...prev, message])
-      // Also check system messages for session end
-      if (message.content.startsWith('Chat Session Ended')) {
-        setIsAssistantTyping(false)
+    listenForMessages(socketRef.current, 'system_message', (message: Message & { isVideoMode?: boolean }) => {
+      // Only handle messages for the current mode
+      if (message.isVideoMode === isVideoMode) {
+        addMessage(message)
+        // Also check system messages for session end
+        if (message.content.startsWith('Chat Session Ended')) {
+          setIsAssistantTyping(false)
+        }
       }
     })
     
     // Fallback for any message
-    listenForMessages(socketRef.current, 'message', (message: Message) => {
-      setMessages(prev => [...prev, message])
-      // Check all messages for session end
-      if (message.content.startsWith('Chat Session Ended')) {
-        setIsAssistantTyping(false)
+    listenForMessages(socketRef.current, 'message', (message: Message & { isVideoMode?: boolean }) => {
+      // Only handle messages for the current mode
+      if (message.isVideoMode === isVideoMode) {
+        addMessage(message)
+        // Check all messages for session end
+        if (message.content.startsWith('Chat Session Ended')) {
+          setIsAssistantTyping(false)
+        }
       }
     })
 
@@ -96,11 +123,11 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
         socketRef.current.disconnect()
       }
     }
-  }, [setMessages])
+  }, [setMessages, isVideoMode]) // Added isVideoMode to dependencies
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, videoMessages]) // Added videoMessages to dependencies
 
   const handleSend = () => {
     if (!input.trim() || !socketRef.current) return
@@ -110,14 +137,44 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
       content: input
     }
 
-    // Emit the message using our utility function
-    emitMessage(socketRef.current, 'user_message', message)
-    
-    // Also add it to the local state
-    setMessages(prev => [...prev, message])
+    // Emit the message using our utility function with mode information
+    emitMessage(socketRef.current, 'user_message', { ...message, isVideoMode })
+
+    // Add it to the appropriate queue
+    addMessage(message)
     setInput('')
     setIsWaitingForInput(false)
     setIsAssistantTyping(true)
+  }
+
+  // Function to render messages from the current mode's queue
+  const renderMessages = (messageList: Message[]) => {
+    if (messageList.length === 0) {
+      return (
+        <div className={styles.message}>
+          <div className={styles.messageHeader}>System</div>
+          <div>System is initializing...</div>
+        </div>
+      )
+    }
+
+    return messageList.map((message, index) => (
+      <div
+        key={index}
+        className={`${styles.message} ${
+          message.role === 'user' ? styles.userMessage : styles.assistantMessage
+        }`}
+      >
+        <div className={styles.messageHeader}>
+          {message.role === 'user' ? 'You' : 'Assistant'}
+        </div>
+        {message.role === 'user' ? (
+          <div>{message.content}</div>
+        ) : (
+          <ReactMarkdown>{message.content}</ReactMarkdown>
+        )}
+      </div>
+    ))
   }
 
   return (
@@ -139,70 +196,61 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
         </FormControl>
       </div>
 
-      {isVideoMode ? (
-        <div style={{ flex: 1, background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-          Video Feed Will Appear Here
-        </div>
-      ) : (
-        <div className={styles.messagesContainer} style={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 200px)' }}>
-          {messages.length === 0 ? (
-            <div className={styles.message}>
-              <div className={styles.messageHeader}>System</div>
-              <div>System is initializing...</div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+        {isVideoMode ? (
+          <div style={{ flex: 1, background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '1.2rem',
+              textAlign: 'center',
+              padding: '1rem'
+            }}>
+              Video Feed Will Appear Here
             </div>
-          ) : (
-            messages.map((message, index) => (
-              <div
-                key={index}
-                className={`${styles.message} ${
-                  message.role === 'user' ? styles.userMessage : styles.assistantMessage
-                }`}
-              >
-                <div className={styles.messageHeader}>
-                  {message.role === 'user' ? 'You' : 'Assistant'}
-                </div>
-                {message.role === 'user' ? (
-                  <div>{message.content}</div>
-                ) : (
-                  <ReactMarkdown>{message.content}</ReactMarkdown>
-                )}
+          </div>
+        ) : (
+          <div className={styles.messagesContainer} style={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 200px)' }}>
+            {renderMessages(messages)}
+            {isAssistantTyping && (
+              <div className={styles.typingIndicator}>
+                Assistant is typing
+                <span className={styles.typingDot}></span>
+                <span className={styles.typingDot}></span>
+                <span className={styles.typingDot}></span>
               </div>
-            ))
-          )}
-          {isAssistantTyping && (
-            <div className={styles.typingIndicator}>
-              Assistant is typing
-              <span className={styles.typingDot}></span>
-              <span className={styles.typingDot}></span>
-              <span className={styles.typingDot}></span>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-      )}
-      
-      <div className={styles.inputContainer} style={{ position: 'sticky', bottom: 0, background: 'white', padding: '1rem 0' }}>
-        {isWaitingForInput && (
-          <div className={styles.inputPrompt}>
-            {inputPrompt}
+            )}
+            <div ref={messagesEndRef} />
           </div>
         )}
-        <input
-          ref={inputRef}
-          className={styles.input}
-          placeholder={isWaitingForInput ? "Type your response..." : "Type your message..."}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-          disabled={!isConnected}
-        />
-        <button
-          className={styles.button}
-          onClick={handleSend}
-          disabled={!isConnected}
-        >
-          Send
-        </button>
+        {/* Input area always visible at the bottom */}
+        <div className={styles.inputContainer} style={{ position: 'sticky', bottom: 0, background: 'white', padding: '1rem 0' }}>
+          {isWaitingForInput && (
+            <div className={styles.inputPrompt}>
+              {inputPrompt}
+            </div>
+          )}
+          <input
+            ref={inputRef}
+            className={styles.input}
+            placeholder={isWaitingForInput ? "Type your response..." : "Type your message..."}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            disabled={!isConnected}
+          />
+          <button
+            className={styles.button}
+            onClick={handleSend}
+            disabled={!isConnected}
+          >
+            Send
+          </button>
+        </div>
       </div>
     </div>
   )

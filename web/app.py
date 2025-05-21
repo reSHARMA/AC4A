@@ -379,102 +379,94 @@ def handle_message(data):
     global conversation_history, new_session_needed
     logger.info(f"Received message: {data}")
     user_message = data.get('content', '')
-    logger.info(f"User message: {user_message}")
+    is_video_mode = data.get('isVideoMode', False)
+    logger.info(f"User message in {'video' if is_video_mode else 'chat'} mode: {user_message}")
     
     # Check if we need to initialize a new session
-    if new_session_needed or not is_agent_session_active():
-        logger.info("Initializing new agent session because we received a user message but the agent session is not active")
+    if new_session_needed or not is_agent_session_active(is_video_mode):
+        logger.info(f"Initializing new {'video' if is_video_mode else 'agent'} session")
         # Make sure the agent session is fully reset before initializing a new one
-        if is_agent_session_active():
-            logger.info("Agent session is active, but a reset was requested")
+        if is_agent_session_active(is_video_mode):
+            logger.info(f"{'Video' if is_video_mode else 'Agent'} session is active, but a reset was requested")
             reset_agent_session()
         initialize_agent_session()
     
     # Check if the agent is waiting for input
-    if is_agent_waiting_for_input():
-        logger.info("Agent is waiting for input, submitting user message")
-        submit_user_input(user_message)
-        set_agent_waiting_for_input(False)
+    if is_agent_waiting_for_input(is_video_mode):
+        logger.info(f"{'Video' if is_video_mode else 'Agent'} is waiting for input, submitting user message")
+        submit_user_input(user_message, is_video_mode)
+        set_agent_waiting_for_input(False, is_video_mode)
     
     # Add user message to conversation history but don't emit it
     # The frontend already displays user messages on the right side
     conversation_history.append({"role": "user", "content": user_message})
-    
-# Function to check for input requests from the agent
+
 def check_for_input_requests():
-    global new_session_needed
+    """Check for input requests from the agent"""
+    global new_session_needed, conversation_history
+    
     while True:
         try:
-            # Check if we need to initialize a new session
-            if new_session_needed:
-                logger.info("New session needed, initializing")
-                # Make sure the agent session is fully reset before initializing a new one
-                if is_agent_session_active():
-                    logger.info("Agent session still active, resetting first")
-                    reset_agent_session()
-                initialize_agent_session()
-                new_session_needed = False
-                logger.info("New session initialized")
-            
-            # Only check for input requests if the agent session is active
-            if is_agent_session_active():
-                logger.info("Agent session is active, checking for input requests and messages")
-                # Check if agent is waiting for input
-                if is_agent_waiting_for_input():
-                    input_request = get_next_input_request()
-                    if input_request:
-                        logger.info(f"Received input request from agent: {input_request}")
-                        set_agent_waiting_for_input(True)
-                        # Emit the input request to the web UI
-                        logger.info(f"Emitting input request to web UI: {input_request}")
-                        socketio.emit('input_request', {"prompt": input_request})
-                
-                # Check for agent messages
-                agent_message = get_next_agent_message()
-                if agent_message:
-                    logger.info(f"Received agent message: {agent_message}")
+            # Check both chat and video mode sessions
+            for is_video_mode in [False, True]:
+                if is_agent_session_active(is_video_mode):
+                    logger.info(f"{'Video' if is_video_mode else 'Agent'} session is active, checking for input requests and messages")
+                    # Check if agent is waiting for input
+                    if is_agent_waiting_for_input(is_video_mode):
+                        input_request = get_next_input_request(is_video_mode)
+                        if input_request:
+                            logger.info(f"Received input request from {'video' if is_video_mode else 'agent'}: {input_request}")
+                            set_agent_waiting_for_input(True, is_video_mode)
+                            # Emit the input request to the web UI
+                            logger.info(f"Emitting input request to web UI: {input_request}")
+                            socketio.emit('input_request', {"prompt": input_request, "isVideoMode": is_video_mode})
                     
-                    # Check for termination messages
-                    if "termination" in agent_message.lower():
-                        logger.info(f"Agent terminated: {agent_message}")
-                        # Set the new session flag
-                        new_session_needed = True
-                        # Emit the termination message
-                        socketio.emit('message', {"role": "System", "content": agent_message})
-                        # Add a small delay to prevent rapid cycling
-                        eventlet.sleep(1)
-                        continue
-                    
-                    # Extract the agent name and content from the message
-                    agent_name = "Assistant"  # Default role
-                    content = agent_message
-                    
-                    # Check if the message starts with an agent name followed by a colon
-                    if ": " in agent_message:
-                        parts = agent_message.split(": ", 1)
-                        agent_name = parts[0]
-                        content = parts[1]
-                    
-                    # Skip user messages to prevent duplication
-                    if agent_name == "User":
-                        logger.info(f"[app.py] Skipping user message to prevent duplication: {content}")
-                        continue
-                    
-                    # Skip system messages about awaiting user input
-                    if agent_name == "System" and "Awaiting user input" in content:
-                        logger.info("Skipping system message about awaiting user input")
-                        continue
-                    
-                    # Add message to conversation history
-                    conversation_history.append({"role": agent_name, "content": content})
-                    
-                    # Emit the message to the web UI
-                    socketio.emit('message', {"role": agent_name, "content": content})
-            else:
-                logger.info("Agent session not active, skipping check for input requests and flushing agent message queue")
-                while remaining_message := get_next_agent_message():
-                    logger.info(f"Flushing remaining message from agent message queue: {remaining_message}")
-                    socketio.emit('message', {"role": "System", "content": remaining_message})
+                    # Check for agent messages
+                    agent_message = get_next_agent_message(is_video_mode)
+                    if agent_message:
+                        logger.info(f"Received {'video' if is_video_mode else 'agent'} message: {agent_message}")
+                        
+                        # Check for termination messages
+                        if "termination" in agent_message.lower():
+                            logger.info(f"{'Video' if is_video_mode else 'Agent'} terminated: {agent_message}")
+                            # Set the new session flag
+                            new_session_needed = True
+                            # Emit the termination message
+                            socketio.emit('message', {"role": "System", "content": agent_message, "isVideoMode": is_video_mode})
+                            # Add a small delay to prevent rapid cycling
+                            eventlet.sleep(1)
+                            continue
+                        
+                        # Extract the agent name and content from the message
+                        agent_name = "Assistant"  # Default role
+                        content = agent_message
+                        
+                        # Check if the message starts with an agent name followed by a colon
+                        if ": " in agent_message:
+                            parts = agent_message.split(": ", 1)
+                            agent_name = parts[0]
+                            content = parts[1]
+                        
+                        # Skip user messages to prevent duplication
+                        if agent_name == "User":
+                            logger.info(f"[app.py] Skipping user message to prevent duplication: {content}")
+                            continue
+                        
+                        # Skip system messages about awaiting user input
+                        if agent_name == "System" and "Awaiting user input" in content:
+                            logger.info("Skipping system message about awaiting user input")
+                            continue
+                        
+                        # Add message to conversation history
+                        conversation_history.append({"role": agent_name, "content": content})
+                        
+                        # Emit the message to the web UI
+                        socketio.emit('message', {"role": agent_name, "content": content, "isVideoMode": is_video_mode})
+                else:
+                    logger.info(f"{'Video' if is_video_mode else 'Agent'} session not active, skipping check for input requests and flushing message queue")
+                    while remaining_message := get_next_agent_message(is_video_mode):
+                        logger.info(f"Flushing remaining message from {'video' if is_video_mode else 'agent'} message queue: {remaining_message}")
+                        socketio.emit('message', {"role": "System", "content": remaining_message, "isVideoMode": is_video_mode})
 
             # Add a small delay to prevent CPU hogging
             eventlet.sleep(1.0)

@@ -70,6 +70,7 @@ def generate_permission(content: str) -> str:
                     success = agent_manager.policy_system.add_policies_from_text(permission, agent_manager)
                     if not success:
                         logger.info(f"[agent_core.py] Failed to add permission: {permission}")
+
             emit_policy_update()
 
 async def run_agent() -> str:
@@ -202,8 +203,6 @@ async def run_agent() -> str:
                                 else:
                                     formatted_message = f"{source}: {content}"
                             
-                            # Emit policy update after processing planner message
-                            emit_policy_update()
                         elif source == "User":
                             # Skip user messages to prevent duplication
                             continue

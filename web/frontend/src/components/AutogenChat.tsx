@@ -199,19 +199,16 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
         {isVideoMode ? (
           <div style={{ flex: 1, background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontSize: '1.2rem',
-              textAlign: 'center',
-              padding: '1rem'
-            }}>
-              Video Feed Will Appear Here
-            </div>
+            <iframe
+              src="http://localhost:6080/vnc.html?host=localhost&port=6080"
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                backgroundColor: 'black'
+              }}
+              title="VNC Browser View"
+            />
           </div>
         ) : (
           <div className={styles.messagesContainer} style={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 200px)' }}>

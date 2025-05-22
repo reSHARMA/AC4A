@@ -217,21 +217,23 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
                 <div>Connecting to browser...</div>
               </div>
             )}
-            <iframe
-              src="http://localhost:6080/vnc_lite.html?autoconnect=true&host=localhost&port=6080&resize=scale"
-              style={{
-                width: '100%',
-                height: '100%',
-                border: 'none',
-                backgroundColor: 'black',
-                opacity: isVncLoading ? 0 : 1,
-                transition: 'opacity 0.3s ease-in-out'
-              }}
-              title="VNC Browser View"
-              onLoad={(e) => {
-                setIsVncLoading(false);
-              }}
-            />
+            <div className="vnc-iframe-wrapper" style={{ width: '100%' }}>
+              <iframe
+                src="http://localhost:6080/vnc_lite.html?autoconnect=true&host=localhost&port=6080&resize=scale"
+                style={{
+                  border: 'none',
+                  backgroundColor: 'black',
+                  opacity: isVncLoading ? 0 : 1,
+                  transition: 'opacity 0.3s ease-in-out',
+                  width: '100%',
+                  height: '100%'
+                }}
+                title="VNC Browser View"
+                onLoad={(e) => {
+                  setIsVncLoading(false);
+                }}
+              />
+            </div>
           </div>
         ) : (
           <div className={styles.messagesContainer} style={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 200px)' }}>

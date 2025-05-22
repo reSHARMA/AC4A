@@ -3,6 +3,9 @@
 # Exit on error
 set -e
 
+# Get script directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
 # Define installation directories
 INSTALL_DIR="$HOME/browser-remote"
 MINICONDA_DIR="$HOME/miniconda3"
@@ -108,7 +111,7 @@ fi
 
 # Copy our custom VNC viewer
 echo "Copying custom VNC viewer..."
-cp "$(dirname "$0")/vnc_lite.html" "$INSTALL_DIR/noVNC/vnc_lite.html"
+cp "${SCRIPT_DIR}/vnc_lite.html" "$INSTALL_DIR/noVNC/vnc_lite.html"
 
 # Step 7: Start Xvfb
 echo "Starting Xvfb..."

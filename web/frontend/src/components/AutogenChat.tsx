@@ -26,6 +26,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [isAssistantTyping, setIsAssistantTyping] = useState(false)
+  const [isVncLoading, setIsVncLoading] = useState(true)
 
   // Function to add message to the appropriate queue
   const addMessage = (message: Message) => {
@@ -198,16 +199,36 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
         {isVideoMode ? (
-          <div style={{ flex: 1, background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ flex: 1, background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+            {isVncLoading && (
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                zIndex: 1,
+                color: 'white',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '1rem'
+              }}>
+                <div className={styles.typingDot}></div>
+                <div>Connecting to browser...</div>
+              </div>
+            )}
             <iframe
-              src="http://localhost:6080/vnc.html?host=localhost&port=6080"
+              src="http://localhost:6080/vnc.html?autoconnect=true&host=localhost&port=6080"
               style={{
                 width: '100%',
                 height: '100%',
                 border: 'none',
-                backgroundColor: 'black'
+                backgroundColor: 'black',
+                opacity: isVncLoading ? 0 : 1,
+                transition: 'opacity 0.3s ease-in-out'
               }}
               title="VNC Browser View"
+              onLoad={() => setIsVncLoading(false)}
             />
           </div>
         ) : (

@@ -106,6 +106,10 @@ if [ ! -d "$INSTALL_DIR/noVNC" ]; then
     git clone https://github.com/novnc/websockify noVNC/utils/websockify
 fi
 
+# Copy our custom VNC viewer
+echo "Copying custom VNC viewer..."
+cp "$(dirname "$0")/vnc_lite.html" "$INSTALL_DIR/noVNC/vnc_lite.html"
+
 # Step 7: Start Xvfb
 echo "Starting Xvfb..."
 Xvfb :99 -screen 0 1280x720x24 &

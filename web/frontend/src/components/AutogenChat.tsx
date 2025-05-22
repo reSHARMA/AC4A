@@ -228,7 +228,9 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
                 transition: 'opacity 0.3s ease-in-out'
               }}
               title="VNC Browser View"
-              onLoad={() => setIsVncLoading(false)}
+              onLoad={(e) => {
+                setIsVncLoading(false);
+              }}
             />
           </div>
         ) : (

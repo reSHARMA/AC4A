@@ -218,7 +218,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
               </div>
             )}
             <iframe
-              src="http://localhost:6080/vnc.html?autoconnect=true&host=localhost&port=6080"
+              src="http://localhost:6080/vnc_lite.html?autoconnect=true&host=localhost&port=6080&resize=scale"
               style={{
                 width: '100%',
                 height: '100%',

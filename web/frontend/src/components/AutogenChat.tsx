@@ -199,7 +199,17 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
         {isVideoMode ? (
-          <div style={{ width: '100%', display: 'flex', justifyContent: 'center', background: 'black' }}>
+          <div style={{ 
+            width: '480px',
+            height: '360px',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            background: 'black',
+            position: 'relative',
+            transform: 'none',
+            margin: '0 auto'
+          }}>
             {isVncLoading && (
               <div style={{
                 position: 'absolute',
@@ -217,16 +227,24 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
                 <div>Connecting to browser...</div>
               </div>
             )}
-            <div className="vnc-iframe-wrapper">
+            <div className="vnc-iframe-wrapper" style={{
+              width: '480px',
+              height: '360px',
+              transform: 'none',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
               <iframe
-                src="http://localhost:6080/vnc_lite.html?autoconnect=true&host=localhost&port=6080&resize=scale"
+                src="http://localhost:6080/vnc_lite.html?autoconnect=true"
                 style={{
                   border: 'none',
                   backgroundColor: 'black',
                   opacity: isVncLoading ? 0 : 1,
                   transition: 'opacity 0.3s ease-in-out',
-                  width: '100%',
-                  height: '100%'
+                  width: '480px',
+                  height: '360px',
+                  transform: 'none',
+                  position: 'relative'
                 }}
                 title="VNC Browser View"
                 onLoad={() => setIsVncLoading(false)}

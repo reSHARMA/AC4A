@@ -11,6 +11,7 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
+            transform: none;
         }
         html {
             margin: 0;
@@ -29,6 +30,8 @@
             height: 100%;
             overflow: hidden;
             background-color: black;
+            transform: none;
+            position: relative;
         }
 
         #screen canvas {
@@ -36,6 +39,7 @@
             height: 100% !important;
             object-fit: contain !important;
             display: block;
+            transform: none;
         }
     </style>
 
@@ -115,7 +119,7 @@
                       { 
                           credentials: { password: password },
                           showStatus: false,
-                          scaleViewport: true,
+                          scaleViewport: false,
                           resizeSession: false,
                           dragViewport: false,
                           clipViewport: false

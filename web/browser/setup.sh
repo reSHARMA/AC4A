@@ -115,7 +115,7 @@ cp "${SCRIPT_DIR}/vnc_lite.html" "$INSTALL_DIR/noVNC/vnc_lite.html"
 
 # Step 7: Start Xvfb
 echo "Starting Xvfb..."
-Xvfb :99 -screen 0 1280x720x24 &
+Xvfb :99 -screen 0 480x360x24 &
 XVFB_PID=$!
 
 # Wait for Xvfb to start
@@ -138,7 +138,7 @@ xauth generate :99 . trusted
 echo "Launching browser..."
 cd "$INSTALL_DIR/playwright-project"
 export PLAYWRIGHT_BROWSERS_PATH="$INSTALL_DIR/playwright-browsers"
-npx playwright open https://example.com &
+npx playwright open --viewport-size=480,360 https://example.com &
 BROWSER_PID=$!
 
 # Wait for browser to start

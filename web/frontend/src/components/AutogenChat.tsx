@@ -22,6 +22,8 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
   const [inputPrompt, setInputPrompt] = useState('')
   const [isVideoMode, setIsVideoMode] = useState(false)
   const [videoMessages, setVideoMessages] = useState<Message[]>([])
+  const [videoInputPrompt, setVideoInputPrompt] = useState('')
+  const [isVideoWaitingForInput, setIsVideoWaitingForInput] = useState(false)
   const socketRef = useRef<Socket | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -63,8 +65,13 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
       console.log('Received input request:', data)
       // Only handle input requests for the current mode
       if (data.isVideoMode === isVideoMode) {
-        setIsWaitingForInput(true)
-        setInputPrompt(data.prompt)
+        if (data.isVideoMode) {
+          setIsVideoWaitingForInput(true)
+          setVideoInputPrompt(data.prompt)
+        } else {
+          setIsWaitingForInput(true)
+          setInputPrompt(data.prompt)
+        }
         setIsAssistantTyping(false)
         
         // Add the prompt as a system message to the current mode's queue
@@ -159,7 +166,11 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
     // Add it to the appropriate queue
     addMessage(message)
     setInput('')
-    setIsWaitingForInput(false)
+    if (isVideoMode) {
+      setIsVideoWaitingForInput(false)
+    } else {
+      setIsWaitingForInput(false)
+    }
     setIsAssistantTyping(true)
   }
 
@@ -368,15 +379,26 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
         )}
         {/* Input area always visible at the bottom */}
         <div className={styles.inputContainer} style={{ position: 'sticky', bottom: 0, background: 'white', padding: '1rem 0' }}>
-          {isWaitingForInput && (
-            <div className={styles.inputPrompt}>
-              {inputPrompt}
-            </div>
+          {isVideoMode ? (
+            isVideoWaitingForInput && (
+              <div className={styles.inputPrompt}>
+                {videoInputPrompt}
+              </div>
+            )
+          ) : (
+            isWaitingForInput && (
+              <div className={styles.inputPrompt}>
+                {inputPrompt}
+              </div>
+            )
           )}
           <input
             ref={inputRef}
             className={styles.input}
-            placeholder={isWaitingForInput ? "Type your response..." : "Type your message..."}
+            placeholder={isVideoMode ? 
+              (isVideoWaitingForInput ? "Type your response..." : "Type your message...") :
+              (isWaitingForInput ? "Type your response..." : "Type your message...")
+            }
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}

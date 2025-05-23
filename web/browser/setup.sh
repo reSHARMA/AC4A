@@ -203,29 +203,8 @@ async function takeScreenshot() {
       scale: 'device'
     });
 
-    // Set up mutation observer
-    await page.evaluate(() => {
-      let lastChangeTime = Date.now();
-      const debounceTime = 500;
-      
-      const observer = new MutationObserver((mutations) => {
-        const now = Date.now();
-        if (now - lastChangeTime >= debounceTime) {
-          lastChangeTime = now;
-          window.dispatchEvent(new CustomEvent('domChanged'));
-        }
-      });
-
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        characterData: true
-      });
-    });
-
-    // Expose screenshot function to page context
-    await page.exposeFunction('takeScreenshot', async () => {
+    // Keep taking screenshots every second
+    while (true) {
       await page.screenshot({ 
         path: process.argv[2],
         fullPage: false,
@@ -233,17 +212,8 @@ async function takeScreenshot() {
         type: 'png',
         scale: 'device'
       });
-    });
-
-    // Listen for DOM changes
-    await page.evaluate(() => {
-      window.addEventListener('domChanged', async () => {
-        await window.takeScreenshot();
-      });
-    });
-
-    // Keep script running
-    await new Promise(() => {});
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
 
   } catch (error) {
     console.error('Screenshot failed:', error);
@@ -301,7 +271,7 @@ echo "Starting screenshot capture..."
       echo "Failed to save screenshot"
     fi
     
-    sleep 2
+    sleep 1  # Take screenshots every second
   done
 ) &
 SCREENSHOT_PID=$!

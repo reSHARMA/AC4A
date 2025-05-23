@@ -223,8 +223,8 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
           <>
             <div 
               style={{ 
-                width: '1024px',
-                height: '768px',
+                width: '563px',
+                height: '422px',
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',

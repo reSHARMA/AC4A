@@ -220,107 +220,130 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
         {isVideoMode ? (
-          <div 
-            style={{ 
-              width: '1024px',
-              height: '768px',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              background: 'transparent',
-              position: 'relative',
-              transform: 'none',
-              margin: '0 auto',
-              overflow: 'hidden'
-            }}
-          >
-            {/* Preview Image (Default, hidden when hovered) */}
-            <img
-              src={`http://localhost:8080/latest-preview.png?t=${previewTimestamp}`}
-              style={{
-                position: 'absolute',
-                width: '563px', // 55% of 1024
-                height: '422px', // 55% of 768
-                objectFit: 'cover',
-                opacity: shouldShowIframe ? 0 : 1,
-                pointerEvents: 'auto',
-                left: '-2.5%', // Slightly off the left edge
-                top: '0',
-                border: '2px solid #fff',
-                borderRadius: '4px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                zIndex: shouldShowIframe ? 0 : 2,
-                transition: 'opacity 0.3s ease-in-out, z-index 0s linear 0.3s'
-              }}
-              alt="Browser Preview"
-              onMouseEnter={() => setIsImageHovered(true)}
-              onMouseLeave={() => setIsImageHovered(false)}
-              onError={(e) => {
-                console.error('Failed to load preview image');
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-            {/* noVNC Session (always mounted, just hidden when not hovered) */}
+          <>
             <div 
-              className="vnc-iframe-wrapper" 
-              style={{
+              style={{ 
                 width: '1024px',
                 height: '768px',
-                position: 'fixed',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                overflow: 'hidden',
-                opacity: shouldShowIframe ? 1 : 0,
-                pointerEvents: shouldShowIframe ? 'auto' : 'none',
-                visibility: shouldShowIframe ? 'visible' : 'hidden',
-                zIndex: shouldShowIframe ? 9999 : -1,
-                display: shouldShowIframe ? 'block' : 'none',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
                 background: 'transparent',
-                transition: 'opacity 0.3s ease-in-out',
-                boxShadow: shouldShowIframe ? '0 0 20px rgba(0,0,0,0.3)' : 'none'
+                position: 'relative',
+                transform: 'none',
+                margin: '0 auto',
+                overflow: 'hidden'
               }}
-              onMouseEnter={() => setIsIframeHovered(true)}
-              onMouseLeave={handleIframeMouseLeave}
             >
-              <iframe
-                ref={iframeRef}
-                src="http://localhost:6080/vnc_lite.html?autoconnect=true"
+              {/* Preview Image (Default, hidden when hovered) */}
+              <img
+                src={`http://localhost:8080/latest-preview.png?t=${previewTimestamp}`}
                 style={{
-                  border: 'none',
-                  backgroundColor: 'black',
+                  position: 'absolute',
+                  width: '563px',
+                  height: '422px',
+                  objectFit: 'cover',
+                  opacity: shouldShowIframe ? 0 : 1,
+                  pointerEvents: 'auto',
+                  left: '-2.5%',
+                  top: '0',
+                  border: '2px solid #fff',
+                  borderRadius: '4px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                  zIndex: shouldShowIframe ? 0 : 2,
+                  transition: 'opacity 0.3s ease-in-out, z-index 0s linear 0.3s'
+                }}
+                alt="Browser Preview"
+                onMouseEnter={() => setIsImageHovered(true)}
+                onMouseLeave={() => setIsImageHovered(false)}
+                onError={(e) => {
+                  console.error('Failed to load preview image');
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+              {/* noVNC Session */}
+              <div 
+                className="vnc-iframe-wrapper" 
+                style={{
                   width: '1024px',
                   height: '768px',
-                  transform: 'none',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
+                  position: 'fixed',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  overflow: 'hidden',
+                  opacity: shouldShowIframe ? 1 : 0,
                   pointerEvents: shouldShowIframe ? 'auto' : 'none',
-                  borderRadius: '4px'
+                  visibility: shouldShowIframe ? 'visible' : 'hidden',
+                  zIndex: shouldShowIframe ? 9999 : -1,
+                  display: shouldShowIframe ? 'block' : 'none',
+                  background: 'transparent',
+                  transition: 'opacity 0.3s ease-in-out',
+                  boxShadow: shouldShowIframe ? '0 0 20px rgba(0,0,0,0.3)' : 'none'
                 }}
-                tabIndex={-1}
-                title="VNC Browser View"
-                onLoad={() => setIsVncLoading(false)}
-              />
-            </div>
-            {isVncLoading && shouldShowIframe && (
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                zIndex: 1,
-                color: 'white',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '1rem'
-              }}>
-                <div className={styles.typingDot}></div>
-                <div>Connecting to browser...</div>
+                onMouseEnter={() => setIsIframeHovered(true)}
+                onMouseLeave={handleIframeMouseLeave}
+              >
+                <iframe
+                  ref={iframeRef}
+                  src="http://localhost:6080/vnc_lite.html?autoconnect=true"
+                  style={{
+                    border: 'none',
+                    backgroundColor: 'black',
+                    width: '1024px',
+                    height: '768px',
+                    transform: 'none',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    pointerEvents: shouldShowIframe ? 'auto' : 'none',
+                    borderRadius: '4px'
+                  }}
+                  tabIndex={-1}
+                  title="VNC Browser View"
+                  onLoad={() => setIsVncLoading(false)}
+                />
               </div>
-            )}
-          </div>
+              {isVncLoading && shouldShowIframe && (
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  zIndex: 1,
+                  color: 'white',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '1rem'
+                }}>
+                  <div className={styles.typingDot}></div>
+                  <div>Connecting to browser...</div>
+                </div>
+              )}
+            </div>
+            {/* Browser Mode Message Container */}
+            <div className={styles.messagesContainer} style={{ 
+              flex: 1, 
+              overflowY: 'auto',
+              margin: '1rem auto',
+              background: 'white',
+              borderRadius: '8px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              padding: '1rem'
+            }}>
+              {renderMessages(videoMessages)}
+              {isAssistantTyping && isVideoMode && (
+                <div className={styles.typingIndicator}>
+                  Assistant is typing
+                  <span className={styles.typingDot}></span>
+                  <span className={styles.typingDot}></span>
+                  <span className={styles.typingDot}></span>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </>
         ) : (
           <div className={styles.messagesContainer} style={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 200px)' }}>
             {renderMessages(messages)}

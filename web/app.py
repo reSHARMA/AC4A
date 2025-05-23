@@ -404,19 +404,34 @@ def handle_message(data):
     logger.info(f"User message in {'video' if is_video_mode else 'chat'} mode: {user_message}")
     
     # Check if we need to initialize a new session
-    if new_session_needed or not is_agent_session_active(is_video_mode):
-        logger.info(f"Initializing new {'video' if is_video_mode else 'agent'} session")
-        # Make sure the agent session is fully reset before initializing a new one
-        if is_agent_session_active(is_video_mode):
-            logger.info(f"{'Video' if is_video_mode else 'Agent'} session is active, but a reset was requested")
-            reset_agent_session()
-        initialize_agent_session()
-    
-    # Check if the agent is waiting for input
-    if is_agent_waiting_for_input(is_video_mode):
-        logger.info(f"{'Video' if is_video_mode else 'Agent'} is waiting for input, submitting user message")
-        submit_user_input(user_message, is_video_mode)
-        set_agent_waiting_for_input(False, is_video_mode)
+    if is_video_mode:
+        if new_session_needed or not is_browser_agent_session_active():
+            logger.info("Initializing new browser session")
+            # Make sure the browser session is fully reset before initializing a new one
+            if is_browser_agent_session_active():
+                logger.info("Browser session is active, but a reset was requested")
+                reset_browser_session()
+            initialize_browser_session()
+        
+        # Check if the browser agent is waiting for input
+        if is_browser_agent_waiting_for_input():
+            logger.info("Browser agent is waiting for input, submitting user message")
+            submit_browser_user_input(user_message)
+            set_browser_agent_waiting_for_input(False)
+    else:
+        if new_session_needed or not is_agent_session_active():
+            logger.info("Initializing new chat session")
+            # Make sure the chat session is fully reset before initializing a new one
+            if is_agent_session_active():
+                logger.info("Chat session is active, but a reset was requested")
+                reset_agent_session()
+            initialize_agent_session()
+        
+        # Check if the chat agent is waiting for input
+        if is_agent_waiting_for_input():
+            logger.info("Chat agent is waiting for input, submitting user message")
+            submit_user_input(user_message)
+            set_agent_waiting_for_input(False)
     
     # Add user message to conversation history but don't emit it
     # The frontend already displays user messages on the right side

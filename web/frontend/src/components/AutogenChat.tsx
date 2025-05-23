@@ -27,6 +27,9 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isAssistantTyping, setIsAssistantTyping] = useState(false)
   const [isVncLoading, setIsVncLoading] = useState(true)
+  const [isHovered, setIsHovered] = useState(false)
+  const [previewTimestamp, setPreviewTimestamp] = useState(0)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
 
   // Function to add message to the appropriate queue
   const addMessage = (message: Message) => {
@@ -130,6 +133,14 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, videoMessages]) // Added videoMessages to dependencies
 
+  // Refresh preview every 2 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPreviewTimestamp(Date.now())
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [])
+
   const handleSend = () => {
     if (!input.trim() || !socketRef.current) return
 
@@ -199,17 +210,21 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
         {isVideoMode ? (
-          <div style={{ 
-            width: '480px',
-            height: '360px',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            background: 'black',
-            position: 'relative',
-            transform: 'none',
-            margin: '0 auto'
-          }}>
+          <div 
+            style={{ 
+              width: '480px',
+              height: '360px',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              background: 'black',
+              position: 'relative',
+              transform: 'none',
+              margin: '0 auto'
+            }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+          >
             {isVncLoading && (
               <div style={{
                 position: 'absolute',
@@ -227,20 +242,40 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
                 <div>Connecting to browser...</div>
               </div>
             )}
+            {/* Preview Image (Default) */}
+            <img
+              src={`http://localhost:8080/latest-preview.webp?t=${previewTimestamp}`}
+              style={{
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                opacity: isHovered ? 0 : 1,
+                transition: 'opacity 0.3s ease-in-out',
+                pointerEvents: 'none'
+              }}
+              alt="Browser Preview"
+              onError={(e) => {
+                console.error('Failed to load preview image');
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+            {/* noVNC Session (Hidden until hover) */}
             <div className="vnc-iframe-wrapper" style={{
               width: '480px',
               height: '360px',
               transform: 'none',
               position: 'relative',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              opacity: isHovered ? 1 : 0,
+              transition: 'opacity 0.3s ease-in-out'
             }}>
               <iframe
+                ref={iframeRef}
                 src="http://localhost:6080/vnc_lite.html?autoconnect=true"
                 style={{
                   border: 'none',
                   backgroundColor: 'black',
-                  opacity: isVncLoading ? 0 : 1,
-                  transition: 'opacity 0.3s ease-in-out',
                   width: '480px',
                   height: '360px',
                   transform: 'none',

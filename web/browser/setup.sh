@@ -14,7 +14,7 @@ ENV_NAME="browser-env"
 # Function to cleanup processes on script exit
 cleanup() {
     echo "Cleaning up processes..."
-    kill $XVFB_PID $BROWSER_PID $VNC_PID $NOVNC_PID 2>/dev/null || true
+    kill $XVFB_PID $BROWSER_PID $VNC_PID $NOVNC_PID $SCREENSHOT_PID $HTTP_PID 2>/dev/null || true
 }
 
 # Register cleanup function to run on script exit
@@ -31,8 +31,8 @@ fi
 # Remove existing browser-remote directory
 rm -rf "$INSTALL_DIR"
 
-# Create working directory
-mkdir -p "$INSTALL_DIR"
+# Create working directory and screenshots directory
+mkdir -p "$INSTALL_DIR/screenshots"
 cd "$INSTALL_DIR"
 
 # Step 1: Install Miniconda if not already installed
@@ -148,6 +148,64 @@ if ! kill -0 $BROWSER_PID 2>/dev/null; then
     exit 1
 fi
 
+# Create screenshot script
+cat > "$INSTALL_DIR/playwright-project/screenshot.js" << 'EOF'
+const { chromium } = require('playwright');
+
+async function waitForServer(url, maxRetries = 30) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) return true;
+    } catch (e) {
+      console.log(`Waiting for server... attempt ${i + 1}/${maxRetries}`);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+  return false;
+}
+
+async function takeScreenshot() {
+  // Wait for noVNC server to be ready
+  const serverReady = await waitForServer('http://localhost:6080/vnc_lite.html');
+  if (!serverReady) {
+    console.error('Failed to connect to noVNC server');
+    process.exit(1);
+  }
+
+  const browser = await chromium.launch();
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  
+  try {
+    // Navigate to the page
+    await page.goto('http://localhost:6080/vnc_lite.html');
+    
+    // Wait for the page to load
+    await page.waitForLoadState('networkidle');
+    
+    // Take screenshot
+    await page.screenshot({ 
+      path: process.argv[2],
+      fullPage: true
+    });
+  } catch (error) {
+    console.error('Screenshot failed:', error);
+    process.exit(1);
+  } finally {
+    await browser.close();
+  }
+}
+
+takeScreenshot().catch(console.error);
+EOF
+
+# Start HTTP server for preview images
+echo "Starting HTTP server for preview images..."
+cd "$INSTALL_DIR/screenshots"
+python3 -m http.server 8080 &
+HTTP_PID=$!
+
 # Step 11: Start x11vnc
 echo "Starting x11vnc..."
 x11vnc -display :99 -nopw -forever -shared -auth "$INSTALL_DIR/.Xauthority" &
@@ -172,6 +230,28 @@ if ! kill -0 $NOVNC_PID 2>/dev/null; then
     echo "Error: noVNC failed to start"
     exit 1
 fi
+
+# Start screenshot capture process
+echo "Starting screenshot capture..."
+(
+  while kill -0 $BROWSER_PID 2>/dev/null; do
+    echo "Taking screenshot..."
+    cd "$INSTALL_DIR/playwright-project"
+    node screenshot.js "$INSTALL_DIR/screenshots/temp-screenshot.png" 2>&1 | tee -a "$INSTALL_DIR/screenshots/screenshot.log"
+    
+    if [ $? -eq 0 ]; then
+      # Resize the image to 25% of original size
+      convert "$INSTALL_DIR/screenshots/temp-screenshot.png" -resize 25% "$INSTALL_DIR/screenshots/latest-preview.webp"
+      rm "$INSTALL_DIR/screenshots/temp-screenshot.png"
+      echo "Screenshot saved successfully"
+    else
+      echo "Failed to save screenshot"
+    fi
+    
+    sleep 2
+  done
+) &
+SCREENSHOT_PID=$!
 
 echo "✅ Setup complete! You can now access the browser at:"
 echo "http://localhost:6080/vnc.html"

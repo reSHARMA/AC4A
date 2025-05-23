@@ -247,13 +247,13 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
               src={`http://localhost:8080/latest-preview.webp?t=${previewTimestamp}`}
               style={{
                 position: 'absolute',
-                width: '256px', // 25% of 1024
-                height: '192px', // 25% of 768
+                width: '563px', // 55% of 1024
+                height: '422px', // 55% of 768
                 objectFit: 'cover',
                 opacity: isHovered ? 0 : 1,
                 transition: 'opacity 0.3s ease-in-out',
                 pointerEvents: 'none',
-                left: '0', // Top-left corner
+                left: '-2%', // Slightly off the left edge
                 top: '0',
                 border: '2px solid #fff',
                 borderRadius: '4px',

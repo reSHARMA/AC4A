@@ -175,32 +175,76 @@ async function takeScreenshot() {
 
   const browser = await chromium.launch({
     args: [
-      '--window-size=480,360',
-      '--window-position=0,0'
+      '--window-size=1024,768',
+      '--window-position=0,0',
+      '--force-device-scale-factor=1',
+      '--disable-gpu',
+      '--no-sandbox'
     ]
   });
   const context = await browser.newContext({
-    viewport: { width: 480, height: 360 }  // Match the Xvfb screen size
+    viewport: { width: 1024, height: 768 },
+    deviceScaleFactor: 1,
+    isMobile: false
   });
   const page = await context.newPage();
   
   try {
-    // Navigate to the page
     await page.goto('http://localhost:6080/vnc_lite.html');
-    
-    // Wait for the page to load
     await page.waitForLoadState('networkidle');
-    
-    // Wait for the VNC canvas to be ready
     await page.waitForSelector('#screen canvas', { timeout: 10000 });
-    
-    // Take screenshot with specific settings
+
+    // Take initial screenshot
     await page.screenshot({ 
       path: process.argv[2],
-      fullPage: false,  // Don't use fullPage as we want exact viewport size
-      omitBackground: true,  // Remove background for better quality
-      type: 'png'  // Use PNG for better quality
+      fullPage: false,
+      omitBackground: false,
+      type: 'png',
+      scale: 'device'
     });
+
+    // Set up mutation observer
+    await page.evaluate(() => {
+      let lastChangeTime = Date.now();
+      const debounceTime = 500;
+      
+      const observer = new MutationObserver((mutations) => {
+        const now = Date.now();
+        if (now - lastChangeTime >= debounceTime) {
+          lastChangeTime = now;
+          window.dispatchEvent(new CustomEvent('domChanged'));
+        }
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        characterData: true
+      });
+    });
+
+    // Expose screenshot function to page context
+    await page.exposeFunction('takeScreenshot', async () => {
+      await page.screenshot({ 
+        path: process.argv[2],
+        fullPage: false,
+        omitBackground: false,
+        type: 'png',
+        scale: 'device'
+      });
+    });
+
+    // Listen for DOM changes
+    await page.evaluate(() => {
+      window.addEventListener('domChanged', async () => {
+        await window.takeScreenshot();
+      });
+    });
+
+    // Keep script running
+    await new Promise(() => {});
+
   } catch (error) {
     console.error('Screenshot failed:', error);
     process.exit(1);
@@ -249,12 +293,9 @@ echo "Starting screenshot capture..."
   while kill -0 $BROWSER_PID 2>/dev/null; do
     echo "Taking screenshot..."
     cd "$INSTALL_DIR/playwright-project"
-    node screenshot.js "$INSTALL_DIR/screenshots/temp-screenshot.png" 2>&1 | tee -a "$INSTALL_DIR/screenshots/screenshot.log"
+    node screenshot.js "$INSTALL_DIR/screenshots/latest-preview.png" 2>&1 | tee -a "$INSTALL_DIR/screenshots/screenshot.log"
     
     if [ $? -eq 0 ]; then
-      # Resize the image to 25% of original size
-      convert "$INSTALL_DIR/screenshots/temp-screenshot.png" -resize 25% "$INSTALL_DIR/screenshots/latest-preview.webp"
-      rm "$INSTALL_DIR/screenshots/temp-screenshot.png"
       echo "Screenshot saved successfully"
     else
       echo "Failed to save screenshot"

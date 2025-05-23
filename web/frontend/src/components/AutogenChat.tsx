@@ -260,18 +260,19 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
               style={{
                 width: '1024px',
                 height: '768px',
-                transform: 'none',
-                position: 'absolute',
-                top: 0,
-                left: 0,
+                position: 'fixed',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
                 overflow: 'hidden',
                 opacity: shouldShowIframe ? 1 : 0,
                 pointerEvents: shouldShowIframe ? 'auto' : 'none',
                 visibility: shouldShowIframe ? 'visible' : 'hidden',
-                zIndex: shouldShowIframe ? 2 : -1,
+                zIndex: shouldShowIframe ? 9999 : -1,
                 display: shouldShowIframe ? 'block' : 'none',
                 background: 'transparent',
-                transition: 'opacity 0.3s ease-in-out'
+                transition: 'opacity 0.3s ease-in-out',
+                boxShadow: shouldShowIframe ? '0 0 20px rgba(0,0,0,0.3)' : 'none'
               }}
               onMouseEnter={() => setIsIframeHovered(true)}
               onMouseLeave={() => setIsIframeHovered(false)}
@@ -288,7 +289,8 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
                   position: 'absolute',
                   top: 0,
                   left: 0,
-                  pointerEvents: shouldShowIframe ? 'auto' : 'none'
+                  pointerEvents: shouldShowIframe ? 'auto' : 'none',
+                  borderRadius: '4px'
                 }}
                 tabIndex={-1}
                 title="VNC Browser View"

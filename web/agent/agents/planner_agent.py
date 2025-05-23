@@ -39,4 +39,4 @@ class PlannerAgent(BaseAgent):
         
         tools = []
         
-        super().__init__("Planner", system_message, tools, model_client, skip_permission_suffix=True) 
+        super().__init__("Planner", system_message, tools, model_client, skip_permission_suffix=True, skip_input_tool_description=True) 

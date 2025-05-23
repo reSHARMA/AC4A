@@ -210,7 +210,15 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
             <Switch
               id="video-toggle"
               isChecked={isVideoMode}
-              onChange={() => setIsVideoMode(!isVideoMode)}
+              onChange={() => {
+                setIsVideoMode(!isVideoMode)
+                // Clear messages when switching modes
+                if (!isVideoMode) {
+                  setVideoMessages([])
+                } else {
+                  setMessages([])
+                }
+              }}
               colorScheme="blue"
               size="md"
             />

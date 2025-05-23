@@ -137,11 +137,11 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, videoMessages]) // Added videoMessages to dependencies
 
-  // Refresh preview every 2 seconds
+  // Refresh preview every 1 second
   useEffect(() => {
     const interval = setInterval(() => {
       setPreviewTimestamp(Date.now())
-    }, 2000)
+    }, 1000)
     return () => clearInterval(interval)
   }, [])
 
@@ -162,6 +162,12 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
     setIsWaitingForInput(false)
     setIsAssistantTyping(true)
   }
+
+  const handleIframeMouseLeave = () => {
+    setIsIframeHovered(false);
+    // Force an immediate refresh of the preview
+    setPreviewTimestamp(Date.now());
+  };
 
   // Function to render messages from the current mode's queue
   const renderMessages = (messageList: Message[]) => {
@@ -275,7 +281,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
                 boxShadow: shouldShowIframe ? '0 0 20px rgba(0,0,0,0.3)' : 'none'
               }}
               onMouseEnter={() => setIsIframeHovered(true)}
-              onMouseLeave={() => setIsIframeHovered(false)}
+              onMouseLeave={handleIframeMouseLeave}
             >
               <iframe
                 ref={iframeRef}

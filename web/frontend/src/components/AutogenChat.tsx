@@ -27,9 +27,13 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isAssistantTyping, setIsAssistantTyping] = useState(false)
   const [isVncLoading, setIsVncLoading] = useState(true)
-  const [isHovered, setIsHovered] = useState(false)
+  const [isImageHovered, setIsImageHovered] = useState(false)
+  const [isIframeHovered, setIsIframeHovered] = useState(false)
   const [previewTimestamp, setPreviewTimestamp] = useState(0)
   const iframeRef = useRef<HTMLIFrameElement>(null)
+
+  // Compute if we should show the iframe
+  const shouldShowIframe = isImageHovered || isIframeHovered
 
   // Function to add message to the appropriate queue
   const addMessage = (message: Message) => {
@@ -223,8 +227,6 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
               margin: '0 auto',
               overflow: 'hidden'
             }}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
           >
             {/* Preview Image (Default, hidden when hovered) */}
             <img
@@ -234,39 +236,46 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
                 width: '563px', // 55% of 1024
                 height: '422px', // 55% of 768
                 objectFit: 'cover',
-                opacity: isHovered ? 0 : 1,
-                pointerEvents: isHovered ? 'none' : 'auto',
+                opacity: shouldShowIframe ? 0 : 1,
+                pointerEvents: 'auto',
                 left: '-2.5%', // Slightly off the left edge
                 top: '0',
                 border: '2px solid #fff',
                 borderRadius: '4px',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                zIndex: isHovered ? 0 : 2,
+                zIndex: shouldShowIframe ? 0 : 2,
                 transition: 'opacity 0.3s ease-in-out, z-index 0s linear 0.3s'
               }}
               alt="Browser Preview"
+              onMouseEnter={() => setIsImageHovered(true)}
+              onMouseLeave={() => setIsImageHovered(false)}
               onError={(e) => {
                 console.error('Failed to load preview image');
                 e.currentTarget.style.display = 'none';
               }}
             />
             {/* noVNC Session (always mounted, just hidden when not hovered) */}
-            <div className="vnc-iframe-wrapper" style={{
-              width: '1024px',
-              height: '768px',
-              transform: 'none',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              overflow: 'hidden',
-              opacity: isHovered ? 1 : 0,
-              pointerEvents: isHovered ? 'auto' : 'none',
-              visibility: isHovered ? 'visible' : 'hidden',
-              zIndex: isHovered ? 2 : -1,
-              display: isHovered ? 'block' : 'none',
-              background: 'transparent',
-              transition: 'opacity 0.3s ease-in-out'
-            }}>
+            <div 
+              className="vnc-iframe-wrapper" 
+              style={{
+                width: '1024px',
+                height: '768px',
+                transform: 'none',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                overflow: 'hidden',
+                opacity: shouldShowIframe ? 1 : 0,
+                pointerEvents: shouldShowIframe ? 'auto' : 'none',
+                visibility: shouldShowIframe ? 'visible' : 'hidden',
+                zIndex: shouldShowIframe ? 2 : -1,
+                display: shouldShowIframe ? 'block' : 'none',
+                background: 'transparent',
+                transition: 'opacity 0.3s ease-in-out'
+              }}
+              onMouseEnter={() => setIsIframeHovered(true)}
+              onMouseLeave={() => setIsIframeHovered(false)}
+            >
               <iframe
                 ref={iframeRef}
                 src="http://localhost:6080/vnc_lite.html?autoconnect=true"
@@ -278,14 +287,15 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
                   transform: 'none',
                   position: 'absolute',
                   top: 0,
-                  left: 0
+                  left: 0,
+                  pointerEvents: shouldShowIframe ? 'auto' : 'none'
                 }}
                 tabIndex={-1}
                 title="VNC Browser View"
                 onLoad={() => setIsVncLoading(false)}
               />
             </div>
-            {isVncLoading && isHovered && (
+            {isVncLoading && shouldShowIframe && (
               <div style={{
                 position: 'absolute',
                 top: '50%',

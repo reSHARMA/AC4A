@@ -115,7 +115,7 @@ cp "${SCRIPT_DIR}/vnc_lite.html" "$INSTALL_DIR/noVNC/vnc_lite.html"
 
 # Step 7: Start Xvfb
 echo "Starting Xvfb..."
-Xvfb :99 -screen 0 480x360x24 &
+Xvfb :99 -screen 0 1024x768x24 &
 XVFB_PID=$!
 
 # Wait for Xvfb to start
@@ -138,7 +138,7 @@ xauth generate :99 . trusted
 echo "Launching browser..."
 cd "$INSTALL_DIR/playwright-project"
 export PLAYWRIGHT_BROWSERS_PATH="$INSTALL_DIR/playwright-browsers"
-npx playwright open --viewport-size=480,360 https://example.com &
+npx playwright open --viewport-size=1024,768 https://example.com &
 BROWSER_PID=$!
 
 # Wait for browser to start
@@ -173,8 +173,15 @@ async function takeScreenshot() {
     process.exit(1);
   }
 
-  const browser = await chromium.launch();
-  const context = await browser.newContext();
+  const browser = await chromium.launch({
+    args: [
+      '--window-size=480,360',
+      '--window-position=0,0'
+    ]
+  });
+  const context = await browser.newContext({
+    viewport: { width: 480, height: 360 }  // Match the Xvfb screen size
+  });
   const page = await context.newPage();
   
   try {
@@ -184,10 +191,15 @@ async function takeScreenshot() {
     // Wait for the page to load
     await page.waitForLoadState('networkidle');
     
-    // Take screenshot
+    // Wait for the VNC canvas to be ready
+    await page.waitForSelector('#screen canvas', { timeout: 10000 });
+    
+    // Take screenshot with specific settings
     await page.screenshot({ 
       path: process.argv[2],
-      fullPage: true
+      fullPage: false,  // Don't use fullPage as we want exact viewport size
+      omitBackground: true,  // Remove background for better quality
+      type: 'png'  // Use PNG for better quality
     });
   } catch (error) {
     console.error('Screenshot failed:', error);

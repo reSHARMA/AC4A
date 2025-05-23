@@ -212,8 +212,8 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
         {isVideoMode ? (
           <div 
             style={{ 
-              width: '480px',
-              height: '360px',
+              width: '1024px',
+              height: '768px',
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
@@ -247,12 +247,17 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
               src={`http://localhost:8080/latest-preview.webp?t=${previewTimestamp}`}
               style={{
                 position: 'absolute',
-                width: '100%',
-                height: '100%',
+                width: '256px', // 25% of 1024
+                height: '192px', // 25% of 768
                 objectFit: 'cover',
                 opacity: isHovered ? 0 : 1,
                 transition: 'opacity 0.3s ease-in-out',
-                pointerEvents: 'none'
+                pointerEvents: 'none',
+                left: '0', // Top-left corner
+                top: '0',
+                border: '2px solid #fff',
+                borderRadius: '4px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
               }}
               alt="Browser Preview"
               onError={(e) => {
@@ -262,8 +267,8 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
             />
             {/* noVNC Session (Hidden until hover) */}
             <div className="vnc-iframe-wrapper" style={{
-              width: '480px',
-              height: '360px',
+              width: '1024px',
+              height: '768px',
               transform: 'none',
               position: 'relative',
               overflow: 'hidden',
@@ -276,8 +281,8 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
                 style={{
                   border: 'none',
                   backgroundColor: 'black',
-                  width: '480px',
-                  height: '360px',
+                  width: '1024px',
+                  height: '768px',
                   transform: 'none',
                   position: 'relative'
                 }}

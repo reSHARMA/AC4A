@@ -217,15 +217,75 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
-              background: 'black',
+              background: 'transparent',
               position: 'relative',
               transform: 'none',
-              margin: '0 auto'
+              margin: '0 auto',
+              overflow: 'hidden'
             }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
           >
-            {isVncLoading && (
+            {/* Preview Image (Default, hidden when hovered) */}
+            <img
+              src={`http://localhost:8080/latest-preview.webp?t=${previewTimestamp}`}
+              style={{
+                position: 'absolute',
+                width: '563px', // 55% of 1024
+                height: '422px', // 55% of 768
+                objectFit: 'cover',
+                opacity: isHovered ? 0 : 1,
+                pointerEvents: isHovered ? 'none' : 'auto',
+                left: '-2.5%', // Slightly off the left edge
+                top: '0',
+                border: '2px solid #fff',
+                borderRadius: '4px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                zIndex: isHovered ? 0 : 2,
+                transition: 'opacity 0.3s ease-in-out, z-index 0s linear 0.3s'
+              }}
+              alt="Browser Preview"
+              onError={(e) => {
+                console.error('Failed to load preview image');
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+            {/* noVNC Session (always mounted, just hidden when not hovered) */}
+            <div className="vnc-iframe-wrapper" style={{
+              width: '1024px',
+              height: '768px',
+              transform: 'none',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              overflow: 'hidden',
+              opacity: isHovered ? 1 : 0,
+              pointerEvents: isHovered ? 'auto' : 'none',
+              visibility: isHovered ? 'visible' : 'hidden',
+              zIndex: isHovered ? 2 : -1,
+              display: isHovered ? 'block' : 'none',
+              background: 'transparent',
+              transition: 'opacity 0.3s ease-in-out'
+            }}>
+              <iframe
+                ref={iframeRef}
+                src="http://localhost:6080/vnc_lite.html?autoconnect=true"
+                style={{
+                  border: 'none',
+                  backgroundColor: 'black',
+                  width: '1024px',
+                  height: '768px',
+                  transform: 'none',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0
+                }}
+                tabIndex={-1}
+                title="VNC Browser View"
+                onLoad={() => setIsVncLoading(false)}
+              />
+            </div>
+            {isVncLoading && isHovered && (
               <div style={{
                 position: 'absolute',
                 top: '50%',
@@ -242,54 +302,6 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
                 <div>Connecting to browser...</div>
               </div>
             )}
-            {/* Preview Image (Default) */}
-            <img
-              src={`http://localhost:8080/latest-preview.webp?t=${previewTimestamp}`}
-              style={{
-                position: 'absolute',
-                width: '563px', // 55% of 1024
-                height: '422px', // 55% of 768
-                objectFit: 'cover',
-                opacity: isHovered ? 0 : 1,
-                transition: 'opacity 0.3s ease-in-out',
-                pointerEvents: 'none',
-                left: '-2%', // Slightly off the left edge
-                top: '0',
-                border: '2px solid #fff',
-                borderRadius: '4px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-              }}
-              alt="Browser Preview"
-              onError={(e) => {
-                console.error('Failed to load preview image');
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-            {/* noVNC Session (Hidden until hover) */}
-            <div className="vnc-iframe-wrapper" style={{
-              width: '1024px',
-              height: '768px',
-              transform: 'none',
-              position: 'relative',
-              overflow: 'hidden',
-              opacity: isHovered ? 1 : 0,
-              transition: 'opacity 0.3s ease-in-out'
-            }}>
-              <iframe
-                ref={iframeRef}
-                src="http://localhost:6080/vnc_lite.html?autoconnect=true"
-                style={{
-                  border: 'none',
-                  backgroundColor: 'black',
-                  width: '1024px',
-                  height: '768px',
-                  transform: 'none',
-                  position: 'relative'
-                }}
-                title="VNC Browser View"
-                onLoad={() => setIsVncLoading(false)}
-              />
-            </div>
           </div>
         ) : (
           <div className={styles.messagesContainer} style={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 200px)' }}>

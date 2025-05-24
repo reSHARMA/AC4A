@@ -45,6 +45,9 @@ from src.utils.dummy_data import call_openai_api
 from web.utils.events import socketio, emit_policy_update
 from web.utils.socket_io import init_socketio
 
+# Import the browser_agent_core module
+from web.agent.browser_agent_core import process_browser_message, get_browser_chat_history, clear_browser_chat_history
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -646,38 +649,18 @@ def browser_chat():
         data = request.get_json()
         user_message = data.get('content', '')
         
-        # Check for termination
-        if user_message.lower() == 'terminate':
-            browser_chat_history.clear()
-            return jsonify({
-                "role": "system",
-                "content": "Chat session ended. Say Hi! to start a new session."
-            })
-        
-        # Add user message to history
-        browser_chat_history.append({
-            "role": "user",
-            "content": user_message
-        })
-        
-        # Simple response - length of message
-        response = {
-            "role": "assistant",
-            "content": f"Message length: {len(user_message)}"
-        }
-        
-        # Add response to history
-        browser_chat_history.append(response)
-        
+        # Process the message using browser_agent_core
+        response = process_browser_message(user_message)
         return jsonify(response)
+        
     except Exception as e:
         logger.error(f"Error in browser_chat: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/browser_chat_history', methods=['GET'])
-def get_browser_chat_history():
+def get_browser_chat_history_route():
     """Get the browser chat history"""
-    return jsonify({"history": browser_chat_history})
+    return jsonify({"history": get_browser_chat_history()})
 
 if __name__ == '__main__':
     # Don't initialize the agent session when the application starts

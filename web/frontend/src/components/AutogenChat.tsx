@@ -152,7 +152,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
         socketRef.current.disconnect()
       }
     }
-  }, [setMessages]) // Removed isVideoMode from dependencies
+  }, [setMessages, isVideoMode]) // Added isVideoMode to dependencies
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })

@@ -1,6 +1,5 @@
 import queue
 import logging
-import threading
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -30,15 +29,6 @@ agent_loop = None
 agent_initialized = False  # New flag to track if agent has been initialized
 last_input_request = None  # Track the last input request to avoid duplicate
 last_video_input_request = None  # Track the last video mode input request
-
-# Browser mode specific queues and flags
-browser_message_queue = queue.Queue()
-browser_input_request_queue = queue.Queue()
-browser_input_response_queue = queue.Queue()
-current_browser_input = None
-browser_session_active = False
-browser_waiting_for_input = False
-last_browser_input_request = None
 
 def get_next_input_request(is_video_mode=False):
     """Get the next input request from the queue"""
@@ -103,80 +93,3 @@ def set_agent_session_active(active: bool, is_video_mode=False):
     else:
         agent_session_active = active
         logger.info(f"Agent session active set to: {agent_session_active}")
-
-def get_next_browser_input_request():
-    """Get the next input request from the browser agent"""
-    global last_browser_input_request
-    try:
-        request = browser_input_request_queue.get_nowait()
-        last_browser_input_request = request
-        logger.info(f"Got browser input request: {request}")
-        return request
-    except queue.Empty:
-        return None
-
-def submit_browser_user_input(input_text: str):
-    """Submit user input to the browser agent"""
-    global current_browser_input
-    current_browser_input = input_text
-    browser_input_response_queue.put(input_text)
-    logger.info(f"Submitted browser user input: {input_text}")
-
-def get_next_browser_agent_message():
-    """Get the next message from the browser agent"""
-    try:
-        message = browser_message_queue.get_nowait()
-        logger.info(f"Got browser agent message: {message}")
-        return message
-    except queue.Empty:
-        return None
-
-def is_browser_agent_waiting_for_input():
-    """Check if the browser agent is waiting for input"""
-    return browser_waiting_for_input
-
-def set_browser_agent_waiting_for_input(waiting: bool):
-    """Set whether the browser agent is waiting for input"""
-    global browser_waiting_for_input
-    browser_waiting_for_input = waiting
-    logger.info(f"Set browser agent waiting for input: {waiting}")
-
-def is_browser_agent_session_active():
-    """Check if the browser agent session is active"""
-    return browser_session_active
-
-def set_browser_agent_session_active(active: bool):
-    """Set whether the browser agent session is active"""
-    global browser_session_active
-    browser_session_active = active
-    logger.info(f"Set browser agent session active: {active}")
-
-def reset_browser_queues():
-    """Reset all browser queues"""
-    global current_browser_input, browser_waiting_for_input, last_browser_input_request
-    
-    # Clear all queues
-    while not browser_message_queue.empty():
-        try:
-            browser_message_queue.get_nowait()
-        except queue.Empty:
-            break
-    
-    while not browser_input_request_queue.empty():
-        try:
-            browser_input_request_queue.get_nowait()
-        except queue.Empty:
-            break
-    
-    while not browser_input_response_queue.empty():
-        try:
-            browser_input_response_queue.get_nowait()
-        except queue.Empty:
-            break
-    
-    # Reset state
-    current_browser_input = None
-    browser_waiting_for_input = False
-    last_browser_input_request = None
-    
-    logger.info("Reset all browser queues")

@@ -27,8 +27,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
   const socketRef = useRef<Socket | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const [isChatAssistantTyping, setIsChatAssistantTyping] = useState(false)
-  const [isVideoAssistantTyping, setIsVideoAssistantTyping] = useState(false)
+  const [isAssistantTyping, setIsAssistantTyping] = useState(false)
   const [isVncLoading, setIsVncLoading] = useState(true)
   const [isImageHovered, setIsImageHovered] = useState(false)
   const [isIframeHovered, setIsIframeHovered] = useState(false)
@@ -69,12 +68,11 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
         if (data.isVideoMode) {
           setIsVideoWaitingForInput(true)
           setVideoInputPrompt(data.prompt)
-          setIsVideoAssistantTyping(false)
         } else {
           setIsWaitingForInput(true)
           setInputPrompt(data.prompt)
-          setIsChatAssistantTyping(false)
         }
+        setIsAssistantTyping(false)
         
         // Add the prompt as a system message to the current mode's queue
         const systemMessage = { role: 'System', content: data.prompt }
@@ -100,11 +98,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
         addMessage(message)
         // Check if message starts with "Chat Session Ended"
         if (message.content.startsWith('Chat Session Ended')) {
-          if (message.isVideoMode) {
-            setIsVideoAssistantTyping(false)
-          } else {
-            setIsChatAssistantTyping(false)
-          }
+          setIsAssistantTyping(false)
         }
       }
     })
@@ -122,11 +116,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
         addMessage(message)
         // Also check system messages for session end
         if (message.content.startsWith('Chat Session Ended')) {
-          if (message.isVideoMode) {
-            setIsVideoAssistantTyping(false)
-          } else {
-            setIsChatAssistantTyping(false)
-          }
+          setIsAssistantTyping(false)
         }
       }
     })
@@ -138,11 +128,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
         addMessage(message)
         // Check all messages for session end
         if (message.content.startsWith('Chat Session Ended')) {
-          if (message.isVideoMode) {
-            setIsVideoAssistantTyping(false)
-          } else {
-            setIsChatAssistantTyping(false)
-          }
+          setIsAssistantTyping(false)
         }
       }
     })
@@ -182,11 +168,10 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
     setInput('')
     if (isVideoMode) {
       setIsVideoWaitingForInput(false)
-      setIsVideoAssistantTyping(true)
     } else {
       setIsWaitingForInput(false)
-      setIsChatAssistantTyping(true)
     }
+    setIsAssistantTyping(true)
   }
 
   const handleIframeMouseLeave = () => {
@@ -238,8 +223,12 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
               isChecked={isVideoMode}
               onChange={() => {
                 setIsVideoMode(!isVideoMode)
-                // Don't clear messages when switching modes
-                // Just switch the view
+                // Clear messages when switching modes
+                if (!isVideoMode) {
+                  setVideoMessages([])
+                } else {
+                  setMessages([])
+                }
               }}
               colorScheme="blue"
               size="md"
@@ -363,7 +352,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
               padding: '1rem'
             }}>
               {renderMessages(videoMessages)}
-              {isVideoAssistantTyping && (
+              {isAssistantTyping && isVideoMode && (
                 <div className={styles.typingIndicator}>
                   Assistant is typing
                   <span className={styles.typingDot}></span>
@@ -377,7 +366,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
         ) : (
           <div className={styles.messagesContainer} style={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 200px)' }}>
             {renderMessages(messages)}
-            {isChatAssistantTyping && (
+            {isAssistantTyping && (
               <div className={styles.typingIndicator}>
                 Assistant is typing
                 <span className={styles.typingDot}></span>

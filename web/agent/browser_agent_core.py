@@ -1,10 +1,48 @@
 import logging
+from enum import Enum
+from typing import Dict, Any, Optional
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
+class MessageType(Enum):
+    """Types of messages that can be sent to the frontend"""
+    USER = "user"
+    ASSISTANT = "assistant"
+    SYSTEM = "system"
+    INTERNAL = "internal"  # For messages that should not be sent to frontend
+    DEBUG = "debug"  # For debugging messages
+    ERROR = "error"
+
+class MessageVisibility(Enum):
+    """Visibility levels for messages"""
+    PUBLIC = "public"  # Visible to all
+    INTERNAL = "internal"  # Only visible in logs
+    DEBUG = "debug"  # Only visible in debug mode
+
 # Store browser chat history
 browser_chat_history = []
+
+def create_message(content: str, role: str, msg_type: MessageType = MessageType.ASSISTANT, 
+                  visibility: MessageVisibility = MessageVisibility.PUBLIC) -> Dict[str, Any]:
+    """
+    Create a message with metadata
+    
+    Args:
+        content (str): The message content
+        role (str): The role of the sender
+        msg_type (MessageType): The type of message
+        visibility (MessageVisibility): The visibility level of the message
+        
+    Returns:
+        dict: Message with metadata
+    """
+    return {
+        "role": role,
+        "content": content,
+        "type": msg_type.value,
+        "visibility": visibility.value
+    }
 
 def handle_termination() -> dict:
     """
@@ -14,10 +52,11 @@ def handle_termination() -> dict:
         dict: Response containing role and content
     """
     clear_browser_chat_history()
-    return {
-        "role": "system",
-        "content": "Chat session ended. Say Hi! to start a new session."
-    }
+    return create_message(
+        content="Chat session ended. Say Hi! to start a new session.",
+        role="system",
+        msg_type=MessageType.SYSTEM
+    )
 
 def process_browser_message(user_message: str) -> dict:
     """
@@ -35,16 +74,19 @@ def process_browser_message(user_message: str) -> dict:
             return handle_termination()
             
         # Add user message to history
-        browser_chat_history.append({
-            "role": "user",
-            "content": user_message
-        })
+        user_msg = create_message(
+            content=user_message,
+            role="user",
+            msg_type=MessageType.USER
+        )
+        browser_chat_history.append(user_msg)
         
-        # Simple response - length of message
-        response = {
-            "role": "assistant",
-            "content": f"Message length: {len(user_message)}"
-        }
+        # Create response message
+        response = create_message(
+            content=f"Message length: {len(user_message)}",
+            role="assistant",
+            msg_type=MessageType.ASSISTANT
+        )
         
         # Add response to history
         browser_chat_history.append(response)
@@ -53,7 +95,11 @@ def process_browser_message(user_message: str) -> dict:
         
     except Exception as e:
         logger.error(f"Error processing browser message: {str(e)}", exc_info=True)
-        return {"error": str(e)}
+        return create_message(
+            content=str(e),
+            role="system",
+            msg_type=MessageType.ERROR
+        )
 
 def get_browser_chat_history() -> list:
     """

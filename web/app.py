@@ -46,7 +46,7 @@ from web.utils.events import socketio, emit_policy_update
 from web.utils.socket_io import init_socketio
 
 # Import the browser_agent_core module
-from web.agent.browser_agent_core import process_browser_message, get_browser_chat_history, clear_browser_chat_history
+from web.agent.browser_agent_core import process_browser_message, get_browser_chat_history, clear_browser_chat_history, create_message, MessageType
 
 # Configure logging
 logging.basicConfig(
@@ -642,25 +642,66 @@ def get_logs():
         logger.error(f"Error in get_logs: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-@app.route('/browser_chat', methods=['POST'])
+def emit_message(message: dict, room: str = None) -> None:
+    """
+    Emit a message to the frontend, filtering based on message type and visibility
+    
+    Args:
+        message (dict): The message to emit
+        room (str, optional): The room to emit to. Defaults to None.
+    """
+    # Skip internal messages
+    if message.get("visibility") == "internal":
+        return
+        
+    # Only emit debug messages in debug mode
+    if message.get("visibility") == "debug" and not app.debug:
+        return
+        
+    # Emit the message
+    if room:
+        socketio.emit("agent_message", message, room=room)
+    else:
+        socketio.emit("agent_message", message)
+
+@app.route("/browser_chat", methods=["POST"])
 def browser_chat():
-    """Handle messages from the browser chat"""
+    """Handle browser chat messages"""
     try:
         data = request.get_json()
-        user_message = data.get('content', '')
+        user_message = data.get("content", "")  # Changed from "message" to "content"
         
-        # Process the message using browser_agent_core
+        # Process the message
         response = process_browser_message(user_message)
-        return jsonify(response)
         
+        # Emit the response
+        emit_message(response)
+        
+        return jsonify(response)
     except Exception as e:
         logger.error(f"Error in browser_chat: {str(e)}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
+        error_msg = create_message(
+            content=str(e),
+            role="system",
+            msg_type=MessageType.ERROR
+        )
+        emit_message(error_msg)
+        return jsonify(error_msg), 500
 
-@app.route('/browser_chat_history', methods=['GET'])
-def get_browser_chat_history_route():
-    """Get the browser chat history"""
-    return jsonify({"history": get_browser_chat_history()})
+@app.route("/browser_chat_history", methods=["GET"])
+def get_browser_chat_history():
+    """Get browser chat history"""
+    try:
+        history = get_browser_chat_history()
+        # Filter out internal messages before sending to frontend
+        filtered_history = [
+            msg for msg in history 
+            if msg.get("visibility") != "internal"
+        ]
+        return jsonify(filtered_history)
+    except Exception as e:
+        logger.error(f"Error getting browser chat history: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     # Don't initialize the agent session when the application starts

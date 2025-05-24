@@ -1,6 +1,8 @@
 import logging
 from enum import Enum
 from typing import Dict, Any, Optional
+import requests
+from datetime import datetime
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -114,4 +116,24 @@ def clear_browser_chat_history() -> None:
     """
     Clear the browser chat history
     """
-    browser_chat_history.clear() 
+    browser_chat_history.clear()
+
+def get_latest_screenshot() -> bytes:
+    """
+    Get the latest screenshot from the browser preview server
+    
+    Returns:
+        bytes: Raw PNG image data
+    """
+    try:
+        # Get the latest screenshot from the preview server
+        response = requests.get('http://localhost:8080/latest-preview.png')
+        
+        if response.status_code == 200:
+            return response.content
+        else:
+            logger.error(f"Failed to get screenshot: {response.status_code}")
+            return b''
+    except Exception as e:
+        logger.error(f"Error getting screenshot: {str(e)}", exc_info=True)
+        return b'' 

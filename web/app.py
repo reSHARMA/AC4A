@@ -96,6 +96,9 @@ socketio = init_socketio(app)
 # Store conversation history
 conversation_history = []
 
+# Store browser chat history
+browser_chat_history = []
+
 # Flag to track if a new session is needed
 new_session_needed = False
 
@@ -635,6 +638,46 @@ def get_logs():
     except Exception as e:
         logger.error(f"Error in get_logs: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
+
+@app.route('/browser_chat', methods=['POST'])
+def browser_chat():
+    """Handle messages from the browser chat"""
+    try:
+        data = request.get_json()
+        user_message = data.get('content', '')
+        
+        # Check for termination
+        if user_message.lower() == 'terminate':
+            browser_chat_history.clear()
+            return jsonify({
+                "role": "system",
+                "content": "Chat session ended. Say Hi! to start a new session."
+            })
+        
+        # Add user message to history
+        browser_chat_history.append({
+            "role": "user",
+            "content": user_message
+        })
+        
+        # Simple response - length of message
+        response = {
+            "role": "assistant",
+            "content": f"Message length: {len(user_message)}"
+        }
+        
+        # Add response to history
+        browser_chat_history.append(response)
+        
+        return jsonify(response)
+    except Exception as e:
+        logger.error(f"Error in browser_chat: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/browser_chat_history', methods=['GET'])
+def get_browser_chat_history():
+    """Get the browser chat history"""
+    return jsonify({"history": browser_chat_history})
 
 if __name__ == '__main__':
     # Don't initialize the agent session when the application starts

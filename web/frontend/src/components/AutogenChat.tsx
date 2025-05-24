@@ -45,10 +45,11 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
       setMessages(prev => [...prev, message])
     }
   }
+  
+  const port = import.meta.env.VITE_PORT || 5000;
 
   useEffect(() => {
     // Create socket connection with debugging
-    const port = import.meta.env.VITE_PORT || 5000;
     socketRef.current = createSocketConnection(`http://localhost:${port}`)
     
     // Set up connection status
@@ -152,31 +153,60 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
     return () => clearInterval(interval)
   }, [])
 
-  const handleSend = () => {
-    if (!input.trim() || !socketRef.current) return
+  const handleSend = async () => {
+    if (!input.trim()) return
 
     const message: Message = {
       role: 'user',
       content: input
     }
 
-    // Emit the message using our utility function with mode information
-    emitMessage(socketRef.current, 'user_message', { ...message, isVideoMode })
-
-    // Add it to the appropriate queue
-    addMessage(message)
-    setInput('')
     if (isVideoMode) {
-      setIsVideoWaitingForInput(false)
+      // Add user message to UI immediately
+      setVideoMessages(prev => [...prev, message])
+      setInput('')
+
+      try {
+        // Send message to backend
+        const response = await fetch(`http://localhost:${port}/browser_chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(message),
+        })
+
+        const data = await response.json()
+
+        // Add response to messages
+        setVideoMessages(prev => [...prev, data])
+
+        // If it's a termination message, clear input
+        if (data.role === 'system' && data.content.includes('Chat session ended')) {
+          setInput('')
+        }
+      } catch (error) {
+        console.error('Error sending message:', error)
+        // Add error message to chat
+        setVideoMessages(prev => [...prev, {
+          role: 'system',
+          content: 'Error sending message. Please try again.'
+        }])
+      }
     } else {
+      // Original chat mode logic
+      if (!socketRef.current) return
+
+      emitMessage(socketRef.current, 'user_message', message)
+      addMessage(message)
+      setInput('')
       setIsWaitingForInput(false)
+      setIsAssistantTyping(true)
     }
-    setIsAssistantTyping(true)
   }
 
   const handleIframeMouseLeave = () => {
     setIsIframeHovered(false);
-    // Force an immediate refresh of the preview
     setPreviewTimestamp(Date.now());
   };
 
@@ -186,7 +216,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
       return (
         <div className={styles.message}>
           <div className={styles.messageHeader}>System</div>
-          <div>System is initializing...</div>
+          <div>Hi! How can I help you?</div>
         </div>
       )
     }
@@ -352,14 +382,6 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
               padding: '1rem'
             }}>
               {renderMessages(videoMessages)}
-              {isAssistantTyping && isVideoMode && (
-                <div className={styles.typingIndicator}>
-                  Assistant is typing
-                  <span className={styles.typingDot}></span>
-                  <span className={styles.typingDot}></span>
-                  <span className={styles.typingDot}></span>
-                </div>
-              )}
               <div ref={messagesEndRef} />
             </div>
           </>

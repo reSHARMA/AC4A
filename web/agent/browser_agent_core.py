@@ -1,8 +1,9 @@
 import logging
 from enum import Enum
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 import requests
-from datetime import datetime
+import base64
+from src.utils.dummy_data import call_openai_api
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -83,12 +84,8 @@ def process_browser_message(user_message: str) -> dict:
         )
         browser_chat_history.append(user_msg)
         
-        # Create response message
-        response = create_message(
-            content=f"Message length: {len(user_message)}",
-            role="assistant",
-            msg_type=MessageType.ASSISTANT
-        )
+        # Process with computer-use model
+        response = process_with_computer_use(user_message)
         
         # Add response to history
         browser_chat_history.append(response)
@@ -136,4 +133,62 @@ def get_latest_screenshot() -> bytes:
             return b''
     except Exception as e:
         logger.error(f"Error getting screenshot: {str(e)}", exc_info=True)
-        return b'' 
+        return b''
+
+def process_with_computer_use(user_input: str) -> Dict[str, Any]:
+    """
+    Process user input with computer-use model using the latest screenshot
+    
+    Args:
+        user_input (str): The user's input/instruction
+        
+    Returns:
+        dict: Response from the model
+    """
+    try:
+        # Get the latest screenshot
+        screenshot_data = get_latest_screenshot()
+        if not screenshot_data:
+            return create_message(
+                content="Failed to get screenshot",
+                role="system",
+                msg_type=MessageType.ERROR
+            )
+            
+        # Convert screenshot to base64
+        screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
+        
+        # Create the system prompt for computer use
+        system_prompt = """You are an AI agent with the ability to control a browser. You can control the keyboard and mouse. 
+You take a screenshot after each action to check if your action was successful. 
+Once you have completed the requested task you should stop running and pass back control to your human supervisor."""
+        
+        # Create the input as a dictionary with text and image
+        input_content = {
+            "text": user_input,
+            "image": f"data:image/png;base64,{screenshot_base64}"
+        }
+        
+        # Call the OpenAI API using the existing function
+        response = call_openai_api(system_prompt, input_content, "computer-use")
+        
+        if response:
+            return create_message(
+                content=response,
+                role="assistant",
+                msg_type=MessageType.ASSISTANT
+            )
+        else:
+            return create_message(
+                content="No response generated from model",
+                role="system",
+                msg_type=MessageType.ERROR
+            )
+            
+    except Exception as e:
+        logger.error(f"Error in computer use processing: {str(e)}", exc_info=True)
+        return create_message(
+            content=f"Error processing with computer-use model: {str(e)}",
+            role="system",
+            msg_type=MessageType.ERROR
+        ) 

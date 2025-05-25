@@ -4,9 +4,9 @@ from azure.identity import AzureCliCredential, DefaultAzureCredential, get_beare
 from dotenv import load_dotenv
 from config import debug_print
 import re
-import logging
+import logging as logger
 from web.utils.openai_logger import setup_openai_logging
-
+logger = logger.getLogger(__name__)
 # Load environment variables from .env file
 load_dotenv()
 
@@ -21,7 +21,9 @@ def call_openai_api(system: str, prompt: str, mode: str) -> str:
     If OpenAI API key is unavailable, falls back to Azure OpenAI client.
 
     Args:
-        prompt (str): The prompt to send to the OpenAI API.
+        system (str): The system prompt/instructions
+        prompt (str): The prompt to send to the OpenAI API
+        mode (str): The mode to use ("perm", "app", or "computer-use")
 
     Returns:
         str: The response from the OpenAI API.
@@ -34,45 +36,52 @@ def call_openai_api(system: str, prompt: str, mode: str) -> str:
             messages = []
             if system:
                 messages.append({"role": "system", "content": system})
-            messages.append({"role": "user", "content": prompt})
             
-            model = "gpt-4o-2024-11-20"
-            if mode == "perm":
-                model = f"{os.getenv('PERM_MODEL')}-{os.getenv('PERM_MODEL_DATE')}"
-            elif mode == "app":
-                model = f"{os.getenv('APP_BACKEND_MODEL')}-{os.getenv('APP_BACKEND_MODEL_DATE')}"
+            # Check if prompt contains image data
+            if isinstance(prompt, dict) and "image" in prompt:
+                # Handle image input
+                content = [
+                    {"type": "text", "text": prompt.get("text", "")},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": prompt["image"]
+                        }
+                    }
+                ]
+            else:
+                # Handle text-only input
+                content = prompt
+
+            messages.append({
+                "role": "user",
+                "content": content
+            })
 
             # Log the API call
             openai_logger.debug("Making OpenAI API call", extra={
                 'openai_data': {
-                    'model': model,
                     'messages': messages,
                     'temperature': 1
                 }
             })
-            
+            model = "gpt-4o-2024-11-20" 
+            if mode == "perm":
+                model = f"{os.getenv('PERM_MODEL')}-{os.getenv('PERM_MODEL_DATE')}"
+            elif mode == "app":
+                model = f"{os.getenv('APP_BACKEND_MODEL')}-{os.getenv('APP_BACKEND_MODEL_DATE')}"
+            elif mode == "computer-use":
+                model = f"{os.getenv('PERM_MODEL')}-{os.getenv('PERM_MODEL_DATE')}"
+
             completion = client.chat.completions.create(
                 messages=messages,
                 model=model,
                 temperature=1,
             )
-            
-            # Log the response
-            openai_logger.debug("Received OpenAI API response", extra={
-                'openai_data': {
-                    'response': completion.choices[0].message.content,
-                    'usage': {
-                        'prompt_tokens': getattr(completion.usage, 'prompt_tokens', 0),
-                        'completion_tokens': getattr(completion.usage, 'completion_tokens', 0),
-                        'total_tokens': getattr(completion.usage, 'total_tokens', 0)
-                    } if hasattr(completion, 'usage') else None
-                }
-            })
-            
             return completion.choices[0].message.content
         else:
             # Fallback to Azure OpenAI client
-            debug_print("OpenAI API key not found, using Azure OpenAI client")
+            logger.info("OpenAI API key not found, using Azure OpenAI client")
             
             # Get the scope from the environment variable
             scope = os.getenv('AZURE_OPENAI_TOKEN_SCOPES')
@@ -92,6 +101,8 @@ def call_openai_api(system: str, prompt: str, mode: str) -> str:
                 model_name = f"{os.getenv('PERM_MODEL')}_{os.getenv('PERM_MODEL_DATE')}"
             elif mode == "app":
                 model_name = f"{os.getenv('APP_BACKEND_MODEL')}_{os.getenv('APP_BACKEND_MODEL_DATE')}"
+            elif mode == "computer-use":
+                model_name = f"{os.getenv('PERM_MODEL')}_{os.getenv('PERM_MODEL_DATE')}"
 
             client = AzureOpenAI(
                 azure_endpoint=endpoint,
@@ -99,10 +110,31 @@ def call_openai_api(system: str, prompt: str, mode: str) -> str:
                 api_version=api_version,
             )
             
+            # Prepare messages with support for both text and image
             messages = []
             if system:
                 messages.append({"role": "system", "content": system})
-            messages.append({"role": "user", "content": prompt})
+            
+            # Check if prompt contains image data
+            if isinstance(prompt, dict) and "image" in prompt:
+                # Handle image input
+                content = [
+                    {"type": "text", "text": prompt.get("text", "")},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": prompt["image"]
+                        }
+                    }
+                ]
+            else:
+                # Handle text-only input
+                content = prompt
+
+            messages.append({
+                "role": "user",
+                "content": content
+            })
             
             # Log the Azure OpenAI API call
             openai_logger.debug("Making Azure OpenAI API call", extra={
@@ -138,7 +170,7 @@ def call_openai_api(system: str, prompt: str, mode: str) -> str:
     except Exception as e:
         # Log any errors
         openai_logger.error(f"Error in OpenAI API call: {str(e)}", exc_info=True)
-        debug_print(f"An error occurred while calling the API: {e}")
+        logger.error(f"An error occurred while calling the API: {e}")
         return ""
 
 def generate_dummy_data(api_endpoint: str, **kwargs) -> dict:
@@ -167,7 +199,7 @@ def generate_dummy_data(api_endpoint: str, **kwargs) -> dict:
     {history}
 """
 
-    debug_print("Dummy data for API endpoint:", api_endpoint)
+    logger.info("Dummy data for API endpoint:", api_endpoint)
     # Use the separate function to call the OpenAI API
     dummy_data = call_openai_api("", prompt, "app")
     
@@ -177,6 +209,6 @@ Keep the summary concise and informative."""
 
     history += summary + "\n" 
 
-    print(f"\033[1;35;40m{summary}\033[0m")
+    logger.info(f"\033[1;35;40m{summary}\033[0m")
     # Use json.loads to safely parse the JSON string
     return summary

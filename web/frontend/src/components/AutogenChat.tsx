@@ -380,7 +380,9 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
               background: 'white',
               borderRadius: '8px',
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              padding: '1rem'
+              padding: '1rem',
+              maxHeight: '300px',
+              height: '300px'
             }}>
               {renderMessages(videoMessages)}
               <div ref={messagesEndRef} />

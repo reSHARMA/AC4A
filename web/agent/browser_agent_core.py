@@ -159,13 +159,35 @@ def process_with_computer_use(user_input: str) -> Dict[str, Any]:
         screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
         
         # Create the system prompt for computer use
-        system_prompt = """You are an AI agent with the ability to control a browser. You can control the keyboard and mouse. 
-You take a screenshot after each action to check if your action was successful. 
-Once you have completed the requested task you should stop running and pass back control to your human supervisor."""
+        system_prompt = """You are an AI agent with the ability to control a browser. You can ask the user to do one action at a time with the keyboard or the mouse. You are given a task and you have to successfully complete it by asking the user to perform actions one by one.
+
+        You will also be given a screenshot of the browser after each action and also the list of past actions. You should check the screenshot to see if your action was successful and decide what to do next. 
+
+        Only output the next action to take or ask the user for confirmation or resolve choices or give missing information.
+        Do not output any other text.
+        Once you have completed the requested task you should output done."""
         
+        global browser_chat_history
+        _input = f"""
+Task: {browser_chat_history[0]['content']}
+
+The following is the history of interactions with the user:
+"""
+        for chat_item in browser_chat_history[1:]:
+            _input += f"""
+{chat_item['role']}: {chat_item['content']}
+"""
+        if user_input == "done" or user_input == "":
+                _input += f"""
+The user says they have completed the task. Check the screenshot to validate and move on to the next action to complete the task.
+"""
+        else:
+                _input += f"""
+User: {user_input}
+"""
         # Create the input as a dictionary with text and image
         input_content = {
-            "text": user_input,
+            "text": _input,
             "image": f"data:image/png;base64,{screenshot_base64}"
         }
         

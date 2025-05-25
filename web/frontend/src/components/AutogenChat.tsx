@@ -154,7 +154,8 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
   }, [])
 
   const handleSend = async () => {
-    if (!input.trim()) return
+    // Only check for empty input in regular chat mode
+    if (!isVideoMode && !input.trim()) return
 
     const message: Message = {
       role: 'user',

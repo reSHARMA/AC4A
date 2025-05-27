@@ -3,6 +3,23 @@
 # Exit on error
 set -e
 
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
+# uBlock Origin Extension Configuration
+UBLOCK_VERSION="1.64.0"
+UBLOCK_URL="https://github.com/gorhill/uBlock/releases/download/${UBLOCK_VERSION}/uBlock0_${UBLOCK_VERSION}.chromium.zip"
+
+# You can change these to use different extensions:
+# EXTENSION_NAME="ublock-origin"
+# EXTENSION_URL="https://github.com/gorhill/uBlock/releases/download/1.64.0/uBlock0_1.64.0.chromium.zip"
+# 
+# For other extensions, you would modify:
+# - EXTENSION_NAME: folder name for the extension
+# - EXTENSION_URL: download URL for the extension
+# - Update the extraction logic if the zip structure is different
+# =============================================================================
+
 # Get script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
@@ -127,6 +144,62 @@ echo "Copying screenshot server and browser launcher..."
 cp "${SCRIPT_DIR}/screenshot_server.py" "$INSTALL_DIR/screenshot_server.py"
 cp "${SCRIPT_DIR}/browser_launcher.js" "$INSTALL_DIR/browser_launcher.js"
 
+# Download and install uBlock Origin extension
+echo "Downloading uBlock Origin extension..."
+mkdir -p "$INSTALL_DIR/extension/ublock-origin"
+cd "$INSTALL_DIR/extension/ublock-origin"
+
+# Download uBlock Origin from GitHub releases
+echo "Downloading uBlock Origin v${UBLOCK_VERSION} from GitHub..."
+wget -q --show-progress "$UBLOCK_URL" -O "ublock-origin.zip"
+
+if [ $? -eq 0 ]; then
+    echo "✓ uBlock Origin downloaded successfully"
+    
+    # Extract the extension
+    echo "Extracting uBlock Origin extension..."
+    unzip -q "ublock-origin.zip"
+    
+    if [ -d "uBlock0.chromium" ] && [ -f "uBlock0.chromium/manifest.json" ]; then
+        echo "✓ uBlock Origin extracted successfully"
+        
+        # Verify manifest file
+        EXTENSION_NAME=$(grep -o '"name": "[^"]*"' "uBlock0.chromium/manifest.json" | cut -d'"' -f4)
+        EXTENSION_VERSION=$(grep -o '"version": "[^"]*"' "uBlock0.chromium/manifest.json" | cut -d'"' -f4)
+        echo "✓ Extension verified: $EXTENSION_NAME v$EXTENSION_VERSION"
+        
+        # Clean up zip file
+        rm "ublock-origin.zip"
+    else
+        echo "✗ Error: Extension extraction failed or manifest.json not found"
+        exit 1
+    fi
+else
+    echo "✗ Error: Failed to download uBlock Origin"
+    echo "Trying alternative download method..."
+    
+    # Fallback: try with curl
+    curl -L "$UBLOCK_URL" -o "ublock-origin.zip"
+    
+    if [ $? -eq 0 ] && [ -f "ublock-origin.zip" ]; then
+        echo "✓ uBlock Origin downloaded with curl"
+        unzip -q "ublock-origin.zip"
+        
+        if [ -d "uBlock0.chromium" ] && [ -f "uBlock0.chromium/manifest.json" ]; then
+            echo "✓ uBlock Origin extracted successfully"
+            rm "ublock-origin.zip"
+        else
+            echo "✗ Error: Extension extraction failed"
+            exit 1
+        fi
+    else
+        echo "✗ Error: Could not download uBlock Origin with either wget or curl"
+        exit 1
+    fi
+fi
+
+cd "$INSTALL_DIR"
+
 # Step 7: Start Xvfb
 echo "Starting Xvfb..."
 Xvfb :99 -screen 0 1024x768x24 &
@@ -156,11 +229,32 @@ node browser_launcher.js &
 BROWSER_PID=$!
 
 # Wait for browser to start
-sleep 2
+sleep 5
 if ! kill -0 $BROWSER_PID 2>/dev/null; then
     echo "Error: Browser failed to start"
     exit 1
 fi
+
+# Test extension loading
+echo "Testing uBlock Origin extension..."
+sleep 2
+
+# Check if browser is responding on debugging port
+if curl -s http://localhost:9222/json > /dev/null 2>&1; then
+    echo "✓ Browser debugging interface is accessible"
+    
+    # Get browser tabs/pages info
+    PAGES_INFO=$(curl -s http://localhost:9222/json)
+    if echo "$PAGES_INFO" | grep -q "example.com"; then
+        echo "✓ Browser successfully navigated to example.com"
+    else
+        echo "⚠ Could not verify example.com navigation"
+    fi
+else
+    echo "⚠ Browser debugging interface not accessible"
+fi
+
+echo "Extension test completed. Browser is running with uBlock Origin."
 
 # Start Flask screenshot server
 echo "Starting Flask screenshot server..."

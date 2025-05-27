@@ -100,9 +100,10 @@ if [ ! -d "$INSTALL_DIR/playwright-project" ]; then
     mkdir "$INSTALL_DIR/playwright-project"
     cd "$INSTALL_DIR/playwright-project"
     
-    # Copy package.json template and screenshot.js from script directory
+    # Copy package.json template, screenshot.js, and browser_launcher.js from script directory
     cp "${SCRIPT_DIR}/package.json.template" "$INSTALL_DIR/playwright-project/package.json"
     cp "${SCRIPT_DIR}/screenshot.js" "$INSTALL_DIR/playwright-project/screenshot.js"
+    cp "${SCRIPT_DIR}/browser_launcher.js" "$INSTALL_DIR/playwright-project/browser_launcher.js"
     
     npm install
     # Install browsers with explicit path
@@ -121,9 +122,10 @@ fi
 echo "Copying custom VNC viewer..."
 cp "${SCRIPT_DIR}/vnc_lite.html" "$INSTALL_DIR/noVNC/vnc_lite.html"
 
-# Copy screenshot server
-echo "Copying screenshot server..."
+# Copy screenshot server and browser launcher
+echo "Copying screenshot server and browser launcher..."
 cp "${SCRIPT_DIR}/screenshot_server.py" "$INSTALL_DIR/screenshot_server.py"
+cp "${SCRIPT_DIR}/browser_launcher.js" "$INSTALL_DIR/browser_launcher.js"
 
 # Step 7: Start Xvfb
 echo "Starting Xvfb..."
@@ -150,7 +152,7 @@ xauth generate :99 . trusted
 echo "Launching browser..."
 cd "$INSTALL_DIR/playwright-project"
 export PLAYWRIGHT_BROWSERS_PATH="$INSTALL_DIR/playwright-browsers"
-npx playwright open --viewport-size=1024,768 https://example.com &
+node browser_launcher.js &
 BROWSER_PID=$!
 
 # Wait for browser to start

@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Dict, Any
 import requests
 import base64
+import re
 from src.utils.dummy_data import call_openai_api
 
 # Set up logging
@@ -115,6 +116,137 @@ def clear_browser_chat_history() -> None:
     """
     browser_chat_history.clear()
 
+def clean_html_content(html: str) -> str:
+    """
+    Clean HTML content for both structure analysis AND CSS path mapping
+    Preserves essential structure and attributes needed for CSS targeting
+    while removing unnecessary content for analysis
+    
+    Args:
+        html (str): Raw HTML content
+        
+    Returns:
+        str: Cleaned HTML that maintains CSS-targetable structure
+    """
+    if not html:
+        return html
+    
+    # Remove entire head section and its contents
+    html = re.sub(r'<head\b[^>]*>.*?</head>', '', html, flags=re.IGNORECASE | re.DOTALL)
+    
+    # Remove non-visible elements that don't contribute to user interaction
+    html = re.sub(r'<meta\b[^>]*/?>', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'<link\b[^>]*/?>', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'<title\b[^>]*>.*?</title>', '', html, flags=re.IGNORECASE | re.DOTALL)
+    html = re.sub(r'<base\b[^>]*/?>', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'<noscript\b[^>]*>.*?</noscript>', '', html, flags=re.IGNORECASE | re.DOTALL)
+    
+    # Remove script tags and their content (case-insensitive, multiline)
+    html = re.sub(r'<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>', '', html, flags=re.IGNORECASE | re.DOTALL)
+    
+    # Remove style tags and their content (case-insensitive, multiline)
+    html = re.sub(r'<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>', '', html, flags=re.IGNORECASE | re.DOTALL)
+    
+    # Replace SVG content but keep the SVG tag structure
+    html = re.sub(r'(<svg\b[^>]*>).*?(<\/svg>)', r'\1retracted\2', html, flags=re.IGNORECASE | re.DOTALL)
+    
+    # Remove JavaScript-related attributes (these don't affect CSS targeting)
+    html = re.sub(r'\s+on\w+\s*=\s*["\'][^"\']*["\']', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'\s+jsaction\s*=\s*["\'][^"\']*["\']', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'\s+jscontroller\s*=\s*["\'][^"\']*["\']', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'\s+jsname\s*=\s*["\'][^"\']*["\']', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'\s+jsdata\s*=\s*["\'][^"\']*["\']', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'\s+jsmodel\s*=\s*["\'][^"\']*["\']', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'\s+jsshadow\s*=\s*["\'][^"\']*["\']', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'\s+jsslot\s*=\s*["\'][^"\']*["\']', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'\s+jsowner\s*=\s*["\'][^"\']*["\']', '', html, flags=re.IGNORECASE)
+    
+    # Remove most data attributes but keep some that might be used for CSS targeting
+    html = re.sub(r'\s+data-(?!testid|role|target|toggle|dismiss)[^=]*=\s*["\'][^"\']*["\']', '', html, flags=re.IGNORECASE)
+    
+    # Remove accessibility attributes (don't affect CSS targeting)
+    html = re.sub(r'\s+aria-[^=]*=\s*["\'][^"\']*["\']', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'\s+role\s*=\s*["\'][^"\']*["\']', '', html, flags=re.IGNORECASE)
+    
+    # Remove inline styles (we want to apply our own styles)
+    html = re.sub(r'\s+style\s*=\s*["\'][^"\']*["\']', '', html, flags=re.IGNORECASE)
+    
+    # Replace URL attributes with "retracted" but keep the attribute for structure
+    html = re.sub(r'href\s*=\s*["\'][^"\']*["\']', 'href="retracted"', html, flags=re.IGNORECASE)
+    html = re.sub(r'src\s*=\s*["\'][^"\']*["\']', 'src="retracted"', html, flags=re.IGNORECASE)
+    html = re.sub(r'action\s*=\s*["\'][^"\']*["\']', 'action="retracted"', html, flags=re.IGNORECASE)
+    html = re.sub(r'poster\s*=\s*["\'][^"\']*["\']', 'poster="retracted"', html, flags=re.IGNORECASE)
+    html = re.sub(r'background\s*=\s*["\'][^"\']*["\']', 'background="retracted"', html, flags=re.IGNORECASE)
+    
+    # Replace data URIs and base64 content with "retracted"
+    html = re.sub(r'data:[^;]+;base64,[A-Za-z0-9+/=]+', 'retracted', html)
+    
+    # Remove hidden elements (not visible to users)
+    html = re.sub(r'<[^>]*\s+hidden\s*(?:=\s*["\'](?:true|hidden)["\'])?\s*[^>]*>.*?</[^>]+>', '', html, flags=re.IGNORECASE | re.DOTALL)
+    html = re.sub(r'<[^>]*\s+style\s*=\s*["\'][^"\']*display\s*:\s*none[^"\']*["\'][^>]*>.*?</[^>]+>', '', html, flags=re.IGNORECASE | re.DOTALL)
+    
+    # Extract only body content if body tag exists
+    body_match = re.search(r'<body\b[^>]*>(.*?)</body>', html, flags=re.IGNORECASE | re.DOTALL)
+    if body_match:
+        html = body_match.group(1)
+    
+    # KEEP ALL CLASS NAMES - they're essential for CSS targeting
+    # KEEP ALL ID ATTRIBUTES - they're essential for CSS targeting
+    # KEEP structural attributes like name, type, value for form elements
+    
+    # Remove empty attributes
+    html = re.sub(r'\s+\w+\s*=\s*["\']["\']', '', html)
+    
+    # Clean up extra whitespace but preserve structure
+    html = re.sub(r'\n\s*\n', '\n', html)
+    html = re.sub(r'  +', ' ', html)
+    
+    # Don't remove empty tags - they might be styled with CSS
+    # Don't collapse nested divs - they might be part of CSS selectors
+    
+    return html.strip()
+
+def create_minimal_html_for_analysis(html: str) -> str:
+    """
+    Create an ultra-minimal HTML version focused purely on structure analysis
+    This removes almost everything except essential tags and visible text content
+    
+    Args:
+        html (str): Raw HTML content
+        
+    Returns:
+        str: Ultra-minimal HTML for pure structure analysis
+    """
+    if not html:
+        return html
+    
+    # Start with the cleaned version
+    html = clean_html_content(html)
+    
+    # Remove all attributes except essential ones for targeting
+    # Keep only: id, class (simplified), name, type, value, alt, title
+    html = re.sub(r'\s+(?!(?:id|class|name|type|value|alt|title|href|src|action)\b)\w+\s*=\s*["\'][^"\']*["\']', '', html, flags=re.IGNORECASE)
+    
+    # Remove redundant nested divs that don't add semantic value
+    # This is aggressive - removes div tags that only contain other divs or single elements
+    html = re.sub(r'<div[^>]*>\s*(<(?:div|span|a|button|input|img)[^>]*>.*?</(?:div|span|a|button)>)\s*</div>', r'\1', html, flags=re.IGNORECASE | re.DOTALL)
+    
+    # Remove span tags that don't have meaningful attributes
+    html = re.sub(r'<span[^>]*>\s*(.*?)\s*</span>', r'\1', html, flags=re.IGNORECASE | re.DOTALL)
+    
+    # Collapse multiple nested divs with no content between them
+    html = re.sub(r'<div[^>]*>\s*<div', '<div', html, flags=re.IGNORECASE)
+    html = re.sub(r'</div>\s*</div>', '</div>', html, flags=re.IGNORECASE)
+    
+    # Remove empty elements more aggressively
+    html = re.sub(r'<(?!(?:img|input|br|hr|meta|link)\b)([^>]+)>\s*</\1>', '', html, flags=re.IGNORECASE)
+    
+    # Final cleanup
+    html = re.sub(r'\n\s*\n', '\n', html)
+    html = re.sub(r'>\s+<', '><', html)
+    
+    return html.strip()
+
 def check_screenshot_server_health() -> Dict[str, Any]:
     """
     Check the health of the screenshot server and HTML source API
@@ -170,7 +302,11 @@ def get_html_source() -> Dict[str, Any]:
         response = requests.get('http://localhost:8080/html-source', timeout=10)
         
         if response.status_code == 200:
-            return response.json()
+            html_data = response.json()
+            # Clean the HTML content before returning
+            if html_data.get('html'):
+                html_data['html'] = clean_html_content(html_data['html'])
+            return html_data
         elif response.status_code == 404:
             logger.warning("No active browser tab found")
             return {

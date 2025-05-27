@@ -5,6 +5,7 @@ import requests
 import base64
 import re
 import json
+import time
 from src.utils.dummy_data import call_openai_api
 
 # Set up logging
@@ -392,6 +393,8 @@ def process_with_computer_use(user_input: str) -> Dict[str, Any]:
                 msg_type=MessageType.ERROR
             )
             
+        clear_element_highlighting()
+        time.sleep(1)
         # Analyze the HTML structure
         html_structure = analyze_html_structure(screenshot_data)
         if not html_structure.get('success', False):
@@ -400,6 +403,10 @@ def process_with_computer_use(user_input: str) -> Dict[str, Any]:
                 role="system",
                 msg_type=MessageType.ERROR
             )
+        time.sleep(1)
+        # Highlight the analyzed elements
+        highlight_analyzed_elements(html_structure)
+        time.sleep(1)
 
         # Convert screenshot to base64
         screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
@@ -638,5 +645,170 @@ Return as JSON with 'data' and 'action' arrays."""
             'data': [],
             'action': [],
             'error': f'Analysis failed: {str(e)}'
+        }
+
+def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: str = "both") -> Dict[str, Any]:
+    """
+    Highlight the analyzed HTML elements by injecting CSS borders
+    
+    Args:
+        html_structure (dict): Result from analyze_html_structure containing data and action selectors
+        highlight_type (str): What to highlight - "data", "action", or "both"
+        
+    Returns:
+        dict: Result of the CSS injection operation
+    """
+    try:
+        if not html_structure.get('success', False):
+            return {
+                'success': False,
+                'error': 'HTML structure analysis was not successful'
+            }
+        
+        selectors_to_highlight = []
+        
+        # Collect selectors based on highlight_type
+        if highlight_type in ["data", "both"]:
+            data_selectors = html_structure.get('data', [])
+            selectors_to_highlight.extend(data_selectors)
+            
+        if highlight_type in ["action", "both"]:
+            action_selectors = html_structure.get('action', [])
+            selectors_to_highlight.extend(action_selectors)
+        
+        if not selectors_to_highlight:
+            return {
+                'success': False,
+                'error': f'No {highlight_type} selectors found to highlight'
+            }
+        
+        # Create different border colors for data vs action elements
+        css_rules = ""
+        
+        if highlight_type in ["data", "both"] and html_structure.get('data'):
+            for selector in html_structure.get('data', []):
+                css_rules += f"""
+                {selector} {{
+                    border: 2px solid #4CAF50 !important;
+                    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5) !important;
+                    position: relative !important;
+                }}
+                {selector}::after {{
+                    content: 'DATA';
+                    position: absolute;
+                    top: -18px;
+                    right: 0;
+                    background: #4CAF50;
+                    color: white;
+                    padding: 1px 4px;
+                    font-size: 9px;
+                    font-family: monospace;
+                    border-radius: 2px;
+                    z-index: 9999;
+                    pointer-events: none;
+                    font-weight: bold;
+                }}
+                """
+        
+        if highlight_type in ["action", "both"] and html_structure.get('action'):
+            for selector in html_structure.get('action', []):
+                css_rules += f"""
+                {selector} {{
+                    border: 2px solid #FF9800 !important;
+                    box-shadow: 0 0 5px rgba(255, 152, 0, 0.5) !important;
+                    position: relative !important;
+                }}
+                {selector}::after {{
+                    content: 'ACTION';
+                    position: absolute;
+                    top: -18px;
+                    right: 0;
+                    background: #FF9800;
+                    color: white;
+                    padding: 1px 4px;
+                    font-size: 9px;
+                    font-family: monospace;
+                    border-radius: 2px;
+                    z-index: 9999;
+                    pointer-events: none;
+                    font-weight: bold;
+                }}
+                """
+        
+        # Send CSS to the injection endpoint
+        payload = {
+            'css': css_rules
+        }
+        
+        response = requests.post('http://localhost:8080/inject-css', 
+                               json=payload, 
+                               timeout=10)
+        
+        if response.status_code == 200:
+            result = response.json()
+            logger.info(f"Successfully highlighted {len(selectors_to_highlight)} elements")
+            return {
+                'success': True,
+                'message': f'Highlighted {len(selectors_to_highlight)} {highlight_type} elements',
+                'highlighted_count': len(selectors_to_highlight),
+                'css_applied': result.get('css_applied', '')
+            }
+        else:
+            error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {}
+            logger.error(f"Failed to inject CSS: {response.status_code} - {error_data}")
+            return {
+                'success': False,
+                'error': f'CSS injection failed: {error_data.get("error", "Unknown error")}'
+            }
+            
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error connecting to CSS injection server: {str(e)}")
+        return {
+            'success': False,
+            'error': f'Connection error: {str(e)}'
+        }
+    except Exception as e:
+        logger.error(f"Error highlighting elements: {str(e)}", exc_info=True)
+        return {
+            'success': False,
+            'error': f'Highlighting failed: {str(e)}'
+        }
+
+def clear_element_highlighting() -> Dict[str, Any]:
+    """
+    Clear all CSS highlighting from the page
+    
+    Returns:
+        dict: Result of the CSS clearing operation
+    """
+    try:
+        response = requests.post('http://localhost:8080/clear-css', timeout=10)
+        
+        if response.status_code == 200:
+            result = response.json()
+            logger.info("Successfully cleared element highlighting")
+            return {
+                'success': True,
+                'message': result.get('message', 'Highlighting cleared')
+            }
+        else:
+            error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {}
+            logger.error(f"Failed to clear CSS: {response.status_code} - {error_data}")
+            return {
+                'success': False,
+                'error': f'CSS clearing failed: {error_data.get("error", "Unknown error")}'
+            }
+            
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error connecting to CSS clearing server: {str(e)}")
+        return {
+            'success': False,
+            'error': f'Connection error: {str(e)}'
+        }
+    except Exception as e:
+        logger.error(f"Error clearing highlighting: {str(e)}", exc_info=True)
+        return {
+            'success': False,
+            'error': f'Clearing failed: {str(e)}'
         }
 

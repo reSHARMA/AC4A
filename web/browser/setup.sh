@@ -50,8 +50,12 @@ conda activate || true
 # Step 3: Create conda environment with required packages
 if ! conda info --envs | grep -q "$ENV_NAME"; then
     echo "Creating conda environment..."
-    conda create -y -n "$ENV_NAME" -c conda-forge nodejs git python=3.9
+    conda create -y -n "$ENV_NAME" -c conda-forge nodejs git python=3.9 pip
     conda activate "$ENV_NAME"
+    
+    # Install Flask dependencies
+    echo "Installing Flask dependencies..."
+    pip install -r "${SCRIPT_DIR}/requirements.txt"
 fi
 
 # Ensure we're in the conda environment
@@ -117,6 +121,10 @@ fi
 echo "Copying custom VNC viewer..."
 cp "${SCRIPT_DIR}/vnc_lite.html" "$INSTALL_DIR/noVNC/vnc_lite.html"
 
+# Copy screenshot server
+echo "Copying screenshot server..."
+cp "${SCRIPT_DIR}/screenshot_server.py" "$INSTALL_DIR/screenshot_server.py"
+
 # Step 7: Start Xvfb
 echo "Starting Xvfb..."
 Xvfb :99 -screen 0 1024x768x24 &
@@ -152,10 +160,10 @@ if ! kill -0 $BROWSER_PID 2>/dev/null; then
     exit 1
 fi
 
-# Start HTTP server for preview images
-echo "Starting HTTP server for preview images..."
-cd "$INSTALL_DIR/screenshots"
-python3 -m http.server 8080 &
+# Start Flask screenshot server
+echo "Starting Flask screenshot server..."
+cd "$INSTALL_DIR"
+python3 screenshot_server.py --host localhost --port 8080 --screenshot-path "$INSTALL_DIR/screenshots/latest-preview.png" &
 HTTP_PID=$!
 
 # Step 11: Start x11vnc

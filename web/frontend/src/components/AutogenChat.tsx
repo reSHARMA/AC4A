@@ -287,7 +287,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
             >
               {/* Preview Image (Default, hidden when hovered) */}
               <img
-                src={`http://localhost:8080/latest-preview.png?t=${previewTimestamp}`}
+                src={`http://localhost:8080/screenshot?t=${previewTimestamp}`}
                 style={{
                   position: 'absolute',
                   width: '563px',

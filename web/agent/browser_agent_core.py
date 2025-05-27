@@ -115,22 +115,52 @@ def clear_browser_chat_history() -> None:
     """
     browser_chat_history.clear()
 
+def check_screenshot_server_health() -> Dict[str, Any]:
+    """
+    Check the health of the screenshot server
+    
+    Returns:
+        dict: Health status information
+    """
+    try:
+        response = requests.get('http://localhost:8080/health', timeout=5)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return {
+                'status': 'unhealthy',
+                'error': f'HTTP {response.status_code}',
+                'screenshot_available': False
+            }
+    except Exception as e:
+        return {
+            'status': 'unreachable',
+            'error': str(e),
+            'screenshot_available': False
+        }
+
 def get_latest_screenshot() -> bytes:
     """
-    Get the latest screenshot from the browser preview server
+    Get the latest screenshot from the Flask screenshot server
     
     Returns:
         bytes: Raw PNG image data
     """
     try:
-        # Get the latest screenshot from the preview server
-        response = requests.get('http://localhost:8080/latest-preview.png')
+        # Get the latest screenshot from the Flask API
+        response = requests.get('http://localhost:8080/screenshot', timeout=10)
         
         if response.status_code == 200:
             return response.content
-        else:
-            logger.error(f"Failed to get screenshot: {response.status_code}")
+        elif response.status_code == 404:
+            logger.warning("Screenshot not available yet")
             return b''
+        else:
+            logger.error(f"Failed to get screenshot: {response.status_code} - {response.text}")
+            return b''
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error connecting to screenshot server: {str(e)}", exc_info=True)
+        return b''
     except Exception as e:
         logger.error(f"Error getting screenshot: {str(e)}", exc_info=True)
         return b''

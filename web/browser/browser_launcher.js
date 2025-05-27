@@ -2,13 +2,13 @@ const { chromium } = require('playwright');
 const path = require('path');
 
 async function launchBrowser() {
-  console.log('Launching Chromium with DevTools Protocol enabled and uBlock Origin...');
+  console.log('Launching Chromium with DevTools Protocol enabled and uBlock Origin Lite...');
   
   try {
-    // Get the absolute path to the uBlock Origin extension
+    // Get the absolute path to the uBlock Origin Lite extension
     // The setup script copies extension to ~/browser-remote/extension/, not inside playwright-project
-    const extensionPath = path.resolve(__dirname, '..', 'extension', 'ublock-origin', 'uBlock0.chromium');
-    console.log('uBlock Origin extension path:', extensionPath);
+    const extensionPath = path.resolve(__dirname, '..', 'extension', 'ublock-origin-lite', 'uBOLite.chromium');
+    console.log('uBlock Origin Lite extension path:', extensionPath);
     
     // Verify extension exists
     const fs = require('fs');

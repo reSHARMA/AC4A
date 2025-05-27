@@ -6,13 +6,13 @@ set -e
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
-# uBlock Origin Extension Configuration
-UBLOCK_VERSION="1.64.0"
-UBLOCK_URL="https://github.com/gorhill/uBlock/releases/download/${UBLOCK_VERSION}/uBlock0_${UBLOCK_VERSION}.chromium.zip"
+# uBlock Origin Lite Extension Configuration (Manifest V3)
+UBOL_VERSION="2025.525.2314"
+UBOL_URL="https://github.com/uBlockOrigin/uBOL-home/releases/download/uBOLite_${UBOL_VERSION}/uBOLite_${UBOL_VERSION}.chromium.mv3.zip"
 
 # You can change these to use different extensions:
-# EXTENSION_NAME="ublock-origin"
-# EXTENSION_URL="https://github.com/gorhill/uBlock/releases/download/1.64.0/uBlock0_1.64.0.chromium.zip"
+# EXTENSION_NAME="ublock-origin-lite"  
+# EXTENSION_URL="https://github.com/uBlockOrigin/uBOL-home/releases/download/uBOLite_2025.525.2314/uBOLite_2025.525.2314.chromium.mv3.zip"
 # 
 # For other extensions, you would modify:
 # - EXTENSION_NAME: folder name for the extension
@@ -144,56 +144,62 @@ echo "Copying screenshot server and browser launcher..."
 cp "${SCRIPT_DIR}/screenshot_server.py" "$INSTALL_DIR/screenshot_server.py"
 cp "${SCRIPT_DIR}/browser_launcher.js" "$INSTALL_DIR/browser_launcher.js"
 
-# Download and install uBlock Origin extension
-echo "Downloading uBlock Origin extension..."
-mkdir -p "$INSTALL_DIR/extension/ublock-origin"
-cd "$INSTALL_DIR/extension/ublock-origin"
+# Download and install uBlock Origin Lite extension
+echo "Downloading uBlock Origin Lite extension..."
+mkdir -p "$INSTALL_DIR/extension/ublock-origin-lite"
+cd "$INSTALL_DIR/extension/ublock-origin-lite"
 
-# Download uBlock Origin from GitHub releases
-echo "Downloading uBlock Origin v${UBLOCK_VERSION} from GitHub..."
-wget -q --show-progress "$UBLOCK_URL" -O "ublock-origin.zip"
+# Download uBlock Origin Lite from GitHub releases
+echo "Downloading uBlock Origin Lite v${UBOL_VERSION} from GitHub..."
+wget -q --show-progress "$UBOL_URL" -O "ublock-origin-lite.zip"
 
 if [ $? -eq 0 ]; then
-    echo "✓ uBlock Origin downloaded successfully"
+    echo "✓ uBlock Origin Lite downloaded successfully"
     
     # Extract the extension
-    echo "Extracting uBlock Origin extension..."
-    unzip -q "ublock-origin.zip"
+    echo "Extracting uBlock Origin Lite extension..."
+    unzip -q "ublock-origin-lite.zip"
     
-    if [ -d "uBlock0.chromium" ] && [ -f "uBlock0.chromium/manifest.json" ]; then
-        echo "✓ uBlock Origin extracted successfully"
+    if [ -f "manifest.json" ]; then
+        # Create the expected directory structure since files are extracted to root
+        mkdir -p "uBOLite.chromium"
+        mv * "uBOLite.chromium/" 2>/dev/null || true
+        # Move back the zip file if it was moved
+        if [ -f "uBOLite.chromium/ublock-origin-lite.zip" ]; then
+            mv "uBOLite.chromium/ublock-origin-lite.zip" .
+        fi
         
-        # Verify manifest file
-        EXTENSION_NAME=$(grep -o '"name": "[^"]*"' "uBlock0.chromium/manifest.json" | cut -d'"' -f4)
-        EXTENSION_VERSION=$(grep -o '"version": "[^"]*"' "uBlock0.chromium/manifest.json" | cut -d'"' -f4)
-        echo "✓ Extension verified: $EXTENSION_NAME v$EXTENSION_VERSION"
-        
-        # Clean up zip file
-        rm "ublock-origin.zip"
+        if [ -f "uBOLite.chromium/manifest.json" ]; then
+            echo "✓ uBlock Origin Lite extracted successfully"
+            rm "ublock-origin-lite.zip"
+        else
+            echo "✗ Error: Failed to create proper directory structure"
+            exit 1
+        fi
     else
-        echo "✗ Error: Extension extraction failed or manifest.json not found"
+        echo "✗ Error: Extension extraction failed"
         exit 1
     fi
 else
-    echo "✗ Error: Failed to download uBlock Origin"
+    echo "✗ Error: Failed to download uBlock Origin Lite"
     echo "Trying alternative download method..."
     
     # Fallback: try with curl
-    curl -L "$UBLOCK_URL" -o "ublock-origin.zip"
+    curl -L "$UBOL_URL" -o "ublock-origin-lite.zip"
     
-    if [ $? -eq 0 ] && [ -f "ublock-origin.zip" ]; then
-        echo "✓ uBlock Origin downloaded with curl"
-        unzip -q "ublock-origin.zip"
+    if [ $? -eq 0 ] && [ -f "ublock-origin-lite.zip" ]; then
+        echo "✓ uBlock Origin Lite downloaded with curl"
+        unzip -q "ublock-origin-lite.zip"
         
-        if [ -d "uBlock0.chromium" ] && [ -f "uBlock0.chromium/manifest.json" ]; then
-            echo "✓ uBlock Origin extracted successfully"
-            rm "ublock-origin.zip"
+        if [ -f "manifest.json" ]; then
+            echo "✓ uBlock Origin Lite extracted successfully"
+            rm "ublock-origin-lite.zip"
         else
             echo "✗ Error: Extension extraction failed"
             exit 1
         fi
     else
-        echo "✗ Error: Could not download uBlock Origin with either wget or curl"
+        echo "✗ Error: Could not download uBlock Origin Lite with either wget or curl"
         exit 1
     fi
 fi
@@ -236,7 +242,7 @@ if ! kill -0 $BROWSER_PID 2>/dev/null; then
 fi
 
 # Test extension loading
-echo "Testing uBlock Origin extension..."
+echo "Testing uBlock Origin Lite extension..."
 sleep 2
 
 # Check if browser is responding on debugging port
@@ -254,7 +260,7 @@ else
     echo "⚠ Browser debugging interface not accessible"
 fi
 
-echo "Extension test completed. Browser is running with uBlock Origin."
+echo "Extension test completed. Browser is running with uBlock Origin Lite."
 
 # Start Flask screenshot server
 echo "Starting Flask screenshot server..."

@@ -4,6 +4,7 @@ from typing import Dict, Any
 import requests
 import base64
 import re
+import json
 from src.utils.dummy_data import call_openai_api
 
 # Set up logging
@@ -391,6 +392,15 @@ def process_with_computer_use(user_input: str) -> Dict[str, Any]:
                 msg_type=MessageType.ERROR
             )
             
+        # Analyze the HTML structure
+        html_structure = analyze_html_structure(screenshot_data)
+        if not html_structure.get('success', False):
+            return create_message(
+                content=html_structure.get('error', 'Failed to analyze HTML structure'),
+                role="system",
+                msg_type=MessageType.ERROR
+            )
+
         # Convert screenshot to base64
         screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
         
@@ -431,8 +441,12 @@ User: {user_input}
         response = call_openai_api(system_prompt, input_content, "computer-use")
         
         if response:
+            # Format HTML structure data for display
+            data_selectors_str = "Data Elements:\n" + "\n".join(html_structure.get('data', [])) if html_structure.get('data') else "Data Elements: None found"
+            action_selectors_str = "Action Elements:\n" + "\n".join(html_structure.get('action', [])) if html_structure.get('action') else "Action Elements: None found"
+            
             return create_message(
-                content=response + "\n\n" + get_html_source()['html'],
+                content=response + "\n\n" + data_selectors_str + "\n\n" + action_selectors_str,
                 role="assistant",
                 msg_type=MessageType.ASSISTANT
             )
@@ -450,3 +464,179 @@ User: {user_input}
             role="system",
             msg_type=MessageType.ERROR
         ) 
+
+def analyze_html_structure(screenshot_data: bytes) -> Dict[str, Any]:
+    """
+    Analyze the HTML structure using screenshot and HTML source
+    
+    Args:
+        screenshot_data (bytes): Raw PNG image data of the current page
+        
+    Returns:
+        dict: Contains 'data' and 'action' lists with valid CSS selectors/paths
+    """
+    try:
+        # Get HTML source from the current page
+        html_result = get_html_source()
+        
+        if not html_result.get('success', False) or not html_result.get('html'):
+            logger.error("Failed to get HTML source for analysis")
+            return {
+                'data': [],
+                'action': [],
+                'error': 'Failed to get HTML source'
+            }
+        
+        # Get the cleaned HTML content and create minimal version for analysis
+        html_content = html_result['html']
+        minimal_html = create_minimal_html_for_analysis(html_content)
+        
+        # Limit HTML size to prevent API payload issues (max ~50KB of HTML)
+        max_html_length = 50000
+        if len(minimal_html) > max_html_length:
+            logger.warning(f"HTML content too large ({len(minimal_html)} chars), truncating to {max_html_length}")
+            minimal_html = minimal_html[:max_html_length] + "\n<!-- ... content truncated for analysis ... -->"
+        
+        # Convert screenshot to base64 for API call
+        screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
+        
+        # Create system prompt for HTML analysis
+        system_prompt = """You are an expert web developer and data analyst. Your task is to analyze a webpage's HTML structure and identify:
+
+1. DATA elements: Elements that contain information, text, values, or content that could be extracted or read
+2. ACTION elements: Interactive elements that can be clicked, typed into, or otherwise interacted with
+
+For each element you identify, provide the most specific and reliable CSS selector or identifier.
+
+Return your analysis as a JSON object with this exact structure:
+{
+    "data": [
+        "css-selector-1",
+        "css-selector-2",
+        "#specific-id",
+        ".class-name"
+    ],
+    "action": [
+        "button.submit-btn",
+        "#login-form input[type='submit']",
+        ".navigation a",
+        "input[name='search']"
+    ]
+}
+
+Guidelines:
+- Prefer IDs over classes when available
+- Use specific selectors that won't break easily
+- For data elements: focus on text content, values, headers, labels
+- For action elements: focus on buttons, links, inputs, forms, clickable elements
+- Ensure selectors are valid CSS syntax
+- Include both specific and general selectors where appropriate
+- Return ONLY the JSON object, no additional text"""
+
+        # Create input text for analysis
+        analysis_text = f"""Please analyze this webpage and identify data and action elements.
+
+HTML Source (simplified for analysis):
+{minimal_html}
+
+Provide CSS selectors for:
+1. DATA elements (content to read/extract)
+2. ACTION elements (interactive elements to click/type into)
+
+Return as JSON with 'data' and 'action' arrays."""
+
+        # Create input content with HTML and screenshot
+        input_content = {
+            "text": analysis_text,
+            "image": f"data:image/png;base64,{screenshot_base64}"
+        }
+        
+        # Call OpenAI API for analysis
+        response = call_openai_api(system_prompt, input_content, "html-analysis")
+        
+        if not response:
+            logger.error("No response from OpenAI API for HTML analysis")
+            return {
+                'data': [],
+                'action': [],
+                'error': 'No response from analysis model'
+            }
+        
+        # Try to parse the JSON response
+        try:
+            # Clean the response - remove any markdown formatting
+            response = response.strip()
+            if response.startswith('```json'):
+                response = response[7:]
+            elif response.startswith('```'):
+                response = response[3:]
+            if response.endswith('```'):
+                response = response[:-3]
+            response = response.strip()
+            
+            # Extract JSON from response if it's wrapped in other text
+            json_match = re.search(r'\{.*\}', response, re.DOTALL)
+            if json_match:
+                json_str = json_match.group()
+                analysis_result = json.loads(json_str)
+            else:
+                # Try parsing the whole response as JSON
+                analysis_result = json.loads(response)
+            
+            # Validate the structure
+            if not isinstance(analysis_result, dict):
+                raise ValueError("Response is not a dictionary")
+            
+            data_selectors = analysis_result.get('data', [])
+            action_selectors = analysis_result.get('action', [])
+            
+            # Ensure they are lists
+            if not isinstance(data_selectors, list):
+                data_selectors = []
+            if not isinstance(action_selectors, list):
+                action_selectors = []
+            
+            # Filter out any non-string values and validate CSS selectors
+            valid_data_selectors = []
+            valid_action_selectors = []
+            
+            for selector in data_selectors:
+                if isinstance(selector, str) and selector.strip():
+                    valid_data_selectors.append(selector.strip())
+            
+            for selector in action_selectors:
+                if isinstance(selector, str) and selector.strip():
+                    valid_action_selectors.append(selector.strip())
+            
+            logger.info(f"HTML analysis found {len(valid_data_selectors)} data elements and {len(valid_action_selectors)} action elements")
+            
+            return {
+                'data': valid_data_selectors,
+                'action': valid_action_selectors,
+                'success': True
+            }
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response from analysis: {str(e)}")
+            logger.debug(f"Raw response: {response}")
+            return {
+                'data': [],
+                'action': [],
+                'error': f'Failed to parse analysis response: {str(e)}'
+            }
+        except Exception as e:
+            logger.error(f"Error processing analysis response: {str(e)}")
+            return {
+                'data': [],
+                'action': [],
+                'error': f'Error processing response: {str(e)}'
+            }
+            
+    except Exception as e:
+        logger.error(f"Error in HTML structure analysis: {str(e)}", exc_info=True)
+        return {
+            'data': [],
+            'action': [],
+            'error': f'Analysis failed: {str(e)}'
+        }
+

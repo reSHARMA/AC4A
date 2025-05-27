@@ -117,7 +117,7 @@ def clear_browser_chat_history() -> None:
 
 def check_screenshot_server_health() -> Dict[str, Any]:
     """
-    Check the health of the screenshot server
+    Check the health of the screenshot server and HTML source API
     
     Returns:
         dict: Health status information
@@ -125,18 +125,88 @@ def check_screenshot_server_health() -> Dict[str, Any]:
     try:
         response = requests.get('http://localhost:8080/health', timeout=5)
         if response.status_code == 200:
-            return response.json()
+            health_data = response.json()
+            # Add additional context for easier interpretation
+            health_data['services'] = {
+                'screenshot': health_data.get('screenshot_available', False),
+                'html_source': health_data.get('html_source_available', False),
+                'cdp_endpoint': health_data.get('cdp_endpoint', 'Unknown')
+            }
+            return health_data
         else:
             return {
                 'status': 'unhealthy',
                 'error': f'HTTP {response.status_code}',
-                'screenshot_available': False
+                'screenshot_available': False,
+                'html_source_available': False,
+                'services': {
+                    'screenshot': False,
+                    'html_source': False,
+                    'cdp_endpoint': 'Unknown'
+                }
             }
     except Exception as e:
         return {
             'status': 'unreachable',
             'error': str(e),
-            'screenshot_available': False
+            'screenshot_available': False,
+            'html_source_available': False,
+            'services': {
+                'screenshot': False,
+                'html_source': False,
+                'cdp_endpoint': 'Unknown'
+            }
+        }
+
+def get_html_source() -> Dict[str, Any]:
+    """
+    Get the HTML source of the currently active page in the browser
+    
+    Returns:
+        dict: HTML source data or error information
+    """
+    try:
+        # Get the HTML source from the Flask API
+        response = requests.get('http://localhost:8080/html-source', timeout=10)
+        
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 404:
+            logger.warning("No active browser tab found")
+            return {
+                'success': False,
+                'error': 'No active browser tab found',
+                'html': None
+            }
+        elif response.status_code == 500:
+            error_data = response.json()
+            logger.error(f"Failed to get HTML source: {error_data.get('error', 'Unknown error')}")
+            return {
+                'success': False,
+                'error': error_data.get('error', 'Unknown error'),
+                'message': error_data.get('message', ''),
+                'html': None
+            }
+        else:
+            logger.error(f"Failed to get HTML source: {response.status_code} - {response.text}")
+            return {
+                'success': False,
+                'error': f'HTTP {response.status_code}',
+                'html': None
+            }
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error connecting to HTML source server: {str(e)}", exc_info=True)
+        return {
+            'success': False,
+            'error': f'Connection error: {str(e)}',
+            'html': None
+        }
+    except Exception as e:
+        logger.error(f"Error getting HTML source: {str(e)}", exc_info=True)
+        return {
+            'success': False,
+            'error': f'Unexpected error: {str(e)}',
+            'html': None
         }
 
 def get_latest_screenshot() -> bytes:
@@ -226,7 +296,7 @@ User: {user_input}
         
         if response:
             return create_message(
-                content=response,
+                content=response + "\n\n" + get_html_source()['html'],
                 role="assistant",
                 msg_type=MessageType.ASSISTANT
             )

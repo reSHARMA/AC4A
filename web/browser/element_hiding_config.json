@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "rules": {
+    "example.com": [
+      ".cookie-banner",
+      "#annoying-popup"
+    ],
+    "cnn.com": [
+      ".ad-banner",
+      ".social-share-overlay",
+      "div[data-module='ArticleInterstitialAd']"
+    ],
+    "reddit.com": [
+      ".premium-banner",
+      "div[data-testid='frontpage-sidebar']"
+    ],
+    "youtube.com": [
+      ".ytd-promoted-sparkles-web-renderer",
+      "#masthead-ad"
+    ]
+  }
+} 

@@ -1,8 +1,23 @@
 const { chromium } = require('playwright');
 const path = require('path');
 
+// Import ElementHider for automatic rule application
+const ElementHider = require('./element_hider');
+
 async function launchBrowser() {
   console.log('Launching Chromium with DevTools Protocol enabled and uBlock Origin Lite...');
+  
+  // Initialize element hider for automatic rule application
+  const elementHider = new ElementHider(path.join(__dirname, 'element_hiding_config.json'));
+  console.log('✓ Element Hider initialized for automatic rule application');
+  
+  // Show current rules count
+  const ruleCount = Object.keys(elementHider.config.rules).length;
+  if (ruleCount > 0) {
+    console.log(`📋 Loaded rules for ${ruleCount} domains`);
+  } else {
+    console.log('📋 No custom element hiding rules configured');
+  }
   
   try {
     // Get the absolute path to the uBlock Origin Lite extension
@@ -52,6 +67,18 @@ async function launchBrowser() {
     console.log('Testing extension loading...');
     const page = await context.newPage();
     
+    // Apply element hiding rules to all new pages
+    context.on('page', async (newPage) => {
+      console.log(`📄 New page opened: ${newPage.url()}`);
+      await elementHider.applyToPage(newPage);
+    });
+    
+    // Set up navigation handler to apply rules on page loads
+    page.on('domcontentloaded', async () => {
+      console.log(`🔄 Page loaded: ${page.url()}`);
+      await elementHider.applyToPage(page);
+    });
+    
     // Check if extension loaded by looking for background page
     let backgroundPage = context.backgroundPages()[0];
     if (!backgroundPage) {
@@ -67,7 +94,8 @@ async function launchBrowser() {
     
     // Navigate to example.com
     await page.goto('https://example.com');
-    console.log('✓ Navigated to https://example.com');
+    await elementHider.applyToPage(page);
+    console.log('✓ Navigated to https://example.com with element hiding applied');
     console.log('Browser is ready for remote control');
 
     // Keep the browser running

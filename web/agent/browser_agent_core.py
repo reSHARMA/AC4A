@@ -449,11 +449,11 @@ User: {user_input}
         
         if response:
             # Format HTML structure data for display
-            data_selectors_str = "Data Elements:\n" + "\n".join(html_structure.get('data', [])) if html_structure.get('data') else "Data Elements: None found"
-            action_selectors_str = "Action Elements:\n" + "\n".join(html_structure.get('action', [])) if html_structure.get('action') else "Action Elements: None found"
+            read_selectors_str = "Read Elements:\n" + "\n".join(html_structure.get('read', [])) if html_structure.get('read') else "Read Elements: None found"
+            write_selectors_str = "Write Elements:\n" + "\n".join(html_structure.get('write', [])) if html_structure.get('write') else "Write Elements: None found"
             
             return create_message(
-                content=response + "\n\n" + data_selectors_str + "\n\n" + action_selectors_str,
+                content=response + "\n\n" + read_selectors_str + "\n\n" + write_selectors_str,
                 role="assistant",
                 msg_type=MessageType.ASSISTANT
             )
@@ -480,7 +480,7 @@ def analyze_html_structure(screenshot_data: bytes) -> Dict[str, Any]:
         screenshot_data (bytes): Raw PNG image data of the current page
         
     Returns:
-        dict: Contains 'data' and 'action' lists with valid CSS selectors/paths
+        dict: Contains 'read' and 'write' lists with valid CSS selectors/paths
     """
     try:
         # Get HTML source from the current page
@@ -489,14 +489,14 @@ def analyze_html_structure(screenshot_data: bytes) -> Dict[str, Any]:
         if not html_result.get('success', False) or not html_result.get('html'):
             logger.error("Failed to get HTML source for analysis")
             return {
-                'data': [],
-                'action': [],
+                'read': [],
+                'write': [],
                 'error': 'Failed to get HTML source'
             }
         
         # Get the cleaned HTML content and create minimal version for analysis
         html_content = html_result['html']
-        minimal_html = create_minimal_html_for_analysis(html_content)
+        minimal_html = clean_html_content(html_content) # create_minimal_html_for_analysis(html_content)
         
         # Limit HTML size to prevent API payload issues (max ~50KB of HTML)
         max_html_length = 50000
@@ -508,22 +508,19 @@ def analyze_html_structure(screenshot_data: bytes) -> Dict[str, Any]:
         screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
         
         # Create system prompt for HTML analysis
-        system_prompt = """You are an expert web developer and data analyst. Your task is to analyze a webpage's HTML structure and identify:
-
-1. DATA elements: Elements that contain information, text, values, or content that could be extracted or read
-2. ACTION elements: Interactive elements that can be clicked, typed into, or otherwise interacted with
+        system_prompt = """You are an expert in HTML. Your task is to analyze a webpage's HTML source code. First analyze the elements which are clickable or interactable. For all such elements, identify that iteracting with them will have a read or write side effect on the data, for example, a search button is a read side effect because clicking it will return information. Similarly, a form submission is a write side effect because it will change the state of the data internally.
 
 For each element you identify, provide the most specific and reliable CSS selector or identifier.
 
 Return your analysis as a JSON object with this exact structure:
 {
-    "data": [
+    "read": [
         "css-selector-1",
         "css-selector-2",
         "#specific-id",
         ".class-name"
     ],
-    "action": [
+    "write": [
         "button.submit-btn",
         "#login-form input[type='submit']",
         ".navigation a",
@@ -534,23 +531,23 @@ Return your analysis as a JSON object with this exact structure:
 Guidelines:
 - Prefer IDs over classes when available
 - Use specific selectors that won't break easily
-- For data elements: focus on text content, values, headers, labels
-- For action elements: focus on buttons, links, inputs, forms, clickable elements
 - Ensure selectors are valid CSS syntax
 - Include both specific and general selectors where appropriate
-- Return ONLY the JSON object, no additional text"""
+- Return ONLY the JSON object, no additional text
+
+Do not miss any elements."""
 
         # Create input text for analysis
-        analysis_text = f"""Please analyze this webpage and identify data and action elements.
+        analysis_text = f"""Please analyze this webpage and identify read and write elements.
 
 HTML Source (simplified for analysis):
 {minimal_html}
 
 Provide CSS selectors for:
-1. DATA elements (content to read/extract)
-2. ACTION elements (interactive elements to click/type into)
+1. Read elements (read access to data by clicking or interacting with the element)
+2. Write elements (write access to data by clicking or interacting with the element)
 
-Return as JSON with 'data' and 'action' arrays."""
+Return as JSON with 'read' and 'write' arrays."""
 
         # Create input content with HTML and screenshot
         input_content = {
@@ -559,13 +556,13 @@ Return as JSON with 'data' and 'action' arrays."""
         }
         
         # Call OpenAI API for analysis
-        response = call_openai_api(system_prompt, input_content, "html-analysis")
+        response = call_openai_api(system_prompt, input_content, "computer-use")
         
         if not response:
             logger.error("No response from OpenAI API for HTML analysis")
             return {
-                'data': [],
-                'action': [],
+                'read': [],
+                'write': [],
                 'error': 'No response from analysis model'
             }
         
@@ -593,33 +590,33 @@ Return as JSON with 'data' and 'action' arrays."""
             # Validate the structure
             if not isinstance(analysis_result, dict):
                 raise ValueError("Response is not a dictionary")
-            
-            data_selectors = analysis_result.get('data', [])
-            action_selectors = analysis_result.get('action', [])
+
+            read_selectors = analysis_result.get('read', [])
+            write_selectors = analysis_result.get('write', [])
             
             # Ensure they are lists
-            if not isinstance(data_selectors, list):
-                data_selectors = []
-            if not isinstance(action_selectors, list):
-                action_selectors = []
+            if not isinstance(read_selectors, list):
+                read_selectors = []
+            if not isinstance(write_selectors, list):
+                write_selectors = []
             
             # Filter out any non-string values and validate CSS selectors
-            valid_data_selectors = []
-            valid_action_selectors = []
+            valid_read_selectors = []
+            valid_write_selectors = []
             
-            for selector in data_selectors:
+            for selector in read_selectors:
                 if isinstance(selector, str) and selector.strip():
-                    valid_data_selectors.append(selector.strip())
+                    valid_read_selectors.append(selector.strip())
             
-            for selector in action_selectors:
+            for selector in write_selectors:
                 if isinstance(selector, str) and selector.strip():
-                    valid_action_selectors.append(selector.strip())
+                    valid_write_selectors.append(selector.strip())
             
-            logger.info(f"HTML analysis found {len(valid_data_selectors)} data elements and {len(valid_action_selectors)} action elements")
+            logger.info(f"HTML analysis found {len(valid_read_selectors)} read elements and {len(valid_write_selectors)} write elements")
             
             return {
-                'data': valid_data_selectors,
-                'action': valid_action_selectors,
+                'read': valid_read_selectors,
+                'write': valid_write_selectors,
                 'success': True
             }
             
@@ -627,23 +624,23 @@ Return as JSON with 'data' and 'action' arrays."""
             logger.error(f"Failed to parse JSON response from analysis: {str(e)}")
             logger.debug(f"Raw response: {response}")
             return {
-                'data': [],
-                'action': [],
+                'read': [],
+                'write': [],
                 'error': f'Failed to parse analysis response: {str(e)}'
             }
         except Exception as e:
             logger.error(f"Error processing analysis response: {str(e)}")
             return {
-                'data': [],
-                'action': [],
+                'read': [],
+                'write': [],
                 'error': f'Error processing response: {str(e)}'
             }
             
     except Exception as e:
         logger.error(f"Error in HTML structure analysis: {str(e)}", exc_info=True)
         return {
-            'data': [],
-            'action': [],
+            'read': [],
+            'write': [],
             'error': f'Analysis failed: {str(e)}'
         }
 
@@ -652,8 +649,8 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: 
     Highlight the analyzed HTML elements by injecting CSS borders
     
     Args:
-        html_structure (dict): Result from analyze_html_structure containing data and action selectors
-        highlight_type (str): What to highlight - "data", "action", or "both"
+        html_structure (dict): Result from analyze_html_structure containing read and write selectors
+        highlight_type (str): What to highlight - "read", "write", or "both"
         
     Returns:
         dict: Result of the CSS injection operation
@@ -668,13 +665,13 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: 
         selectors_to_highlight = []
         
         # Collect selectors based on highlight_type
-        if highlight_type in ["data", "both"]:
-            data_selectors = html_structure.get('data', [])
-            selectors_to_highlight.extend(data_selectors)
+        if highlight_type in ["read", "both"]:
+            read_selectors = html_structure.get('read', [])
+            selectors_to_highlight.extend(read_selectors)
             
-        if highlight_type in ["action", "both"]:
-            action_selectors = html_structure.get('action', [])
-            selectors_to_highlight.extend(action_selectors)
+        if highlight_type in ["write", "both"]:
+            write_selectors = html_structure.get('write', [])
+            selectors_to_highlight.extend(write_selectors)
         
         if not selectors_to_highlight:
             return {
@@ -682,11 +679,11 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: 
                 'error': f'No {highlight_type} selectors found to highlight'
             }
         
-        # Create different border colors for data vs action elements
+        # Create different border colors for read vs write elements
         css_rules = ""
         
-        if highlight_type in ["data", "both"] and html_structure.get('data'):
-            for selector in html_structure.get('data', []):
+        if highlight_type in ["read", "both"] and html_structure.get('read'):
+            for selector in html_structure.get('read', []):
                 css_rules += f"""
                 {selector} {{
                     border: 2px solid #4CAF50 !important;
@@ -694,7 +691,7 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: 
                     position: relative !important;
                 }}
                 {selector}::after {{
-                    content: 'DATA';
+                    content: 'READ';
                     position: absolute;
                     top: -18px;
                     right: 0;
@@ -710,8 +707,8 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: 
                 }}
                 """
         
-        if highlight_type in ["action", "both"] and html_structure.get('action'):
-            for selector in html_structure.get('action', []):
+        if highlight_type in ["write", "both"] and html_structure.get('write'):
+            for selector in html_structure.get('write', []):
                 css_rules += f"""
                 {selector} {{
                     border: 2px solid #FF9800 !important;
@@ -719,7 +716,7 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: 
                     position: relative !important;
                 }}
                 {selector}::after {{
-                    content: 'ACTION';
+                    content: 'WRITE';
                     position: absolute;
                     top: -18px;
                     right: 0;

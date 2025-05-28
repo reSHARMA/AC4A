@@ -9,7 +9,7 @@ const path = require('path');
 class ElementHider {
   constructor(configPath = './element_hiding_config.json') {
     this.configPath = configPath;
-    this.config = this.loadConfig();
+    this.loadConfig();
   }
 
   /**
@@ -19,23 +19,18 @@ class ElementHider {
     try {
       if (fs.existsSync(this.configPath)) {
         const data = fs.readFileSync(this.configPath, 'utf8');
-        return JSON.parse(data);
+        this.config = JSON.parse(data);
+        console.log(`✓ Configuration loaded from ${this.configPath}`);
+        console.log(`📊 Loaded ${Object.keys(this.config.rules).length} domains with rules:`, Object.keys(this.config.rules));
+      } else {
+        console.log(`Config file not found at ${this.configPath}, creating default...`);
+        this.config = { version: '1.0', rules: {} };
+        this.saveConfig();
       }
     } catch (error) {
       console.error('Error loading config:', error);
+      this.config = { version: '1.0', rules: {} };
     }
-    
-    // Default config structure
-    return {
-      version: "1.0",
-      rules: {
-        // "example.com": [
-        //   ".cookie-banner",
-        //   "div[class*='gdpr']",
-        //   "#annoying-popup"
-        // ]
-      }
-    };
   }
 
   /**
@@ -45,6 +40,7 @@ class ElementHider {
     try {
       fs.writeFileSync(this.configPath, JSON.stringify(this.config, null, 2));
       console.log(`✓ Configuration saved to ${this.configPath}`);
+      console.log(`📊 Current rules: ${Object.keys(this.config.rules).length} domains`);
     } catch (error) {
       console.error('Error saving config:', error);
     }

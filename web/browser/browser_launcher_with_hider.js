@@ -6,9 +6,15 @@ async function launchBrowserWithElementHider() {
   console.log('🎯 Launching browser in ZAPPER MODE...');
   console.log('Point and click elements to hide them forever!');
   
-  // Initialize element hider
-  const elementHider = new ElementHider(path.join(__dirname, 'element_hiding_config.json'));
+  // Calculate path to script directory config file
+  // Dynamic approach: use HOME environment variable to find the script directory
+  const homeDir = process.env.HOME || process.env.USERPROFILE;
+  const scriptDirConfigPath = path.join(homeDir, 'data-policy-lang', 'web', 'browser', 'element_hiding_config.json');
+  
+  // Initialize element hider with script directory config
+  const elementHider = new ElementHider(scriptDirConfigPath);
   console.log('✓ Element Hider initialized');
+  console.log(`📁 Using config from: ${scriptDirConfigPath}`);
   
   // Show current rules count
   const ruleCount = Object.keys(elementHider.config.rules).length;
@@ -82,6 +88,7 @@ async function launchBrowserWithElementHider() {
     console.log('====================');
     console.log('• Hover over any element to highlight it');
     console.log('• Click to HIDE the element forever');
+    console.log('• Ctrl+Click to use elements normally');
     console.log('• Rules auto-save to element_hiding_config.json');
     console.log('• Press ESC to temporarily disable zapper');
     console.log('• Navigate to any website and zap away!');
@@ -150,8 +157,9 @@ async function enableZapperMode(page, elementHider) {
           font-weight: bold;
           z-index: 999999;
           box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          line-height: 1.2;
         `;
-        indicator.textContent = '🎯 ZAPPER MODE';
+        indicator.innerHTML = '🎯 ZAPPER MODE<br><small>Ctrl+Click = Normal</small>';
         document.body.appendChild(indicator);
       }
       
@@ -173,11 +181,11 @@ async function enableZapperMode(page, elementHider) {
       
       if (isZapperActive) {
         document.body.style.cursor = 'crosshair';
-        if (indicator) indicator.textContent = '🎯 ZAPPER MODE';
+        if (indicator) indicator.innerHTML = '🎯 ZAPPER MODE<br><small>Ctrl+Click = Normal</small>';
         console.log('🎯 Zapper mode enabled. Click elements to hide them.');
       } else {
         document.body.style.cursor = 'default';
-        if (indicator) indicator.textContent = '😴 ZAPPER OFF';
+        if (indicator) indicator.innerHTML = '😴 ZAPPER OFF<br><small>Press ESC to enable</small>';
         if (highlightedElement) unhighlightElement();
         console.log('😴 Zapper mode disabled. Press ESC to re-enable.');
       }
@@ -211,6 +219,12 @@ async function enableZapperMode(page, elementHider) {
     function zapElement(e) {
       if (!isZapperActive) return;
       if (e.target.id === 'zapper-indicator') return;
+      
+      // Allow Ctrl+Click (or Cmd+Click on Mac) to work normally
+      if (e.ctrlKey || e.metaKey) {
+        console.log('🖱️ Normal click (Ctrl+Click) - not zapping');
+        return; // Let the normal click behavior proceed
+      }
       
       e.preventDefault();
       e.stopPropagation();
@@ -323,10 +337,13 @@ async function monitorElementSelection(page, elementHider) {
       
       if (result) {
         const { selector, domain } = result;
+        console.log(`🔍 Detected zapped element: ${domain} -> ${selector}`);
         const added = elementHider.addRule(domain, selector);
         
         if (added) {
           console.log(`✅ Auto-saved rule: ${domain} -> ${selector}`);
+        } else {
+          console.log(`ℹ️ Rule already exists: ${domain} -> ${selector}`);
         }
       }
     } catch (error) {

@@ -378,6 +378,7 @@ if [ "$MODE" = "config" ]; then
     if [ "$ELEMENT_HIDER_TEST_PASSED" = true ]; then
         echo "• Hover over elements to highlight them"
         echo "• Click to hide elements permanently"
+        echo "• Ctrl+Click to use elements normally (buttons, links, etc.)"
         echo "• Rules automatically saved to: $INSTALL_DIR/playwright-project/element_hiding_config.json"
         echo "• Press ESC to temporarily disable zapper"
     else
@@ -529,6 +530,7 @@ show_help() {
     echo "    - Visual element picker interface (like uBlock Origin's zapper)"
     echo "    - Hover over elements to highlight them"
     echo "    - Click to hide elements permanently"
+    echo "    - Ctrl+Click to use elements normally (buttons, links, etc.)"
     echo "    - Rules automatically saved to element_hiding_config.json"
     echo "    - Press ESC to temporarily disable zapper"
     echo "    - No command line interface - pure visual interaction"

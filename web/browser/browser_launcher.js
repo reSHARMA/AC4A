@@ -7,9 +7,15 @@ const ElementHider = require('./element_hider');
 async function launchBrowser() {
   console.log('Launching Chromium with DevTools Protocol enabled and uBlock Origin Lite...');
   
+  // Calculate path to script directory config file
+  // Dynamic approach: use HOME environment variable to find the script directory
+  const homeDir = process.env.HOME || process.env.USERPROFILE;
+  const scriptDirConfigPath = path.join(homeDir, 'data-policy-lang', 'web', 'browser', 'element_hiding_config.json');
+  
   // Initialize element hider for automatic rule application
-  const elementHider = new ElementHider(path.join(__dirname, 'element_hiding_config.json'));
+  const elementHider = new ElementHider(scriptDirConfigPath);
   console.log('✓ Element Hider initialized for automatic rule application');
+  console.log(`📁 Using config from: ${scriptDirConfigPath}`);
   
   // Show current rules count
   const ruleCount = Object.keys(elementHider.config.rules).length;

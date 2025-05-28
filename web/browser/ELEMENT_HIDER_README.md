@@ -33,6 +33,7 @@ Pure visual interface for element hiding configuration:
 - **No command line interface** - everything is visual
 - **Hover** over elements to highlight them
 - **Click** to hide elements permanently  
+- **Ctrl+Click** to use elements normally (buttons, links, etc.)
 - **Auto-save** rules to `element_hiding_config.json`
 - **Press ESC** to temporarily disable zapper
 - **Navigate freely** and zap elements on any website

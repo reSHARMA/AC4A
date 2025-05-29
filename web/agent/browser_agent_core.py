@@ -7,6 +7,9 @@ import re
 import json
 import time
 from src.utils.dummy_data import call_openai_api
+from .agent_manager import agent_manager
+from PIL import Image
+import io
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -355,6 +358,43 @@ def get_html_source() -> Dict[str, Any]:
             'html': None
         }
 
+def compress_screenshot(screenshot_data: bytes, max_size: tuple = (800, 600), quality: int = 55) -> bytes:
+    """
+    Compress and resize screenshot data to reduce size
+    
+    Args:
+        screenshot_data (bytes): Raw PNG image data
+        max_size (tuple): Maximum width and height
+        quality (int): JPEG quality (1-100)
+        
+    Returns:
+        bytes: Compressed image data
+    """
+    try:
+        # Open image from bytes
+        img = Image.open(io.BytesIO(screenshot_data))
+        
+        # Convert to RGB if needed (for PNG with transparency)
+        if img.mode in ('RGBA', 'LA'):
+            background = Image.new('RGB', img.size, (255, 255, 255))
+            background.paste(img, mask=img.split()[-1])
+            img = background
+        
+        # Calculate new dimensions while maintaining aspect ratio
+        ratio = min(max_size[0] / img.width, max_size[1] / img.height)
+        if ratio < 1:  # Only resize if image is larger than max_size
+            new_size = (int(img.width * ratio), int(img.height * ratio))
+            img = img.resize(new_size, Image.Resampling.LANCZOS)
+        
+        # Save as JPEG with specified quality
+        output = io.BytesIO()
+        img.save(output, format='JPEG', quality=quality, optimize=True)
+        return output.getvalue()
+        
+    except Exception as e:
+        logger.error(f"Error compressing screenshot: {str(e)}")
+        return screenshot_data  # Return original if compression fails
+
 def get_latest_screenshot() -> bytes:
     """
     Get the latest screenshot from the Flask screenshot server
@@ -367,7 +407,8 @@ def get_latest_screenshot() -> bytes:
         response = requests.get('http://localhost:8080/screenshot', timeout=10)
         
         if response.status_code == 200:
-            return response.content
+            # Compress the screenshot before returning
+            return compress_screenshot(response.content)
         elif response.status_code == 404:
             logger.warning("Screenshot not available yet")
             return b''
@@ -404,13 +445,16 @@ def process_with_computer_use(user_input: str) -> Dict[str, Any]:
         clear_element_highlighting()
         time.sleep(1)
         # Analyze the HTML structure
-        html_structure = analyze_html_structure(screenshot_data)
+        # html_structure = analyze_html_structure(screenshot_data)
+        html_structure = infer_data_from_html_structure(screenshot_data)
         if not html_structure.get('success', False):
             return create_message(
                 content=html_structure.get('error', 'Failed to analyze HTML structure'),
                 role="system",
                 msg_type=MessageType.ERROR
             )
+
+        logger.info(f"[browser_agent_core.py] HTML structure: {html_structure}")
         time.sleep(1)
         # Highlight the analyzed elements
         highlight_analyzed_elements(html_structure)
@@ -456,12 +500,8 @@ User: {user_input}
         response = call_openai_api(system_prompt, input_content, "computer-use")
         
         if response:
-            # Format HTML structure data for display
-            read_selectors_str = "Read Elements:\n" + "\n".join(html_structure.get('read', [])) if html_structure.get('read') else "Read Elements: None found"
-            write_selectors_str = "Write Elements:\n" + "\n".join(html_structure.get('write', [])) if html_structure.get('write') else "Write Elements: None found"
-            
             return create_message(
-                content=response + "\n\n" + read_selectors_str + "\n\n" + write_selectors_str,
+                content=response,
                 role="assistant",
                 msg_type=MessageType.ASSISTANT
             )
@@ -479,6 +519,234 @@ User: {user_input}
             role="system",
             msg_type=MessageType.ERROR
         ) 
+
+def infer_data_from_html_structure(screenshot_data: bytes) -> Dict[str, Any]:
+    """
+    Infer data from the HTML structure using screenshot and HTML source
+    
+    Args:
+        screenshot_data (bytes): Raw PNG image data of the current page
+    
+    Returns:
+        dict with key as pair of data type and data value mapped to the CSS selector of the element
+    """
+    try:
+        # Get HTML source from the current page
+        html_result = get_html_source()
+        
+        if not html_result.get('success', False) or not html_result.get('html'):
+            logger.error("Failed to get HTML source for analysis")
+            return {
+                'data': {},
+                'error': 'Failed to get HTML source'
+            }
+        
+        # Get the cleaned HTML content and create minimal version for analysis
+        html_content = html_result['html']
+        minimal_html = get_element_paths(html_content)
+        
+        # Convert screenshot to base64 for API call
+        screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
+        
+        # Get all data and schema
+        all_data = "<ALL DATA>\n"
+        # Get and print attribute trees
+        attribute_trees = agent_manager.get_attribute_trees()
+        for i, tree in enumerate(attribute_trees):
+            all_data += f"{tree.get_tree_string()}\n"
+        all_data += "</ALL DATA>"
+        logger.info(f"[browser_agent_core.py] All data: {all_data}")
+
+        all_data_schema = "<ALL DATA SCHEMA>\n"
+        all_data_schema += str(agent_manager.get_attribute_schema())
+        all_data_schema += "</ALL DATA SCHEMA>"
+        logger.info(f"[browser_agent_core.py] All data schema: {all_data_schema}")
+
+        data_schema = all_data + all_data_schema
+        # Create system prompt for HTML analysis
+        system_prompt = """You are an expert in reasoning about the content on any webpage. Your task is to analyze the text, icons, images, buttons, links, etc given to you as a list of data from an html element and their unique CSS selector. You are also provided with a screenshot of the page to better understand the context.
+
+        For a given data schema describing the data type and the data value, identify the elements which belong to that data type and have the data value. If the data value is in a different format convert it to the format specified in the data schema. Also, if the data in the webpage represent all the data values of a data type, then the data value is "*", for example, if a button searches all the calendara data for all the years then the data value is "*" for the appropriate data type which maybe Calendar:Year (based on the data schema)
+
+        Return your analysis as a JSON object with this exact structure:
+        {
+            "data": {
+                ("data_type", "data_value"): "css_selector",
+                ("data_type", "data_value"): "css_selector",
+                ...
+            }
+        }
+
+        Guidelines:
+        - Classify all the elements given to you, do not miss any elements. If any element does not belong to any data type, its data type is "unknown" and value is "none".
+        - Only output the CSS selector given to you with the element data. Do not add any other text.
+        - Return ONLY the JSON object, no additional text."""
+
+        analysis_text = f"""Please analyze this webpage and classify the elements into data types and data values.
+List of HTML elements and their CSS selectors:
+{minimal_html}
+
+Data schema:
+{data_schema}"""
+
+        # Create input content with HTML and screenshot
+        input_content = {
+            "text": analysis_text,
+            "image": f"data:image/png;base64,{screenshot_base64}"
+        }
+
+        logger.info(f"[browser_agent_core.py] Input content: {input_content}")
+        # Call OpenAI API for analysis
+        response = call_openai_api(system_prompt, input_content, "computer-use")
+
+        if not response:
+            logger.error("No response from OpenAI API for HTML analysis")
+            return {
+                'data': {},
+                'error': 'No response from analysis model'
+            }
+
+        # Try to parse the JSON response
+        try:
+            # Clean the response - remove any markdown formatting
+            response = response.strip()
+            logger.debug(f"Raw response before cleaning: {response}")
+            
+            # Remove markdown code blocks
+            if response.startswith('```json'):
+                response = response[7:]
+            elif response.startswith('```'):
+                response = response[3:]
+            if response.endswith('```'):
+                response = response[:-3]
+            response = response.strip()
+            logger.debug(f"Response after removing markdown: {response}")
+
+            # Convert tuple keys to strings
+            # First, find all tuple patterns like ("key", "value")
+            tuple_pattern = r'\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\)'
+            
+            def replace_tuple(match):
+                key, value = match.groups()
+                return f'"{key}:{value}"'
+            
+            # Replace all tuple keys with string keys
+            response = re.sub(tuple_pattern, replace_tuple, response)
+            logger.debug(f"Response after tuple conversion: {response}")
+
+            # Extract JSON from response if it's wrapped in other text
+            json_match = re.search(r'\{.*\}', response, re.DOTALL)
+            if json_match:
+                json_str = json_match.group()
+                logger.debug(f"Extracted JSON string: {json_str}")
+                
+                # Fix common JSON formatting issues
+                # 1. Ensure property names are quoted
+                json_str = re.sub(r'([{,])\s*([a-zA-Z0-9_]+)\s*:', r'\1"\2":', json_str)
+                # 2. Fix single quotes to double quotes
+                json_str = json_str.replace("'", '"')
+                # 3. Fix trailing commas
+                json_str = re.sub(r',\s*}', '}', json_str)
+                json_str = re.sub(r',\s*]', ']', json_str)
+                # 4. Fix missing quotes around values
+                json_str = re.sub(r':\s*([a-zA-Z0-9_]+)([,}])', r':"\1"\2', json_str)
+                
+                logger.debug(f"Cleaned JSON string: {json_str}")
+                analysis_result = json.loads(json_str)
+            else:
+                # Try parsing the whole response as JSON
+                # Apply the same fixes to the whole response
+                response = re.sub(r'([{,])\s*([a-zA-Z0-9_]+)\s*:', r'\1"\2":', response)
+                response = response.replace("'", '"')
+                response = re.sub(r',\s*}', '}', response)
+                response = re.sub(r',\s*]', ']', response)
+                response = re.sub(r':\s*([a-zA-Z0-9_]+)([,}])', r':"\1"\2', response)
+                
+                logger.debug(f"Cleaned full response: {response}")
+                analysis_result = json.loads(response)
+
+            # Validate the structure
+            if not isinstance(analysis_result, dict):
+                raise ValueError("Response is not a dictionary")
+
+            # Ensure the data field exists and is a dictionary
+            if 'data' not in analysis_result:
+                analysis_result = {'data': analysis_result}
+            elif not isinstance(analysis_result['data'], dict):
+                analysis_result['data'] = {}
+
+            # Convert string keys back to tuples in the data dictionary
+            converted_data = {}
+            for key, value in analysis_result['data'].items():
+                if ':' in key:
+                    # Convert "key:value" back to tuple
+                    k, v = key.split(':', 1)
+                    converted_data[(k, v)] = value
+                else:
+                    converted_data[key] = value
+            
+            analysis_result['data'] = converted_data
+
+            return {
+                'data': analysis_result['data'],
+                'success': True
+            }
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response from analysis: {str(e)}")
+            logger.error(f"Raw response: {response}")
+            # Try one last time with a more aggressive cleaning
+            try:
+                # Remove any non-JSON text before and after the JSON object
+                json_str = re.search(r'\{.*\}', response, re.DOTALL).group()
+                # Convert tuple keys to strings
+                json_str = re.sub(tuple_pattern, replace_tuple, json_str)
+                # Convert all single quotes to double quotes
+                json_str = json_str.replace("'", '"')
+                # Add quotes around all unquoted property names
+                json_str = re.sub(r'([{,])\s*([a-zA-Z0-9_]+)\s*:', r'\1"\2":', json_str)
+                # Add quotes around all unquoted values
+                json_str = re.sub(r':\s*([a-zA-Z0-9_]+)([,}])', r':"\1"\2', json_str)
+                # Remove any trailing commas
+                json_str = re.sub(r',\s*}', '}', json_str)
+                json_str = re.sub(r',\s*]', ']', json_str)
+                
+                logger.debug(f"Last attempt cleaned JSON: {json_str}")
+                analysis_result = json.loads(json_str)
+                
+                if 'data' not in analysis_result:
+                    analysis_result = {'data': analysis_result}
+                elif not isinstance(analysis_result['data'], dict):
+                    analysis_result['data'] = {}
+                
+                # Convert string keys back to tuples in the data dictionary
+                converted_data = {}
+                for key, value in analysis_result['data'].items():
+                    if ':' in key:
+                        # Convert "key:value" back to tuple
+                        k, v = key.split(':', 1)
+                        converted_data[(k, v)] = value
+                    else:
+                        converted_data[key] = value
+                
+                analysis_result['data'] = converted_data
+                    
+                return {
+                    'data': analysis_result['data'],
+                    'success': True
+                }
+            except Exception as e2:
+                logger.error(f"Last attempt failed: {str(e2)}")
+                return {
+                    'data': {},
+                    'error': f'Failed to parse analysis response: {str(e)}'
+                }
+    except Exception as e:
+        logger.error(f"Error in infer_data_from_html_structure: {str(e)}", exc_info=True)
+        return {
+            'data': {},
+            'error': f'Error in infer_data_from_html_structure: {str(e)}'
+        }
 
 def analyze_html_structure(screenshot_data: bytes) -> Dict[str, Any]:
     """
@@ -505,13 +773,6 @@ def analyze_html_structure(screenshot_data: bytes) -> Dict[str, Any]:
         # Get the cleaned HTML content and create minimal version for analysis
         html_content = html_result['html']
         minimal_html = get_element_paths(html_content)
-        logger.info("Minimal HTML: " + minimal_html)
-        
-        # Limit HTML size to prevent API payload issues (max ~50KB of HTML)
-        max_html_length = 100000
-        if len(minimal_html) > max_html_length:
-            logger.warning(f"HTML content too large ({len(minimal_html)} chars), truncating to {max_html_length}")
-            minimal_html = minimal_html[:max_html_length] + "\n<!-- ... content truncated for analysis ... -->"
         
         # Convert screenshot to base64 for API call
         screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
@@ -647,53 +908,77 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: 
     Highlight the analyzed HTML elements by injecting CSS borders
     
     Args:
-        html_structure (dict): Result from analyze_html_structure containing read and write selectors
+        html_structure (dict): Dictionary containing lists of CSS selectors for different categories
         highlight_type (str): What to highlight - "read", "write", or "both"
         
     Returns:
         dict: Result of the CSS injection operation
     """
     try:
-        if not html_structure.get('success', False):
+        if not isinstance(html_structure, dict):
             return {
                 'success': False,
-                'error': 'HTML structure analysis was not successful'
+                'error': 'HTML structure must be a dictionary'
             }
         
-        selectors_to_highlight = []
-        
-        # Collect selectors based on highlight_type
-        if highlight_type in ["read", "both"]:
-            read_selectors = html_structure.get('read', [])
-            selectors_to_highlight.extend(read_selectors)
-            
-        if highlight_type in ["write", "both"]:
-            write_selectors = html_structure.get('write', [])
-            selectors_to_highlight.extend(write_selectors)
-        
-        if not selectors_to_highlight:
+        # Get the data dictionary from the structure
+        data_dict = html_structure.get('data', {})
+        if not data_dict:
             return {
                 'success': False,
-                'error': f'No {highlight_type} selectors found to highlight'
+                'error': 'No data found in HTML structure'
             }
         
-        # Create different border colors for read vs write elements
+        # Define a list of distinct colors for different categories
+        colors = [
+            ('#4CAF50', '#4CAF50'),  # Green
+            ('#FF9800', '#FF9800'),  # Orange
+            ('#2196F3', '#2196F3'),  # Blue
+            ('#9C27B0', '#9C27B0'),  # Purple
+            ('#F44336', '#F44336'),  # Red
+            ('#00BCD4', '#00BCD4'),  # Cyan
+            ('#FFEB3B', '#FFEB3B'),  # Yellow
+            ('#795548', '#795548'),  # Brown
+            ('#607D8B', '#607D8B'),  # Blue Grey
+            ('#E91E63', '#E91E63'),  # Pink
+        ]
+        
         css_rules = ""
+        color_index = 0
         
-        if highlight_type in ["read", "both"] and html_structure.get('read'):
-            for selector in html_structure.get('read', []):
+        # Group selectors by their first tuple element (data type)
+        type_groups = {}
+        for (data_type, data_value), selector in data_dict.items():
+            if data_type not in type_groups:
+                type_groups[data_type] = []
+            type_groups[data_type].append((data_value, selector))
+        
+        # Process each data type group
+        for data_type, value_selectors in type_groups.items():
+            # Get color for this data type
+            border_color, bg_color = colors[color_index % len(colors)]
+            color_index += 1
+            
+            # Add CSS rules for each selector in this group
+            for data_value, selector in value_selectors:
+                if not isinstance(selector, str) or not selector.strip():
+                    continue
+                
+                # Create a display label that includes both type and value
+                display_label = f"{data_type}:{data_value}"
+                
                 css_rules += f"""
                 {selector} {{
-                    border: 2px solid #4CAF50 !important;
-                    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5) !important;
+                    border: 2px solid {border_color} !important;
+                    box-shadow: 0 0 5px {border_color} !important;
                     position: relative !important;
                 }}
                 {selector}::after {{
-                    content: 'READ';
+                    content: '{display_label}';
                     position: absolute;
                     top: -18px;
                     right: 0;
-                    background: #4CAF50;
+                    background: {bg_color};
                     color: white;
                     padding: 1px 4px;
                     font-size: 9px;
@@ -705,30 +990,11 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: 
                 }}
                 """
         
-        if highlight_type in ["write", "both"] and html_structure.get('write'):
-            for selector in html_structure.get('write', []):
-                css_rules += f"""
-                {selector} {{
-                    border: 2px solid #FF9800 !important;
-                    box-shadow: 0 0 5px rgba(255, 152, 0, 0.5) !important;
-                    position: relative !important;
-                }}
-                {selector}::after {{
-                    content: 'WRITE';
-                    position: absolute;
-                    top: -18px;
-                    right: 0;
-                    background: #FF9800;
-                    color: white;
-                    padding: 1px 4px;
-                    font-size: 9px;
-                    font-family: monospace;
-                    border-radius: 2px;
-                    z-index: 9999;
-                    pointer-events: none;
-                    font-weight: bold;
-                }}
-                """
+        if not css_rules:
+            return {
+                'success': False,
+                'error': 'No valid selectors found to highlight'
+            }
         
         # Send CSS to the injection endpoint
         payload = {
@@ -741,11 +1007,10 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: 
         
         if response.status_code == 200:
             result = response.json()
-            logger.info(f"Successfully highlighted {len(selectors_to_highlight)} elements")
+            logger.info(f"Successfully highlighted elements")
             return {
                 'success': True,
-                'message': f'Highlighted {len(selectors_to_highlight)} {highlight_type} elements',
-                'highlighted_count': len(selectors_to_highlight),
+                'message': 'Highlighted elements',
                 'css_applied': result.get('css_applied', '')
             }
         else:

@@ -102,7 +102,7 @@ def call_openai_api(system: str, prompt: str, mode: str) -> str:
             elif mode == "app":
                 model_name = f"{os.getenv('APP_BACKEND_MODEL')}_{os.getenv('APP_BACKEND_MODEL_DATE')}"
             elif mode == "computer-use":
-                model_name = f"{os.getenv('PERM_MODEL')}_{os.getenv('PERM_MODEL_DATE')}"
+                model_name = f"{os.getenv('CHAT_MODEL')}_{os.getenv('CHAT_MODEL_DATE')}"
 
             client = AzureOpenAI(
                 azure_endpoint=endpoint,

@@ -229,12 +229,20 @@ def create_minimal_html_for_analysis(html: str) -> str:
     # Keep only: id, class (simplified), name, type, value, alt, title
     html = re.sub(r'\s+(?!(?:id|class|name|type|value|alt|title|href|src|action)\b)\w+\s*=\s*["\'][^"\']*["\']', '', html, flags=re.IGNORECASE)
     
+    # If an element has an ID, remove its CLASS attribute
+    # Handles cases where 'id' attribute might appear before or after 'class' attribute
+    # Case 1: id attribute before class attribute
+    html = re.sub(r'(<(\w+)[^>]*?\bid\s*=\s*(["\'])[^\3]*?\3[^>]*?)(\s*class\s*=\s*(["\'])[^\5]*?\5)([^>]*?>)', r'\1\6', html, flags=re.IGNORECASE)
+    # Case 2: class attribute before id attribute
+    html = re.sub(r'(<(\w+)[^>]*?)(\s*class\s*=\s*(["\'])[^\4]*?\4)([^>]*?\bid\s*=\s*(["\'])[^\6]*?\6[^>]*?>)', r'\1\5', html, flags=re.IGNORECASE)
+    
     # Remove redundant nested divs that don't add semantic value
     # This is aggressive - removes div tags that only contain other divs or single elements
     html = re.sub(r'<div[^>]*>\s*(<(?:div|span|a|button|input|img)[^>]*>.*?</(?:div|span|a|button)>)\s*</div>', r'\1', html, flags=re.IGNORECASE | re.DOTALL)
     
-    # Remove span tags that don't have meaningful attributes
-    html = re.sub(r'<span[^>]*>\s*(.*?)\s*</span>', r'\1', html, flags=re.IGNORECASE | re.DOTALL)
+    # Remove span tags that have no attributes left after cleaning, preserving their content.
+    # This ensures spans with meaningful attributes (like id) are kept.
+    html = re.sub(r'<span\\s*>\\s*(.*?)\\s*</span>', r'\\1', html, flags=re.IGNORECASE | re.DOTALL)
     
     # Collapse multiple nested divs with no content between them
     html = re.sub(r'<div[^>]*>\s*<div', '<div', html, flags=re.IGNORECASE)
@@ -496,10 +504,11 @@ def analyze_html_structure(screenshot_data: bytes) -> Dict[str, Any]:
         
         # Get the cleaned HTML content and create minimal version for analysis
         html_content = html_result['html']
-        minimal_html = clean_html_content(html_content) # create_minimal_html_for_analysis(html_content)
+        minimal_html = create_minimal_html_for_analysis(html_content)
+        logger.info("Minimal HTML: " + minimal_html)
         
         # Limit HTML size to prevent API payload issues (max ~50KB of HTML)
-        max_html_length = 50000
+        max_html_length = 100000
         if len(minimal_html) > max_html_length:
             logger.warning(f"HTML content too large ({len(minimal_html)} chars), truncating to {max_html_length}")
             minimal_html = minimal_html[:max_html_length] + "\n<!-- ... content truncated for analysis ... -->"
@@ -508,9 +517,15 @@ def analyze_html_structure(screenshot_data: bytes) -> Dict[str, Any]:
         screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
         
         # Create system prompt for HTML analysis
-        system_prompt = """You are an expert in HTML. Your task is to analyze a webpage's HTML source code. First analyze the elements which are clickable or interactable. For all such elements, identify that iteracting with them will have a read or write side effect on the data, for example, a search button is a read side effect because clicking it will return information. Similarly, a form submission is a write side effect because it will change the state of the data internally.
+        system_prompt = """You are an expert in HTML. Your task is to analyze a webpage's HTML source code. Use the HTML source given to you to identify the elements which will let the user see more data or change the state of the data in the backend.
+
+        You will be given the complete HTML source code of the page but you should only focus on the elements that are visible in the screenshot of the page given to you.
+        
+Classify the elements into read or write side effect. The write side effect changes the state in the backend for example buttons for booking, paying, creating, editing while read only gives read access to data this could be from search, show data, share, print and whatever can give access to the data. 
 
 For each element you identify, provide the most specific and reliable CSS selector or identifier.
+
+Only focus on data, like calendar data, flight data, cookie data etc. Do not focus on elements that can not read or write data like headings which are not clickable or interactable.
 
 Return your analysis as a JSON object with this exact structure:
 {
@@ -539,15 +554,8 @@ Do not miss any elements."""
 
         # Create input text for analysis
         analysis_text = f"""Please analyze this webpage and identify read and write elements.
-
 HTML Source (simplified for analysis):
-{minimal_html}
-
-Provide CSS selectors for:
-1. Read elements (read access to data by clicking or interacting with the element)
-2. Write elements (write access to data by clicking or interacting with the element)
-
-Return as JSON with 'read' and 'write' arrays."""
+{minimal_html}"""
 
         # Create input content with HTML and screenshot
         input_content = {

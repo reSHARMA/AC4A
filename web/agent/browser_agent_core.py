@@ -504,7 +504,7 @@ def analyze_html_structure(screenshot_data: bytes) -> Dict[str, Any]:
         
         # Get the cleaned HTML content and create minimal version for analysis
         html_content = html_result['html']
-        minimal_html = create_minimal_html_for_analysis(html_content)
+        minimal_html = get_element_paths(html_content)
         logger.info("Minimal HTML: " + minimal_html)
         
         # Limit HTML size to prevent API payload issues (max ~50KB of HTML)
@@ -517,15 +517,9 @@ def analyze_html_structure(screenshot_data: bytes) -> Dict[str, Any]:
         screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
         
         # Create system prompt for HTML analysis
-        system_prompt = """You are an expert in HTML. Your task is to analyze a webpage's HTML source code. Use the HTML source given to you to identify the elements which will let the user see more data or change the state of the data in the backend.
+        system_prompt = """You are an expert in reasoning about the content on any webpage. Your task is to analyze the text, icons, images, buttons, links, etc given to you as a list of data from an html element and their unique CSS selector. Use it along with the screenshot of the page to identify the elements which will let the user see more data or change the state of the data in the backend.
 
-        You will be given the complete HTML source code of the page but you should only focus on the elements that are visible in the screenshot of the page given to you.
-        
-Classify the elements into read or write side effect. The write side effect changes the state in the backend for example buttons for booking, paying, creating, editing while read only gives read access to data this could be from search, show data, share, print and whatever can give access to the data. 
-
-For each element you identify, provide the most specific and reliable CSS selector or identifier.
-
-Only focus on data, like calendar data, flight data, cookie data etc. Do not focus on elements that can not read or write data like headings which are not clickable or interactable.
+Classify the elements into read or write side effect. The write side effect changes the state in the backend for example buttons for booking, paying, creating, editing while read only gives read access to data this could be from search, show data, share, print and whatever can give access to the data. If something is not a write then the default is read.
 
 Return your analysis as a JSON object with this exact structure:
 {
@@ -544,17 +538,13 @@ Return your analysis as a JSON object with this exact structure:
 }
 
 Guidelines:
-- Prefer IDs over classes when available
-- Use specific selectors that won't break easily
-- Ensure selectors are valid CSS syntax
-- Include both specific and general selectors where appropriate
-- Return ONLY the JSON object, no additional text
-
-Do not miss any elements."""
+- Only output the CSS selector given to you with the element data. Do not add any other text.
+- Return ONLY the JSON object, no additional text.
+- Classify all the elements given to you, do not miss any elements."""
 
         # Create input text for analysis
-        analysis_text = f"""Please analyze this webpage and identify read and write elements.
-HTML Source (simplified for analysis):
+        analysis_text = f"""Please analyze this webpage and classify the elements into read and write elements.
+List of HTML elements and their CSS selectors:
 {minimal_html}"""
 
         # Create input content with HTML and screenshot
@@ -816,4 +806,82 @@ def clear_element_highlighting() -> Dict[str, Any]:
             'success': False,
             'error': f'Clearing failed: {str(e)}'
         }
+
+def get_minimum_element_path(element) -> str:
+    """
+    Generate a unique CSS selector for an HTML element using the minimum necessary path.
+    Prioritizes IDs, then classes, and falls back to tag names with nth-child if needed.
+    
+    Args:
+        element: BeautifulSoup element to generate selector for
+        
+    Returns:
+        str: Unique CSS selector for the element
+    """
+    if not element:
+        return ""
+        
+    # If element has an ID, use that as it's unique
+    if element.get('id'):
+        return f"#{element['id']}"
+        
+    # Build selector using classes if available
+    classes = element.get('class', [])
+    if classes:
+        class_selector = '.'.join(classes)
+        # Check if this class combination is unique
+        siblings = element.find_previous_siblings() + element.find_next_siblings()
+        if not any(s.get('class') == classes for s in siblings):
+            return f".{class_selector}"
+            
+    # If no unique identifier found, use tag name with nth-child
+    tag = element.name
+    if not tag:
+        return ""
+        
+    # Count position among siblings
+    position = 1
+    for sibling in element.find_previous_siblings():
+        if sibling.name == tag:
+            position += 1
+            
+    return f"{tag}:nth-of-type({position})"
+
+def get_element_paths(html_content: str) -> Dict[str, str]:
+    """
+    Analyze HTML content and create a mapping of content to unique selectors.
+    
+    Args:
+        html_content (str): HTML content to analyze
+        
+    Returns:
+        dict: Mapping of content descriptions to unique selectors
+    """
+    try:
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html_content, 'html.parser')
+        content_map = {}
+        
+        # Handle text elements
+        for text_node in soup.find_all(text=True):
+            if text_node.strip() and text_node.parent.name not in ['script', 'style']:
+                cleaned_text = f"Text: {text_node.strip()}"
+                selector = get_minimum_element_path(text_node.parent)
+                if selector:
+                    content_map[cleaned_text] = selector
+        
+        # Handle images/icons
+        for element in soup.find_all(['img', 'i', 'svg']):
+            identifier = element.get('alt') or element.get('title') or ' '.join(element.get('class', []))
+            element_type = "Image" if element.name == 'img' else "Icon"
+            key = f"{element_type}: {identifier}"
+            selector = get_minimum_element_path(element)
+            if selector:
+                content_map[key] = selector
+                
+        return str(content_map)
+    
+    except Exception as e:
+        logger.error(f"Error getting element paths: {str(e)}", exc_info=True)
+        return {}
 

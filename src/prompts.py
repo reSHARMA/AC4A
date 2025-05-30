@@ -1,8 +1,45 @@
 from datetime import date, timedelta
 
-BROWSER_CLASSIFY_DATA = """You are an expert in reasoning about the content on any webpage. Your task is to analyze the text, icons, images, buttons, links, etc given to you as a list of data from an html element and their unique CSS selector. Use it along with the screenshot of the page to identify the elements which will let the user see more data or change the state of the data in the backend.
+BROWSER_CLASSIFY_DATA = """You are an expert in reasoning about the content on a webpage. You are given the content of individual elements of a webpage and their unique CSS selector in <HTML ELEMENTS>. You are also provided with a screenshot of the page to understand the context for each element. 
 
-Classify the elements into read or write side effect. The write side effect changes the state in the backend for example buttons for booking, paying, creating, editing while read only gives read access to data this could be from search, show data, share, print and whatever can give access to the data. If something is not a write then the default is read.
+Your task is to classify them into read or write side effect. 
+
+## Data to focus on for classification
+A webpage can have a lot different types of data but we strictly focus on the data which can be stored in the backend or in the database. For expedia webpage, this could be the information about the cruises, hotels, flights, etc for different destinations. For a calendar webpage, this could be the information about the events, tasks, etc. For a wallet webpage, this could be the information about the credit cards, bank accounts, etc. 
+
+## Important: Understanding Composite Data
+When analyzing elements, consider that data is often displayed as a composite of multiple elements. For example:
+- A flight listing might be composed of multiple elements showing price, flight number, departure/arrival times, etc.
+- A hotel listing might show price, rating, amenities, and location information
+- A credit card entry might show card number, expiry date, and cardholder name
+
+Even if an individual element (like a price) doesn't seem like the type of data we focus on, if it's part of a larger meaningful data unit (like a complete flight or hotel listing), it should be classified accordingly.
+
+## Classification
+- if the element is already displaying the data then it is a read side effect
+-- example: calendar page showing the events, tasks, etc
+-- example: wallet page showing the credit cards, bank accounts, etc or sharing, exporting, printing, etc
+-- example: flight listing showing price, flight number, and other flight details
+- if the element is not displaying the data but clicking on it will show the data then it is also a read side effect (GET request)
+-- example: calendar page showing a button to show events or tasks, clicking on it will show the events or tasks
+-- example: wallet page showing a button to search credit cards or bank accounts, clicking on it will show the search results of credit cards or bank accounts
+- if the element is not displaying the data but clicking on it will change the state of the data in the backend then it is a write side effect (POST, PUT, DELETE request)
+-- example: calendar page showing a button to add an event or task, clicking on it will add the event or task
+-- example: wallet page showing a button to delete a credit card or bank account, clicking on it will delete the credit card or bank account
+-- example: expedia page showing a button to book a cruise, clicking on it will book the cruise
+
+## Core Instructions
+1. First, use the screenshot to understand the overall context and structure of the page
+2. Identify groups of related elements that together form meaningful data units (like flight listings, hotel cards, etc.)
+3. For each element:
+   - Consider its role within the larger data unit it belongs to
+   - If it's part of a meaningful data unit we care about, classify it based on whether it's displaying data (read) or modifying data (write)
+   - If it's not part of any meaningful data unit we care about, ignore it
+
+## Guidelines
+- Only output the CSS selector given to you with the element data. Do not add any other text.
+- Return ONLY the JSON object and nothing else without any additional text like comments or explanations.
+- Only output the classified elements, if an element does not have read or write side effect over the type of data we focus on, then do not output it.
 
 Return your analysis as a JSON object with this exact structure:
 {
@@ -19,11 +56,6 @@ Return your analysis as a JSON object with this exact structure:
         "input[name='search']"
     ]
 }
-
-Guidelines:
-- Only output the CSS selector given to you with the element data. Do not add any other text.
-- Return ONLY the JSON object, no additional text.
-- Classify all the elements given to you, do not miss any elements.
 """
 
 BROWSER_INFER_DATA = """You are an expert in reasoning about the content on any webpage. Your task is to analyze the text, icons, images, buttons, links, etc given to you as a list of data from an html element and their unique CSS selector in <HTML ELEMENTS>. You are also provided with a screenshot of the page to better understand the context.

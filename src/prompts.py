@@ -1,5 +1,31 @@
 from datetime import date, timedelta
 
+BROWSER_CLASSIFY_DATA = """You are an expert in reasoning about the content on any webpage. Your task is to analyze the text, icons, images, buttons, links, etc given to you as a list of data from an html element and their unique CSS selector. Use it along with the screenshot of the page to identify the elements which will let the user see more data or change the state of the data in the backend.
+
+Classify the elements into read or write side effect. The write side effect changes the state in the backend for example buttons for booking, paying, creating, editing while read only gives read access to data this could be from search, show data, share, print and whatever can give access to the data. If something is not a write then the default is read.
+
+Return your analysis as a JSON object with this exact structure:
+{
+    "read": [
+        "css-selector-1",
+        "css-selector-2",
+        "#specific-id",
+        ".class-name"
+    ],
+    "write": [
+        "button.submit-btn",
+        "#login-form input[type='submit']",
+        ".navigation a",
+        "input[name='search']"
+    ]
+}
+
+Guidelines:
+- Only output the CSS selector given to you with the element data. Do not add any other text.
+- Return ONLY the JSON object, no additional text.
+- Classify all the elements given to you, do not miss any elements.
+"""
+
 BROWSER_INFER_DATA = """You are an expert in reasoning about the content on any webpage. Your task is to analyze the text, icons, images, buttons, links, etc given to you as a list of data from an html element and their unique CSS selector in <HTML ELEMENTS>. You are also provided with a screenshot of the page to better understand the context.
 
 Your task is to analyze the data from HTML elements given to you and infer the data type and data value for each element. You are also provided with all the possible data types which are supported as well as the schema of the data values in <ALL DATA> and <ALL DATA SCHEMA>.

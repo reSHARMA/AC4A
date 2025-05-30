@@ -812,31 +812,6 @@ def analyze_html_structure(screenshot_data: bytes) -> Dict[str, Any]:
         screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
         
         # Create system prompt for HTML analysis
-        system_prompt = """You are an expert in reasoning about the content on any webpage. Your task is to analyze the text, icons, images, buttons, links, etc given to you as a list of data from an html element and their unique CSS selector. Use it along with the screenshot of the page to identify the elements which will let the user see more data or change the state of the data in the backend.
-
-Classify the elements into read or write side effect. The write side effect changes the state in the backend for example buttons for booking, paying, creating, editing while read only gives read access to data this could be from search, show data, share, print and whatever can give access to the data. If something is not a write then the default is read.
-
-Return your analysis as a JSON object with this exact structure:
-{
-    "read": [
-        "css-selector-1",
-        "css-selector-2",
-        "#specific-id",
-        ".class-name"
-    ],
-    "write": [
-        "button.submit-btn",
-        "#login-form input[type='submit']",
-        ".navigation a",
-        "input[name='search']"
-    ]
-}
-
-Guidelines:
-- Only output the CSS selector given to you with the element data. Do not add any other text.
-- Return ONLY the JSON object, no additional text.
-- Classify all the elements given to you, do not miss any elements."""
-
         # Create input text for analysis
         analysis_text = f"""Please analyze this webpage and classify the elements into read and write elements.
 List of HTML elements and their CSS selectors:
@@ -849,7 +824,7 @@ List of HTML elements and their CSS selectors:
         }
         
         # Call OpenAI API for analysis
-        response = call_openai_api(system_prompt, input_content, "computer-use")
+        response = call_openai_api(BROWSER_CLASSIFY_DATA, input_content, "computer-use")
         
         if not response:
             logger.error("No response from OpenAI API for HTML analysis")

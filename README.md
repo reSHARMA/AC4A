@@ -37,6 +37,7 @@ Example tasks for these applications can be found in `tasks.md`, which contains 
 
 ### Backend Requirements
 - Python 3.x
+- Redis Server
 - Required Python packages (see `web/requirements.txt`)
 
 ### Frontend Requirements
@@ -51,13 +52,23 @@ Example tasks for these applications can be found in `tasks.md`, which contains 
    cd data-policy-lang
    ```
 
-2. **Install Backend Dependencies**
+2. **Install Redis**
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get update
+   sudo apt-get install redis-server
+   
+   # macOS
+   brew install redis
+   ```
+
+3. **Install Backend Dependencies**
    ```bash
    cd web
    pip install -r requirements.txt
    ```
 
-3. **Install Frontend Dependencies**
+4. **Install Frontend Dependencies**
    ```bash
    cd frontend
    npm install
@@ -65,22 +76,41 @@ Example tasks for these applications can be found in `tasks.md`, which contains 
 
 ## Running the Project
 
-### Development Mode
+### Quick Start
+Use the setup script to start all services:
+```bash
+./web/browser/setup.sh
+```
 
-1. **Start the Backend Server:**
+This will:
+- Start Redis server in daemon mode
+- Start the backend server
+- Start the frontend development server
+- Show service status and endpoints
+
+### Manual Start
+
+1. **Start Redis Server**
+   ```bash
+   redis-server --daemonize yes
+   ```
+
+2. **Start the Backend Server**
    ```bash
    cd web
    python app.py
    ```
 
-2. **Start the Frontend Development Server:**
+3. **Start the Frontend Development Server**
    ```bash
+   cd frontend
    npm run dev
    ```
 
 The application will be available at:
-- Frontend: `http://localhost:5000`
-- Backend API: `http://localhost:5173`
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:5000`
+- Redis: `localhost:6379`
 
 ## Features
 
@@ -103,6 +133,7 @@ This project is configured to work with GitHub Codespaces. To get started:
 The codespace will automatically:
 - Set up a Python 3.11 environment
 - Install Node.js 18.x
+- Install Redis
 - Install all Python dependencies from `web/requirements.txt`
 - Install all frontend dependencies in `web/frontend`
 - Configure VS Code with recommended extensions
@@ -110,17 +141,7 @@ The codespace will automatically:
 The development environment will be ready to use with:
 - Frontend running on port 5173
 - Backend running on port 5000
-
-To start the development server:
-```bash
-# Start the backend
-cd web
-python app.py
-
-# In another terminal, start the frontend
-cd web/frontend
-npm run dev
-```
+- Redis running on port 6379
 
 ### Testing
 - Backend tests are located in `src/tests/`

@@ -444,10 +444,9 @@ def process_with_computer_use(user_input: str) -> Dict[str, Any]:
             )
             
         clear_element_highlighting()
-        time.sleep(1)
-        # Analyze the HTML structure
-        # html_structure = analyze_html_structure(screenshot_data)
-        html_structure = infer_data_from_html_structure(screenshot_data)
+
+        # First analyze HTML structure to get read/write elements
+        html_structure = analyze_html_structure(screenshot_data)
         if not html_structure.get('success', False):
             return create_message(
                 content=html_structure.get('error', 'Failed to analyze HTML structure'),
@@ -455,11 +454,56 @@ def process_with_computer_use(user_input: str) -> Dict[str, Any]:
                 msg_type=MessageType.ERROR
             )
 
-        logger.info(f"[browser_agent_core.py] HTML structure: {html_structure}")
-        time.sleep(1)
-        # Highlight the analyzed elements
-        highlight_analyzed_elements(html_structure)
-        time.sleep(1)
+        # Get HTML source and create minimal version
+        html_result = get_html_source()
+        if not html_result.get('success', False) or not html_result.get('html'):
+            return create_message(
+                content="Failed to get HTML source",
+                role="system",
+                msg_type=MessageType.ERROR
+            )
+
+        # Create minimal HTML with element paths
+        minimal_html = get_element_paths(html_result['html'])
+        
+        # Filter minimal_html to only include elements that are in the read list
+        filtered_read_html = {}
+        filtered_write_html = {}
+        read_selectors = set(html_structure.get('read', []))
+        write_selectors = set(html_structure.get('write', []))
+        
+        # Filter the dictionary directly since minimal_html is already a dictionary
+        for element, selector in minimal_html.items():
+            if selector in read_selectors:
+                filtered_read_html[element] = selector
+            if selector in write_selectors:
+                filtered_write_html[element] = selector
+
+        # Now infer data from the filtered HTML structure for read elements
+        read_data_structure = infer_data_from_html_structure(screenshot_data, filtered_read_html)
+        if not read_data_structure.get('success', False):
+            return create_message(
+                content=read_data_structure.get('error', 'Failed to infer data from HTML structure'),
+                role="system",
+                msg_type=MessageType.ERROR
+            )
+
+        logger.info(f"[browser_agent_core.py] Read data structure: {read_data_structure}")
+        # Highlight the read elements first
+        highlight_analyzed_elements(read_data_structure, highlight_type="read")
+
+        # Now infer data from the filtered HTML structure for write elements
+        write_data_structure = infer_data_from_html_structure(screenshot_data, filtered_write_html)
+        if not write_data_structure.get('success', False):
+            return create_message(
+                content=write_data_structure.get('error', 'Failed to infer data from HTML structure'),
+                role="system",
+                msg_type=MessageType.ERROR
+            )
+
+        logger.info(f"[browser_agent_core.py] Write data structure: {write_data_structure}")
+        # Then highlight the write elements
+        highlight_analyzed_elements(write_data_structure, highlight_type="write")
 
         # Convert screenshot to base64
         screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
@@ -519,32 +563,34 @@ User: {user_input}
             content=f"Error processing with computer-use model: {str(e)}",
             role="system",
             msg_type=MessageType.ERROR
-        ) 
+        )
 
-def infer_data_from_html_structure(screenshot_data: bytes) -> Dict[str, Any]:
+def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[str, str] = None) -> Dict[str, Any]:
     """
     Infer data from the HTML structure using screenshot and HTML source
     
     Args:
         screenshot_data (bytes): Raw PNG image data of the current page
+        minimal_html (Dict[str, str]): Optional pre-filtered HTML elements and their selectors
     
     Returns:
         dict with key as pair of data type and data value mapped to the CSS selector of the element
     """
     try:
-        # Get HTML source from the current page
-        html_result = get_html_source()
-        
-        if not html_result.get('success', False) or not html_result.get('html'):
-            logger.error("Failed to get HTML source for analysis")
-            return {
-                'data': {},
-                'error': 'Failed to get HTML source'
-            }
-        
-        # Get the cleaned HTML content and create minimal version for analysis
-        html_content = html_result['html']
-        minimal_html = get_element_paths(html_content)
+        # Get HTML source from the current page if minimal_html not provided
+        if minimal_html is None:
+            html_result = get_html_source()
+            
+            if not html_result.get('success', False) or not html_result.get('html'):
+                logger.error("Failed to get HTML source for analysis")
+                return {
+                    'data': {},
+                    'error': 'Failed to get HTML source'
+                }
+            
+            # Get the cleaned HTML content and create minimal version for analysis
+            html_content = html_result['html']
+            minimal_html = get_element_paths(html_content)
         
         # Convert screenshot to base64 for API call
         screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
@@ -563,8 +609,6 @@ def infer_data_from_html_structure(screenshot_data: bytes) -> Dict[str, Any]:
         all_data_schema += "</ALL DATA SCHEMA>"
         logger.info(f"[browser_agent_core.py] All data schema: {all_data_schema}")
 
-        data_schema = all_data + all_data_schema
-        # Create system prompt for HTML analysis
         analysis_text = f"""Please analyze this webpage and classify the elements into data types and data values.
 
         <ALL DATA>
@@ -576,7 +620,7 @@ def infer_data_from_html_structure(screenshot_data: bytes) -> Dict[str, Any]:
         </ALL DATA SCHEMA>
 
         <HTML ELEMENTS>
-        {minimal_html}
+        {str(minimal_html)}
         </HTML ELEMENTS>"""
 
         # Create input content with HTML and screenshot
@@ -796,7 +840,7 @@ Guidelines:
         # Create input text for analysis
         analysis_text = f"""Please analyze this webpage and classify the elements into read and write elements.
 List of HTML elements and their CSS selectors:
-{minimal_html}"""
+{str(minimal_html)}"""
 
         # Create input content with HTML and screenshot
         input_content = {
@@ -919,19 +963,23 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: 
                 'error': 'No data found in HTML structure'
             }
         
-        # Define a list of distinct colors for different categories
-        colors = [
+        # Define colors for read and write elements
+        read_colors = [
             ('#4CAF50', '#4CAF50'),  # Green
-            ('#FF9800', '#FF9800'),  # Orange
             ('#2196F3', '#2196F3'),  # Blue
-            ('#9C27B0', '#9C27B0'),  # Purple
-            ('#F44336', '#F44336'),  # Red
             ('#00BCD4', '#00BCD4'),  # Cyan
-            ('#FFEB3B', '#FFEB3B'),  # Yellow
-            ('#795548', '#795548'),  # Brown
             ('#607D8B', '#607D8B'),  # Blue Grey
+        ]
+        
+        write_colors = [
+            ('#F44336', '#F44336'),  # Red
+            ('#FF9800', '#FF9800'),  # Orange
+            ('#9C27B0', '#9C27B0'),  # Purple
             ('#E91E63', '#E91E63'),  # Pink
         ]
+        
+        # Choose color palette based on highlight type
+        colors = write_colors if highlight_type == "write" else read_colors
         
         css_rules = ""
         color_index = 0
@@ -950,6 +998,9 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: 
                 if not isinstance(selector, str) or not selector.strip():
                     continue
                 
+                # Add prefix to label based on highlight type
+                label_prefix = "Write: " if highlight_type == "write" else "Read: "
+                
                 css_rules += f"""
                 {selector} {{
                     border: 2px solid {border_color} !important;
@@ -957,7 +1008,7 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: 
                     position: relative !important;
                 }}
                 {selector}::after {{
-                    content: '{data_type}';
+                    content: '{label_prefix}{data_type}';
                     position: absolute;
                     top: -18px;
                     right: 0;
@@ -990,10 +1041,10 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: 
         
         if response.status_code == 200:
             result = response.json()
-            logger.info(f"Successfully highlighted elements")
+            logger.info(f"Successfully highlighted {highlight_type} elements")
             return {
                 'success': True,
-                'message': 'Highlighted elements',
+                'message': f'Highlighted {highlight_type} elements',
                 'css_applied': result.get('css_applied', '')
             }
         else:
@@ -1127,7 +1178,7 @@ def get_element_paths(html_content: str) -> Dict[str, str]:
             if selector:
                 content_map[key] = selector
                 
-        return str(content_map)
+        return content_map
     
     except Exception as e:
         logger.error(f"Error getting element paths: {str(e)}", exc_info=True)

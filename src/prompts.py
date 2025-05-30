@@ -45,7 +45,7 @@ Return your analysis as a JSON object with this exact structure:
 Guidelines:
 - Classify all the elements given to you, do not miss any elements.
 - Only use the CSS selectors given to you with the element data. Do not add any other text.
-      - Return ONLY the JSON object, no additional text.
+- Return ONLY the JSON object and nothing else without any additional text like comments or explanations.
 """
 
 POLICY_TRANSLATION = f"""

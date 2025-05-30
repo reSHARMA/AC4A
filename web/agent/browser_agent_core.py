@@ -10,6 +10,7 @@ from src.utils.dummy_data import call_openai_api
 from .agent_manager import agent_manager
 from PIL import Image
 import io
+from src.prompts import BROWSER_INFER_DATA
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -564,30 +565,19 @@ def infer_data_from_html_structure(screenshot_data: bytes) -> Dict[str, Any]:
 
         data_schema = all_data + all_data_schema
         # Create system prompt for HTML analysis
-        system_prompt = """You are an expert in reasoning about the content on any webpage. Your task is to analyze the text, icons, images, buttons, links, etc given to you as a list of data from an html element and their unique CSS selector. You are also provided with a screenshot of the page to better understand the context.
-
-        For a given data schema describing the data type and the data value, identify the elements which belong to that data type and have the data value. If the data value is in a different format convert it to the format specified in the data schema. Also, if the data in the webpage represent all the data values of a data type, then the data value is "*", for example, if a button searches all the calendara data for all the years then the data value is "*" for the appropriate data type which maybe Calendar:Year (based on the data schema)
-
-        Return your analysis as a JSON object with this exact structure:
-        {
-            "data": {
-                ("data_type", "data_value"): "css_selector",
-                ("data_type", "data_value"): "css_selector",
-                ...
-            }
-        }
-
-        Guidelines:
-        - Classify all the elements given to you, do not miss any elements. If any element does not belong to any data type, its data type is "unknown" and value is "none".
-        - Only output the CSS selector given to you with the element data. Do not add any other text.
-        - Return ONLY the JSON object, no additional text."""
-
         analysis_text = f"""Please analyze this webpage and classify the elements into data types and data values.
-List of HTML elements and their CSS selectors:
-{minimal_html}
 
-Data schema:
-{data_schema}"""
+        <ALL DATA>
+        {all_data}
+        </ALL DATA>
+
+        <ALL DATA SCHEMA>
+        {all_data_schema}
+        </ALL DATA SCHEMA>
+
+        <HTML ELEMENTS>
+        {minimal_html}
+        </HTML ELEMENTS>"""
 
         # Create input content with HTML and screenshot
         input_content = {
@@ -597,7 +587,7 @@ Data schema:
 
         logger.info(f"[browser_agent_core.py] Input content: {input_content}")
         # Call OpenAI API for analysis
-        response = call_openai_api(system_prompt, input_content, "computer-use")
+        response = call_openai_api(BROWSER_INFER_DATA, input_content, "computer-use")
 
         if not response:
             logger.error("No response from OpenAI API for HTML analysis")
@@ -908,7 +898,7 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: 
     Highlight the analyzed HTML elements by injecting CSS borders
     
     Args:
-        html_structure (dict): Dictionary containing lists of CSS selectors for different categories
+        html_structure (dict): Dictionary containing data types as keys and arrays of CSS selectors as values
         highlight_type (str): What to highlight - "read", "write", or "both"
         
     Returns:
@@ -946,26 +936,19 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: 
         css_rules = ""
         color_index = 0
         
-        # Group selectors by their first tuple element (data type)
-        type_groups = {}
-        for (data_type, data_value), selector in data_dict.items():
-            if data_type not in type_groups:
-                type_groups[data_type] = []
-            type_groups[data_type].append((data_value, selector))
-        
-        # Process each data type group
-        for data_type, value_selectors in type_groups.items():
+        # Process each data type and its selectors
+        for data_type, selectors in data_dict.items():
+            if not isinstance(selectors, list):
+                continue
+                
             # Get color for this data type
             border_color, bg_color = colors[color_index % len(colors)]
             color_index += 1
             
-            # Add CSS rules for each selector in this group
-            for data_value, selector in value_selectors:
+            # Add CSS rules for each selector in this data type
+            for selector in selectors:
                 if not isinstance(selector, str) or not selector.strip():
                     continue
-                
-                # Create a display label that includes both type and value
-                display_label = f"{data_type}:{data_value}"
                 
                 css_rules += f"""
                 {selector} {{
@@ -974,7 +957,7 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: 
                     position: relative !important;
                 }}
                 {selector}::after {{
-                    content: '{display_label}';
+                    content: '{data_type}';
                     position: absolute;
                     top: -18px;
                     right: 0;

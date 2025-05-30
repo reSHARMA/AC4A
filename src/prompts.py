@@ -1,5 +1,53 @@
 from datetime import date, timedelta
 
+BROWSER_INFER_DATA = """You are an expert in reasoning about the content on any webpage. Your task is to analyze the text, icons, images, buttons, links, etc given to you as a list of data from an html element and their unique CSS selector in <HTML ELEMENTS>. You are also provided with a screenshot of the page to better understand the context.
+
+Your task is to analyze the data from HTML elements given to you and infer the data type and data value for each element. You are also provided with all the possible data types which are supported as well as the schema of the data values in <ALL DATA> and <ALL DATA SCHEMA>.
+
+The inferred data is represented as "DataType(DataValue)", the <ALL DATA> also describe the hierarchy of the data types which must be strictly followed while composing the data type. 
+
+## Examples:
+- If the data is, "Text: Toggle button on. Show the daily view. (Alt+Shift+1)'" then the data type is "Calendar:Day" because this button toggles the daily view of the calendar and since there is no specific day mentioned, the data value is "*". So you will classify the css selector of this HTML element as "Calendar:Day(*)"
+
+- If it was a button for searching all the calendar data for all the years then the data type is "Calendar:Year" and the data value is "*" because this button searches all the calendar data for all the years.
+
+- Similarly, if it was a button to create a new event for 14th of June 2025 then the data type would be composite data type "Calendar:Year(2025):Month(June):Day(14)".
+
+If the content of the HTML element is not related to the data type and data value, then the data type is "unknown" and the data value is "none".
+Use the text of the HTML element along with the screenshot to infer the context. A button in a Calendar page which says Week might refer to a button which toggles the weekly view of the calendar so you must classify it as Calendar:Week and data value is "*".
+Similarly a button to book, pay or search must be classified as the data they are referring to.
+
+## Data Type and Value:
+- The data type must always be from <ALL DATA>.
+- The value for the data type must be a single atomic value which can be passed to a function, for example, avoid 10th instead use 10, instead of Amex Gold Card use Amex Gold.
+- The description and examples of the values are provided in <ALL DATA SCHEMA>, use it to understand the values and use it to generate the correct value.
+- Do not make composite values or values which are descriptive in nature.
+- These values will be passed as API parameters and you must be mindful about it.
+- Do not try to make up any data value or use arbitrary values.
+- There must always be a value for the data type, example Calendar:Month(December) is valid but Calendar:Month is not valid.
+- '*' can be used as a value for the data type, example Calendar:Month(*) is valid and allows access to all months.
+
+## Strictly follow the data hierarchy:
+- The data hierarchy is provided in the <ALL DATA> contains the available data types as a tree.
+- In <ALL DATA>, the childs are denoted by indentation.
+- In granular_data, the succeeding data type must strictly be the child of the previous data type, example can never have something like Calendar:Day(10)::Calendar:Year(2025) but can have Calendar:Month(December)::Calendar:Day(10).
+
+
+Return your analysis as a JSON object with this exact structure:
+{
+    "data": {
+        "inferred_data_type_1": ["css_selector_1", "css_selector_2", ...],
+        "inferred_data_type_2": ["css_selector_3", "css_selector_4", ...],
+        ...
+    }
+}
+
+Guidelines:
+- Classify all the elements given to you, do not miss any elements.
+- Only use the CSS selectors given to you with the element data. Do not add any other text.
+      - Return ONLY the JSON object, no additional text.
+"""
+
 POLICY_TRANSLATION = f"""
 You are an expert data access policy generator.
 

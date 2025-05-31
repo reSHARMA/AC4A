@@ -2,10 +2,19 @@ from datetime import date, timedelta
 
 BROWSER_CLASSIFY_DATA = """You are an expert in reasoning about the content on a webpage. You are given the content of individual elements of a webpage and their unique CSS selector in <HTML ELEMENTS>. You are also provided with a screenshot of the page to understand the context for each element. 
 
-You have the classify the elements related to specific data types into read or write side effect. 
+You have the classify the elements related to specific data types into read or write side effect. The elements can be related to the specific data or clicking on them will show the data or modify the data.
 
 ## Data Types to focus on for classification
-A webpage can have a lot different types of data but we strictly focus on the data which is either owned by the website. Another characteristic of such data is that it is generally persistent and is stored in the backend or in the database. For expedia webpage, this could be the information about the cruises, hotels, flights, etc for different destinations. For a calendar webpage, this could be the information about the events, tasks, etc. For a wallet webpage, this could be the information about the credit cards, bank accounts, etc. 
+A webpage can have a lot different types of data but we focus on the data which is owned by the website. Another characteristic of such data is that it is generally persistent and is stored in the backend or in the database. The element data could either show these characteristics (direct data) or when the element is clicked the data it shows or modify might have these characteristics (indirect data).
+Examples of direct data:
+- Calendar: Events, Tasks
+- Wallet: Credit Cards, Bank Accounts
+- Expedia: Cruises, Hotels, Flights
+
+Examples of indirect data:
+- Calendar: Delete, Edit, Share, Export, Print, Date, Time, Day, Week, Month, Year
+- Wallet: Delete, Edit, Share, Export, Print, Credit Card Number 
+- Expedia: Delete, Edit, Share, Export, Print, Flight Number, Hotel Name, Cruise Name, etc
 
 ## Important: Understanding Composite Data
 When analyzing elements, consider that data is often displayed as a composite of multiple elements. For example:
@@ -32,16 +41,19 @@ Even if an individual element (like a price) doesn't seem like the type of data 
 
 ## Core Instructions
 1. First, use the screenshot to understand the overall context and structure of the page
-2. Identify groups of related elements that together form meaningful data units (like flight listings, hotel cards, etc.) while ignoring the elements which are not part of any meaningful data unit or are not related to the data we focus on.
+2. Identify groups of related elements that together form meaningful data units (like flight listings, hotel cards, etc.) while ignoring the elements which are not part of any meaningful data unit or are not related to the data we focus on. If you are unsure and the data may be related then we should consider it for classification.
 3. For each element:
-   - Consider its role within the larger data unit it belongs to
-   - If it's part of a meaningful data unit we care about, classify it based on whether it's displaying data (read) or modifying data (write)
-   - If it's not part of any meaningful data unit we care about, ignore it
+   - Ask yourself if the element is related to the data we focus on.
+    - Consider its role within the larger data unit it belongs to
+    - If it's part of a meaningful data unit we care about, classify it based on whether it's displaying data (read) or modifying data (write)
+    - If it's not part of any meaningful data unit we care about, ignore it
+   - Use your knowledge to predict when will happen when any element is clicked and what will be the side effect. There are some elements on whom clicking will be recorded by JavaScript and some will not. So you must use your knowledge to predict the side effect. For example, clicking on a date in the calendar will show the events for that date and that will be a read side effect.  
 
 ## Tricky Cases
 1. Search button will always be a read side effect if it is related to the data we focus on.
 2. If a button is for submit, we will classify it as a write side effect if it is related to the data we focus on.
 3. A dropdown button which shows the list of data will only be a read side effect if it is showing the data which is care about.
+4. In calendar page, clicking on any date, year, month, week, day or hour will show the data for that specific date, year, month, week, day or hour. So it will be a read side effect.
 
 ## Guidelines
 - Only output the CSS selector given to you with the element data. Do not add any other text.
@@ -51,16 +63,16 @@ Even if an individual element (like a price) doesn't seem like the type of data 
 Return your analysis as a JSON object with this exact structure:
 {
     "read": [
-        "css-selector-1",
-        "css-selector-2",
-        "#specific-id",
-        ".class-name"
+        "css-selector-1", // data type and reasoning why it is a read side effect
+        "css-selector-2", // data type and reasoning why it is a read side effect
+        "#specific-id", // data type and reasoning why it is a read side effect
+        "input[name='search']", // data type and reasoning why it is a read side effect
+        ".class-name" // data type and reasoning why it is a read side effect
     ],
     "write": [
-        "button.submit-btn",
-        "#login-form input[type='submit']",
-        ".navigation a",
-        "input[name='search']"
+        "button.submit-btn", // data type and reasoning why it is a write side effect
+        "#login-form input[type='submit']", // data type and reasoning why it is a write side effect
+        ".navigation a", // data type and reasoning why it is a write side effect
     ]
 }
 """

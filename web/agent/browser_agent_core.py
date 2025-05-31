@@ -10,7 +10,7 @@ from src.utils.dummy_data import call_openai_api
 from .agent_manager import agent_manager
 from PIL import Image
 import io
-from src.prompts import BROWSER_INFER_DATA
+from src.prompts import BROWSER_INFER_DATA, BROWSER_CLASSIFY_DATA
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -826,6 +826,10 @@ List of HTML elements and their CSS selectors:
         # Call OpenAI API for analysis
         response = call_openai_api(BROWSER_CLASSIFY_DATA, input_content, "computer-use")
         
+        logger.info(f"[browser_agent_core.py] Classification response: {response}")
+        
+        # response can have comments starting with // remove them till the end of the line
+        response = re.sub(r'//.*', '', response)
         if not response:
             logger.error("No response from OpenAI API for HTML analysis")
             return {
@@ -881,6 +885,8 @@ List of HTML elements and their CSS selectors:
                     valid_write_selectors.append(selector.strip())
             
             logger.info(f"HTML analysis found {len(valid_read_selectors)} read elements and {len(valid_write_selectors)} write elements")
+            logger.info(f"Valid read selectors: {valid_read_selectors}")
+            logger.info(f"Valid write selectors: {valid_write_selectors}")
             
             return {
                 'read': valid_read_selectors,
@@ -912,31 +918,21 @@ List of HTML elements and their CSS selectors:
             'error': f'Analysis failed: {str(e)}'
         }
 
-def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: str = "both") -> Dict[str, Any]:
+def highlight_analyzed_elements(html_structure: Dict[str, Any] | list, highlight_type: str = "both") -> Dict[str, Any]:
     """
     Highlight the analyzed HTML elements by injecting CSS borders
     
     Args:
-        html_structure (dict): Dictionary containing data types as keys and arrays of CSS selectors as values
+        html_structure (dict | list): Either:
+            - Dictionary containing data types as keys and arrays of CSS selectors as values
+            - List of CSS selectors to highlight
         highlight_type (str): What to highlight - "read", "write", or "both"
         
     Returns:
         dict: Result of the CSS injection operation
     """
     try:
-        if not isinstance(html_structure, dict):
-            return {
-                'success': False,
-                'error': 'HTML structure must be a dictionary'
-            }
-        
-        # Get the data dictionary from the structure
-        data_dict = html_structure.get('data', {})
-        if not data_dict:
-            return {
-                'success': False,
-                'error': 'No data found in HTML structure'
-            }
+        logger.info(f"Starting to highlight {highlight_type} elements")
         
         # Define colors for read and write elements
         read_colors = [
@@ -955,26 +951,25 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: 
         
         # Choose color palette based on highlight type
         colors = write_colors if highlight_type == "write" else read_colors
+        logger.info(f"Using {'write' if highlight_type == 'write' else 'read'} color palette")
         
         css_rules = ""
         color_index = 0
-        
-        # Process each data type and its selectors
-        for data_type, selectors in data_dict.items():
-            if not isinstance(selectors, list):
-                continue
-                
-            # Get color for this data type
-            border_color, bg_color = colors[color_index % len(colors)]
-            color_index += 1
-            
-            # Add CSS rules for each selector in this data type
-            for selector in selectors:
+        total_selectors = 0
+
+        # Handle list input
+        if isinstance(html_structure, list):
+            logger.info(f"Processing list of {len(html_structure)} selectors")
+            for selector in html_structure:
                 if not isinstance(selector, str) or not selector.strip():
+                    logger.warning(f"Invalid selector found, skipping")
                     continue
                 
+                total_selectors += 1
                 # Add prefix to label based on highlight type
                 label_prefix = "Write: " if highlight_type == "write" else "Read: "
+                border_color, bg_color = colors[color_index % len(colors)]
+                color_index += 1
                 
                 css_rules += f"""
                 {selector} {{
@@ -983,7 +978,7 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: 
                     position: relative !important;
                 }}
                 {selector}::after {{
-                    content: '{label_prefix}{data_type}';
+                    content: '{label_prefix}Element';
                     position: absolute;
                     top: -18px;
                     right: 0;
@@ -998,18 +993,85 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any], highlight_type: 
                     font-weight: bold;
                 }}
                 """
+        # Handle dictionary input (existing functionality)
+        elif isinstance(html_structure, dict):
+            # Get the data dictionary from the structure
+            data_dict = html_structure.get('data', {})
+            if not data_dict:
+                logger.error("No data found in HTML structure")
+                return {
+                    'success': False,
+                    'error': 'No data found in HTML structure'
+                }
+            
+            logger.info(f"Found {len(data_dict)} data types to highlight")
+            
+            # Process each data type and its selectors
+            for data_type, selectors in data_dict.items():
+                if not isinstance(selectors, list):
+                    logger.warning(f"Selectors for {data_type} is not a list, skipping")
+                    continue
+                    
+                # Get color for this data type
+                border_color, bg_color = colors[color_index % len(colors)]
+                color_index += 1
+                
+                logger.info(f"Processing {len(selectors)} selectors for data type: {data_type}")
+                
+                # Add CSS rules for each selector in this data type
+                for selector in selectors:
+                    if not isinstance(selector, str) or not selector.strip():
+                        logger.warning(f"Invalid selector found for {data_type}, skipping")
+                        continue
+                    
+                    total_selectors += 1
+                    # Add prefix to label based on highlight type
+                    label_prefix = "Write: " if highlight_type == "write" else "Read: "
+                    
+                    css_rules += f"""
+                    {selector} {{
+                        border: 2px solid {border_color} !important;
+                        box-shadow: 0 0 5px {border_color} !important;
+                        position: relative !important;
+                    }}
+                    {selector}::after {{
+                        content: '{label_prefix}{data_type}';
+                        position: absolute;
+                        top: -18px;
+                        right: 0;
+                        background: {bg_color};
+                        color: white;
+                        padding: 1px 4px;
+                        font-size: 9px;
+                        font-family: monospace;
+                        border-radius: 2px;
+                        z-index: 9999;
+                        pointer-events: none;
+                        font-weight: bold;
+                    }}
+                    """
+        else:
+            logger.error("Invalid input type for html_structure")
+            return {
+                'success': False,
+                'error': 'html_structure must be either a dictionary or a list'
+            }
         
         if not css_rules:
+            logger.error("No valid selectors found to highlight")
             return {
                 'success': False,
                 'error': 'No valid selectors found to highlight'
             }
+        
+        logger.info(f"Generated CSS rules for {total_selectors} selectors")
         
         # Send CSS to the injection endpoint
         payload = {
             'css': css_rules
         }
         
+        logger.info("Sending CSS rules to injection endpoint")
         response = requests.post('http://localhost:8080/inject-css', 
                                json=payload, 
                                timeout=10)
@@ -1158,4 +1220,70 @@ def get_element_paths(html_content: str) -> Dict[str, str]:
     except Exception as e:
         logger.error(f"Error getting element paths: {str(e)}", exc_info=True)
         return {}
+
+def get_dom_tree_with_selectors(html_content: str) -> Dict[str, Any]:
+    """
+    Create a DOM tree where each node is a CSS selector.
+    Uses the same selector generation logic as get_element_paths.
+    
+    Args:
+        html_content (str): HTML content to analyze
+        
+    Returns:
+        dict: Tree structure where each node is a CSS selector and has children if any
+    """
+    try:
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html_content, 'html.parser')
+        
+        def build_tree(element) -> Dict[str, Any]:
+            """Recursively build the tree structure for an element"""
+            if element is None:
+                return None
+                
+            # Skip script and style tags
+            if element.name in ['script', 'style']:
+                return None
+                
+            # Get the selector for this element
+            selector = get_minimum_element_path(element)
+            if not selector:
+                return None
+                
+            # Process children
+            children = {}
+            for child in element.children:
+                if child.name is not None:  # Skip text nodes
+                    child_tree = build_tree(child)
+                    if child_tree is not None:
+                        children.update(child_tree)
+            
+            # If no children, just return the selector
+            if not children:
+                return {selector: {}}
+            
+            # Return selector with its children
+            return {selector: children}
+        
+        # Start with the root element
+        root = soup.find('html')
+        if root is None:
+            root = soup.find('body')
+        if root is None:
+            root = soup
+            
+        tree = build_tree(root)
+        
+        return {
+            'success': True,
+            'tree': tree
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting DOM tree with selectors: {str(e)}", exc_info=True)
+        return {
+            'success': False,
+            'error': str(e),
+            'tree': None
+        }
 

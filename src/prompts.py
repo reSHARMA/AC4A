@@ -2,10 +2,10 @@ from datetime import date, timedelta
 
 BROWSER_CLASSIFY_DATA = """You are an expert in reasoning about the content on a webpage. You are given the content of individual elements of a webpage and their unique CSS selector in <HTML ELEMENTS>. You are also provided with a screenshot of the page to understand the context for each element. 
 
-Your task is to classify them into read or write side effect. 
+You have the classify the elements related to specific data types into read or write side effect. 
 
-## Data to focus on for classification
-A webpage can have a lot different types of data but we strictly focus on the data which can be stored in the backend or in the database. For expedia webpage, this could be the information about the cruises, hotels, flights, etc for different destinations. For a calendar webpage, this could be the information about the events, tasks, etc. For a wallet webpage, this could be the information about the credit cards, bank accounts, etc. 
+## Data Types to focus on for classification
+A webpage can have a lot different types of data but we strictly focus on the data which is either owned by the website. Another characteristic of such data is that it is generally persistent and is stored in the backend or in the database. For expedia webpage, this could be the information about the cruises, hotels, flights, etc for different destinations. For a calendar webpage, this could be the information about the events, tasks, etc. For a wallet webpage, this could be the information about the credit cards, bank accounts, etc. 
 
 ## Important: Understanding Composite Data
 When analyzing elements, consider that data is often displayed as a composite of multiple elements. For example:
@@ -13,28 +13,35 @@ When analyzing elements, consider that data is often displayed as a composite of
 - A hotel listing might show price, rating, amenities, and location information
 - A credit card entry might show card number, expiry date, and cardholder name
 
+Some data will be indirectly saved in the backend like logs, we do not focus on them. We only focus on the data that is directly stored in the backend like credit cards, bank accounts, events, tasks, etc.
+
 Even if an individual element (like a price) doesn't seem like the type of data we focus on, if it's part of a larger meaningful data unit (like a complete flight or hotel listing), it should be classified accordingly.
 
-## Classification
-- if the element is already displaying the data then it is a read side effect
+## Classification Scenarios
+1. If the element is already displaying the data then it is a read side effect
 -- example: calendar page showing the events, tasks, etc
 -- example: wallet page showing the credit cards, bank accounts, etc or sharing, exporting, printing, etc
 -- example: flight listing showing price, flight number, and other flight details
-- if the element is not displaying the data but clicking on it will show the data then it is also a read side effect (GET request)
+2. If the element is not displaying the data but clicking on it will show the data then it is also a read side effect (GET request)
 -- example: calendar page showing a button to show events or tasks, clicking on it will show the events or tasks
 -- example: wallet page showing a button to search credit cards or bank accounts, clicking on it will show the search results of credit cards or bank accounts
-- if the element is not displaying the data but clicking on it will change the state of the data in the backend then it is a write side effect (POST, PUT, DELETE request)
+3. If the element is not displaying the data but clicking on it will change the state of the data in the backend then it is a write side effect (POST, PUT, DELETE request)
 -- example: calendar page showing a button to add an event or task, clicking on it will add the event or task
 -- example: wallet page showing a button to delete a credit card or bank account, clicking on it will delete the credit card or bank account
 -- example: expedia page showing a button to book a cruise, clicking on it will book the cruise
 
 ## Core Instructions
 1. First, use the screenshot to understand the overall context and structure of the page
-2. Identify groups of related elements that together form meaningful data units (like flight listings, hotel cards, etc.)
+2. Identify groups of related elements that together form meaningful data units (like flight listings, hotel cards, etc.) while ignoring the elements which are not part of any meaningful data unit or are not related to the data we focus on.
 3. For each element:
    - Consider its role within the larger data unit it belongs to
    - If it's part of a meaningful data unit we care about, classify it based on whether it's displaying data (read) or modifying data (write)
    - If it's not part of any meaningful data unit we care about, ignore it
+
+## Tricky Cases
+1. Search button will always be a read side effect if it is related to the data we focus on.
+2. If a button is for submit, we will classify it as a write side effect if it is related to the data we focus on.
+3. A dropdown button which shows the list of data will only be a read side effect if it is showing the data which is care about.
 
 ## Guidelines
 - Only output the CSS selector given to you with the element data. Do not add any other text.

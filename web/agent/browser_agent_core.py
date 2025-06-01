@@ -443,53 +443,8 @@ def process_with_computer_use(user_input: str) -> Dict[str, Any]:
                 role="system",
                 msg_type=MessageType.ERROR
             )
-            
-        clear_element_highlighting()
 
-        # Get the HTML source and create minimal version
-        html_result = get_html_source()
-        if not html_result.get('success', False) or not html_result.get('html'):
-            return create_message(
-                content="Failed to get HTML source",
-                role="system",
-                msg_type=MessageType.ERROR
-            )
-
-        # Create minimal HTML with element paths
-        minimal_html = get_element_paths(html_result['html'])
-
-        # First analyze HTML structure to get read/write elements
-        html_structure = analyze_html_structure(screenshot_data, minimal_html)
-        if not html_structure.get('success', False):
-            return create_message(
-                content=html_structure.get('error', 'Failed to analyze HTML structure'),
-                role="system",
-                msg_type=MessageType.ERROR
-            )
-
-        # Filter the minimal HTML to only include elements that are in the read and write lists to create a single dict from conetnt to css selector
-        filtered_minimal_html = {}
-        for element, selector in minimal_html.items():
-            if selector in html_structure.get('read', []):
-                filtered_minimal_html[element] = selector
-            if selector in html_structure.get('write', []):
-                filtered_minimal_html[element] = selector
-
-        # Now infer data from the filtered HTML structure for all elements
-        data_required = infer_data_from_html_structure(screenshot_data, filtered_minimal_html, html_result['html'])
-        if not data_required.get('success', False):
-            return create_message(
-                content=data_required.get('error', 'Failed to infer data from HTML structure'),
-                role="system",
-                msg_type=MessageType.ERROR
-            )
-
-        logger.info(f"[browser_agent_core.py] Data required: {data_required}")
-
-        allowed_elements, not_allowed_elements = get_allowed_and_not_allowed_elements(data_required, html_structure)
-
-        logger.info(f"[browser_agent_core.py] Allowed elements: {allowed_elements}")
-        logger.info(f"[browser_agent_core.py] Not allowed elements: {not_allowed_elements}")
+        infer_permissions_from_html(screenshot_data)
 
         # Convert screenshot to base64
         screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
@@ -1287,3 +1242,51 @@ def get_allowed_and_not_allowed_elements(data_required: Dict[str, Any], html_str
                 not_allowed_elements[selector_type].append(selector)
                 
     return allowed_elements, not_allowed_elements
+            
+def infer_permissions_from_html(screenshot_data: bytes) -> Dict[str, Any]:
+    clear_element_highlighting()
+
+    # Get the HTML source and create minimal version
+    html_result = get_html_source()
+    if not html_result.get('success', False) or not html_result.get('html'):
+        return create_message(
+            content="Failed to get HTML source",
+            role="system",
+            msg_type=MessageType.ERROR
+        )
+
+    # Create minimal HTML with element paths
+    minimal_html = get_element_paths(html_result['html'])
+
+    # First analyze HTML structure to get read/write elements
+    html_structure = analyze_html_structure(screenshot_data, minimal_html)
+    if not html_structure.get('success', False):
+        return create_message(
+            content=html_structure.get('error', 'Failed to analyze HTML structure'),
+            role="system",
+            msg_type=MessageType.ERROR
+        )
+
+    # Filter the minimal HTML to only include elements that are in the read and write lists to create a single dict from conetnt to css selector
+    filtered_minimal_html = {}
+    for element, selector in minimal_html.items():
+        if selector in html_structure.get('read', []):
+            filtered_minimal_html[element] = selector
+        if selector in html_structure.get('write', []):
+            filtered_minimal_html[element] = selector
+
+    # Now infer data from the filtered HTML structure for all elements
+    data_required = infer_data_from_html_structure(screenshot_data, filtered_minimal_html, html_result['html'])
+    if not data_required.get('success', False):
+        return create_message(
+            content=data_required.get('error', 'Failed to infer data from HTML structure'),
+            role="system",
+            msg_type=MessageType.ERROR
+        )
+
+    logger.info(f"[browser_agent_core.py] Data required: {data_required}")
+
+    allowed_elements, not_allowed_elements = get_allowed_and_not_allowed_elements(data_required, html_structure)
+
+    logger.info(f"[browser_agent_core.py] Allowed elements: {allowed_elements}")
+    logger.info(f"[browser_agent_core.py] Not allowed elements: {not_allowed_elements}")

@@ -4,5 +4,63 @@
     "read": [],
     "write": [],
     "data": {}
+  },
+  "https://www.expedia.com/": {
+    "verified": true,
+    "read": [
+      ".uitk-tab-text",
+      "#search_button",
+      ".uitk-fake-input.uitk-form-field-trigger.uitk-field-fake-input.uitk-field-fake-input-hasicon",
+      ".uitk-menu-trigger.open-room-picker-observer-root.uitk-fake-input.uitk-form-field-trigger.uitk-field-fake-input.uitk-field-fake-input-hasicon",
+      ".uitk-checkbox-label-content",
+      ".uitk-heading.uitk-heading-7",
+      ".uitk-step-input-label",
+      ".uitk-button.uitk-button-large.uitk-button-as-link.uitk-button-primary.uitk-button-has-text",
+      ".is-visually-hidden",
+      "#property-type-carousel",
+      "div#tabo1-gdfhdd3-0",
+      "#tab-ddxg61paa-0",
+      "#tab-gb4nbxju-0",
+      "#tab-5zwnuzhei-0"
+
+    ],
+    "write": [
+      "#traveler_selector_add_room",
+      "#traveler_selector_done_button"
+    ],
+    "data": {
+      "Expedia:Experience(*)": [
+        "#property-type-carousel",
+        ".uitk-tab-text",
+        "div#tabo1-gdfhdd3-0",
+        ".uitk-checkbox-label-content"
+      ],
+      "Expedia:Destination(*)": [
+        ".uitk-tab-text",
+        "#tab-5zwnuzhei-0",
+        "#search_button"
+      ],
+      "Expedia:Flight(*)": [
+        ".uitk-tab-text"
+      ],
+      "Expedia:CarRental(*)": [
+        ".uitk-tab-text"
+      ],
+      "Expedia:Cruise(*)": [
+        ".uitk-tab-text"
+      ],
+      "Expedia:Hotel(*)": [
+        ".uitk-tab-text",
+        "div#tabo1-gdfhdd3-0",
+        ".uitk-fake-input.uitk-form-field-trigger.uitk-field-fake-input.uitk-field-fake-input-hasicon",
+        ".uitk-menu-trigger.open-room-picker-observer-root.uitk-fake-input.uitk-form-field-trigger.uitk-field-fake-input.uitk-field-fake-input-hasicon",
+        ".uitk-heading.uitk-heading-7",
+        ".uitk-step-input-label",
+        "#traveler_selector_add_room",
+        "#traveler_selector_done_button",
+        "#search_button",
+        ".uitk-button.uitk-button-large.uitk-button-as-link.uitk-button-primary.uitk-button-has-text"
+      ]
+    }
   }
 }

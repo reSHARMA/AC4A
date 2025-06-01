@@ -531,7 +531,7 @@ User: {user_input}
         }
         
         # Call the OpenAI API using the existing function
-        response = call_openai_api(system_prompt, input_content, "computer-use")
+        response = None # call_openai_api(system_prompt, input_content, "computer-use")
         
         if response:
             return create_message(
@@ -1306,7 +1306,7 @@ def get_base_url(url: str) -> str:
         logger.error(f"Error parsing URL {url}: {str(e)}")
         return url
 
-def get_allowed_and_not_allowed_elements(data_required: Dict[str, Any], html_structure: Dict[str, Any]) -> Tuple[Dict[str, List[str]], Dict[str, List[str]]]:
+def get_allowed_and_not_allowed_elements_from_text(data_required: Dict[str, Any], html_structure: Dict[str, Any]) -> Tuple[Dict[str, List[str]], Dict[str, List[str]]]:
     """
     Get allowed and not allowed elements based on data requirements
     
@@ -1347,6 +1347,51 @@ def get_allowed_and_not_allowed_elements(data_required: Dict[str, Any], html_str
                 
     return allowed_elements, not_allowed_elements
             
+def get_allowed_and_not_allowed_elements_from_config(data_required: Dict[str, Any], html_structure: Dict[str, Any]) -> Tuple[Dict[str, List[str]], Dict[str, List[str]]]:
+    """
+    Get allowed and not allowed elements based on data requirements
+    
+    Args:
+        data_required (Dict[str, Any]): Data requirements with data type as key and list of CSS selectors as value
+        html_structure (Dict[str, Any]): HTML structure with read and write elements
+    Returns:
+        Tuple[Dict[str, List[str]], Dict[str, List[str]]]: Allowed and not allowed elements
+    """
+    
+    allowed_elements = {'read': [], 'write': []}
+    not_allowed_elements = {'read': [], 'write': []}
+
+    for data_type, selectors in data_required['data'].items():
+        permission_result = {'read': None, 'write': None}
+        
+        for selector in selectors:
+            selector_type = 'read' if selector in html_structure['read'] else 'write' if selector in html_structure['write'] else None
+            if not selector_type:
+                logger.warning(f"Selector {selector} not found in HTML structure")
+                continue
+
+            if permission_result[selector_type] is None:
+                temp_policy_system = PolicySystem()
+                permission_text = f"Grant {selector_type} access for {data_type}"
+                temp_policy_system.add_policy({
+                    "granular_data": f"{data_type}",
+                    "data_access": "Read" if selector_type == 'read' else "Write",
+                    "position": "Current"
+                })
+                permission_allowed = True
+                for policy in temp_policy_system.get_all_policy_rules():
+                    permission_allowed = agent_manager.policy_system.is_action_allowed(policy)
+                    if not permission_allowed:
+                        break
+                permission_result[selector_type] = permission_allowed
+            
+            if permission_result[selector_type] is True:
+                allowed_elements[selector_type].append(selector)
+            else:
+                not_allowed_elements[selector_type].append(selector)
+                
+    return allowed_elements, not_allowed_elements
+
 def infer_permissions_from_html(screenshot_data: bytes) -> Dict[str, Any]:
 
     success = handle_from_config()
@@ -1397,7 +1442,7 @@ def infer_permissions_from_html(screenshot_data: bytes) -> Dict[str, Any]:
 
     add_to_config(html_structure, data_required)
 
-    allowed_elements, not_allowed_elements = get_allowed_and_not_allowed_elements(data_required, html_structure)
+    allowed_elements, not_allowed_elements = get_allowed_and_not_allowed_elements_from_text(data_required, html_structure)
 
     logger.info(f"[browser_agent_core.py] Allowed elements: {allowed_elements}")
     logger.info(f"[browser_agent_core.py] Not allowed elements: {not_allowed_elements}")
@@ -1653,7 +1698,7 @@ def handle_from_config() -> bool:
         logger.info(f"[browser_agent_core.py] Found config for URL: {active_url}")
 
         # Handle not allowed elements
-        allowed_elements, not_allowed_elements = get_allowed_and_not_allowed_elements(data_required, html_structure)
+        allowed_elements, not_allowed_elements = get_allowed_and_not_allowed_elements_from_config(data_required, html_structure)
         handle_not_allowed_elements(not_allowed_elements)
         
         return True

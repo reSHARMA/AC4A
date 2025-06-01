@@ -600,29 +600,62 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
                 # Fix common JSON formatting issues
                 # 1. Remove trailing commas before closing braces and brackets
                 json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)
-                # 2. Ensure property names are quoted (including those with colons)
-                json_str = re.sub(r'([{,])\s*"([^"]+)"\s*:', r'\1"\2":', json_str)
+                
+                # 2. Fix property names - handle both quoted and unquoted cases
+                # First, find all property names (both quoted and unquoted)
+                property_names = re.findall(r'([{,])\s*(?:"([^"]+)"|([^"{\s][^:]*?)):\s*', json_str)
+                
+                # Replace each property name with its properly quoted version
+                for match in property_names:
+                    prefix, quoted_name, unquoted_name = match
+                    name = quoted_name if quoted_name else unquoted_name
+                    if name:
+                        # Escape any double quotes in the name
+                        escaped_name = name.replace('"', '\\"')
+                        # Replace the original property name with the properly quoted version
+                        json_str = json_str.replace(f'{prefix} {name}:', f'{prefix} "{escaped_name}":')
+                        json_str = json_str.replace(f'{prefix}"{name}":', f'{prefix} "{escaped_name}":')
+                
                 # 3. Fix single quotes to double quotes
                 json_str = json_str.replace("'", '"')
+                
                 # 4. Fix missing quotes around values
                 json_str = re.sub(r':\s*([a-zA-Z0-9_]+)([,}])', r':"\1"\2', json_str)
-                # 5. Fix unquoted property names with colons
-                json_str = re.sub(r'([{,])\s*([^"{\s][^:]*?):\s*', r'\1"\2":', json_str)
                 
                 logger.debug(f"Cleaned JSON string: {json_str}")
-                analysis_result = json.loads(json_str)
+                try:
+                    analysis_result = json.loads(json_str)
+                except json.JSONDecodeError as e:
+                    logger.error(f"First attempt failed: {str(e)}")
+                    # Try one more time with more aggressive cleaning
+                    json_str = re.sub(r'([{,])\s*([^"{\s][^:]*?):\s*', r'\1"\2":', json_str)
+                    analysis_result = json.loads(json_str)
             else:
                 # Try parsing the whole response as JSON
                 # Apply the same fixes to the whole response
                 response = re.sub(r',(\s*[}\]])', r'\1', response)  # Remove trailing commas
-                response = re.sub(r'([{,])\s*"([^"]+)"\s*:', r'\1"\2":', response)
+                
+                # Fix property names in the whole response
+                property_names = re.findall(r'([{,])\s*(?:"([^"]+)"|([^"{\s][^:]*?)):\s*', response)
+                for match in property_names:
+                    prefix, quoted_name, unquoted_name = match
+                    name = quoted_name if quoted_name else unquoted_name
+                    if name:
+                        escaped_name = name.replace('"', '\\"')
+                        response = response.replace(f'{prefix} {name}:', f'{prefix} "{escaped_name}":')
+                        response = response.replace(f'{prefix}"{name}":', f'{prefix} "{escaped_name}":')
+                
                 response = response.replace("'", '"')
                 response = re.sub(r':\s*([a-zA-Z0-9_]+)([,}])', r':"\1"\2', response)
-                # Fix unquoted property names with colons
-                response = re.sub(r'([{,])\s*([^"{\s][^:]*?):\s*', r'\1"\2":', response)
                 
                 logger.debug(f"Cleaned full response: {response}")
-                analysis_result = json.loads(response)
+                try:
+                    analysis_result = json.loads(response)
+                except json.JSONDecodeError as e:
+                    logger.error(f"First attempt failed: {str(e)}")
+                    # Try one more time with more aggressive cleaning
+                    response = re.sub(r'([{,])\s*([^"{\s][^:]*?):\s*', r'\1"\2":', response)
+                    analysis_result = json.loads(response)
 
             # Validate the structure
             if not isinstance(analysis_result, dict):
@@ -1320,7 +1353,9 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
             css_rules += f"""
             {selector} {{
                 position: relative !important;
-                filter: blur(8px) !important;
+                background: #000 !important;
+                color: transparent !important;
+                text-shadow: 0 0 8px rgba(0,0,0,0.5) !important;
                 pointer-events: none !important;
                 user-select: none !important;
             }}
@@ -1330,15 +1365,17 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
                 top: 50% !important;
                 left: 50% !important;
                 transform: translate(-50%, -50%) !important;
-                background: rgba(0, 0, 0, 0.8) !important;
+                background: rgba(0, 0, 0, 0.9) !important;
                 color: white !important;
-                padding: 8px 12px !important;
-                border-radius: 4px !important;
-                font-size: 14px !important;
+                padding: 12px 16px !important;
+                border-radius: 6px !important;
+                font-size: 16px !important;
                 font-weight: bold !important;
-                z-index: 9999 !important;
+                z-index: 99999 !important;
                 white-space: nowrap !important;
                 pointer-events: none !important;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+                border: 2px solid rgba(255,255,255,0.2) !important;
             }}
             """
             
@@ -1350,25 +1387,39 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
             css_rules += f"""
             {selector} {{
                 position: relative !important;
-                opacity: 0.7 !important;
+                opacity: 0.5 !important;
                 pointer-events: none !important;
                 cursor: not-allowed !important;
             }}
             {selector}::before {{
                 content: 'No permission to interact' !important;
                 position: absolute !important;
-                top: -20px !important;
+                top: -24px !important;
                 left: 50% !important;
                 transform: translateX(-50%) !important;
-                background: rgba(255, 0, 0, 0.8) !important;
+                background: rgba(255, 0, 0, 0.9) !important;
                 color: white !important;
-                padding: 4px 8px !important;
+                padding: 6px 12px !important;
                 border-radius: 4px !important;
-                font-size: 12px !important;
+                font-size: 14px !important;
                 font-weight: bold !important;
-                z-index: 9999 !important;
+                z-index: 99999 !important;
                 white-space: nowrap !important;
                 pointer-events: none !important;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+                border: 2px solid rgba(255,255,255,0.2) !important;
+            }}
+            {selector}::after {{
+                content: '' !important;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                background: rgba(255, 0, 0, 0.1) !important;
+                z-index: 99998 !important;
+                pointer-events: auto !important;
+                cursor: not-allowed !important;
             }}
             """
             

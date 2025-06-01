@@ -77,48 +77,70 @@ Return your analysis as a JSON object with this exact structure:
 }
 """
 
-BROWSER_INFER_DATA = """You are an expert in reasoning about the content on any webpage. Your task is to analyze the text, icons, images, buttons, links, etc given to you as a list of data from an html element and their unique CSS selector in <HTML ELEMENTS>. You are also provided with a screenshot of the page to better understand the context.
+BROWSER_INFER_DATA = """You are an expert in reasoning about the content on any webpage. Your task is to analyze the text, icons, images, buttons, links, etc given to you as a list of data from an html element and their unique CSS selector in <HTML ELEMENTS> and the screenshot of the current state of the webpage to find out the data directly or indirectly represented by the element.
 
-Your task is to analyze the data from HTML elements given to you and infer the data type and data value for each element. You are also provided with all the possible data types which are supported as well as the schema of the data values in <ALL DATA> and <ALL DATA SCHEMA>.
+## Each element given to you must be associated with a direct or indirect data type.
+When the data in the element is the actual data, it is a direct data type.
+Examples of direct data:
+- Calendar: Events, Tasks
+- Wallet: Credit Cards, Bank Accounts
+- Expedia: Cruises, Hotels, Flights
 
-The inferred data is represented as "DataType(DataValue)", the <ALL DATA> also describe the hierarchy of the data types which must be strictly followed while composing the data type. 
+When the data in the element is not the actual data but clicking on it will show the actual data, it is an indirect data type.
+Examples of indirect data:
+- Calendar: Delete, Edit, Share, Export, Print, Date, Time, Day, Week, Month, Year
+- Wallet: Delete, Edit, Share, Export, Print, Credit Card Number 
+- Expedia: Delete, Edit, Share, Export, Print, Flight Number, Hotel Name, Cruise Name, etc
 
-## Examples:
-- If the data is, "Text: Toggle button on. Show the daily view. (Alt+Shift+1)'" then the data type is "Calendar:Day" because this button toggles the daily view of the calendar and since there is no specific day mentioned, the data value is "*". So you will classify the css selector of this HTML element as "Calendar:Day(*)"
+## Important: Understanding Composite Data
+When analyzing elements, consider that data is often displayed as a composite of multiple elements. For example:
+- A flight listing might be composed of multiple elements showing price, flight number, departure/arrival times, etc.
+- A hotel listing might show price, rating, amenities, and location information
+- A credit card entry might show card number, expiry date, and cardholder name
 
-- If it was a button for searching all the calendar data for all the years then the data type is "Calendar:Year" and the data value is "*" because this button searches all the calendar data for all the years.
+You are also provided with all the possible data types which are supported as well as the schema of the data values in <ALL DATA> and <ALL DATA SCHEMA>. You must use this information along with the screenshot and the DOM tree given in <DOM TREE> to associate each element in the <HTML ELEMENTS> with a direct or indirect data type from <ALL DATA> and <ALL DATA SCHEMA>.
 
-- Similarly, if it was a button to create a new event for 14th of June 2025 then the data type would be composite data type "Calendar:Year(2025):Month(June):Day(14)".
+## Direct Data Examples:
+- If the data is, "Text: Toggle button on. Show the daily view. (Alt+Shift+1)'" then it represents all Calendar Day data because this button when pressed shows the daily view of the calendar and since there is no specific day mentioned, the data value is all.
 
-If the content of the HTML element is not related to the data type and data value, then the data type is "unknown" and the data value is "none".
-Use the text of the HTML element along with the screenshot to infer the context. A button in a Calendar page which says Week might refer to a button which toggles the weekly view of the calendar so you must classify it as Calendar:Week and data value is "*".
-Similarly a button to book, pay or search must be classified as the data they are referring to.
+- If it was a button for searching all the calendar data for all the years then the data associated with the button is all the calendar data for all the years.
 
-## Data Type and Value:
-- The data type must always be from <ALL DATA>.
-- The value for the data type must be a single atomic value which can be passed to a function, for example, avoid 10th instead use 10, instead of Amex Gold Card use Amex Gold.
-- The description and examples of the values are provided in <ALL DATA SCHEMA>, use it to understand the values and use it to generate the correct value.
-- Do not make composite values or values which are descriptive in nature.
-- These values will be passed as API parameters and you must be mindful about it.
-- Do not try to make up any data value or use arbitrary values.
-- There must always be a value for the data type, example Calendar:Month(December) is valid but Calendar:Month is not valid.
-- '*' can be used as a value for the data type, example Calendar:Month(*) is valid and allows access to all months.
+- Similarly, if it was a button to create a new event for 14th of June 2025 then the data associated with the button would be the calendar data for year 2025, month June and day 14.
 
-## Strictly follow the data hierarchy:
-- The data hierarchy is provided in the <ALL DATA> contains the available data types as a tree.
-- In <ALL DATA>, the childs are denoted by indentation.
-- In granular_data, the succeeding data type must strictly be the child of the previous data type, example can never have something like Calendar:Day(10)::Calendar:Year(2025) but can have Calendar:Month(December)::Calendar:Day(10).
+If the content of the HTML element is not related to the data type and data value, then it could also represent a composite data type which is a combination of multiple data types. Using the screenshot and the DOM tree, you must infer the composite data type. 
+
+## Indirect Data Examples:
+If the data is neither direct nor composite, then it is an indirect data type. Predict what will happen when the element is clicked and what will be the side effect. What data will be shown or modified when the element is clicked. 
+- If the button is a submit button and it only has the text "Submit" then it is an indirect data type. Predict what will happen when the button is clicked and what will be the side effect. What data will be shown or modified when the button is clicked. 
+-- If in a Calendar page, the button is to create a new event. See the other information given to you to infer what will this button actually do. Let's say it adds a new event for 14th June 2025 then the data associated with the button is the calendar data for year 2025, month June and day 14. 
+-- Similarly, if the button is to create a flight booking. See the other information given to you to infer what will this button actually do. Let's say it creates a flight booking for flight AA123 then the data associated with the button is the flight data for flight AA123.
+
+## Avoid data inconsistencies
+If you are on expedia page then you can not associate the data with the calendar data even when you see dates because the data is related to the flight data.
+Similarly, if you are on a calendar page then you can not associate the data with the flight data even when you see flight numbers in event descriptions.
+
+## Composite Data and Data Hierarchy in <ALL DATA>
+For example, if we have three composite HTML elements, one for the date, one for the month and one for the year then for representing year, month and day individually you can use them separately but to represent data like Oct month of 2025 or 10th day of June 2025 you must use the all the three elements together.
 
 
 Return your analysis as a JSON object with this exact structure:
 {
     "data": {
-        "inferred_data_type_1": ["css_selector_1", "css_selector_2", ...],
-        "inferred_data_type_2": ["css_selector_3", "css_selector_4", ...],
+        "data associated with the element": ["css_selector_1", "css_selector_2", ...], // reasoning why does these CSS selectors represent the data
+        "data associated with the element": ["css_selector_3", "css_selector_4", ...], // reasoning why does these CSS selectors represent the data
         ...
     }
 }
 
+Example of output:
+{
+    "data": {
+        "Calendar data for all the years": ["#calendar-year-dropdown"],
+        "Calendar data for year 2025": ["#calendar-year-dropdown", "#year-2025-button"],
+        "Calendar data for October month": ["#calendar-month-dropdown", "#month-october-button"],
+        "Calendar data for year 2025 and October month": ["#calendar-year-dropdown", "#year-2025-button", "#calendar-month-dropdown", "#month-october-button"]
+    }
+}
 Guidelines:
 - Classify all the elements given to you, do not miss any elements.
 - Only use the CSS selectors given to you with the element data. Do not add any other text.

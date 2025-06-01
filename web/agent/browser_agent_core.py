@@ -623,17 +623,18 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
             response = response.strip()
             logger.debug(f"Response after removing markdown: {response}")
 
-            # Convert tuple keys to strings
-            # First, find all tuple patterns like ("key", "value")
-            tuple_pattern = r'\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\)'
-            
-            def replace_tuple(match):
-                key, value = match.groups()
-                return f'"{key}:{value}"'
-            
-            # Replace all tuple keys with string keys
-            response = re.sub(tuple_pattern, replace_tuple, response)
-            logger.debug(f"Response after tuple conversion: {response}")
+            # Remove comments starting with //
+            response = re.sub(r'//.*$', '', response, flags=re.MULTILINE)
+            logger.debug(f"Response after removing comments: {response}")
+
+            # Remove specific words from keys
+            response = re.sub(r'\(composite\)', '', response, flags=re.IGNORECASE)
+            response = re.sub(r'\(direct\)', '', response, flags=re.IGNORECASE)
+            response = re.sub(r'\(indirect\)', '', response, flags=re.IGNORECASE)
+            response = re.sub(r',\s*composite', '', response, flags=re.IGNORECASE)
+            response = re.sub(r',\s*direct', '', response, flags=re.IGNORECASE)
+            response = re.sub(r',\s*indirect', '', response, flags=re.IGNORECASE)
+            logger.debug(f"Response after removing specific words: {response}")
 
             # Extract JSON from response if it's wrapped in other text
             json_match = re.search(r'\{.*\}', response, re.DOTALL)
@@ -642,13 +643,12 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
                 logger.debug(f"Extracted JSON string: {json_str}")
                 
                 # Fix common JSON formatting issues
-                # 1. Ensure property names are quoted
+                # 1. Remove trailing commas before closing braces and brackets
+                json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)
+                # 2. Ensure property names are quoted
                 json_str = re.sub(r'([{,])\s*([a-zA-Z0-9_]+)\s*:', r'\1"\2":', json_str)
-                # 2. Fix single quotes to double quotes
+                # 3. Fix single quotes to double quotes
                 json_str = json_str.replace("'", '"')
-                # 3. Fix trailing commas
-                json_str = re.sub(r',\s*}', '}', json_str)
-                json_str = re.sub(r',\s*]', ']', json_str)
                 # 4. Fix missing quotes around values
                 json_str = re.sub(r':\s*([a-zA-Z0-9_]+)([,}])', r':"\1"\2', json_str)
                 
@@ -657,10 +657,9 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
             else:
                 # Try parsing the whole response as JSON
                 # Apply the same fixes to the whole response
+                response = re.sub(r',(\s*[}\]])', r'\1', response)  # Remove trailing commas
                 response = re.sub(r'([{,])\s*([a-zA-Z0-9_]+)\s*:', r'\1"\2":', response)
                 response = response.replace("'", '"')
-                response = re.sub(r',\s*}', '}', response)
-                response = re.sub(r',\s*]', ']', response)
                 response = re.sub(r':\s*([a-zA-Z0-9_]+)([,}])', r':"\1"\2', response)
                 
                 logger.debug(f"Cleaned full response: {response}")
@@ -676,17 +675,25 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
             elif not isinstance(analysis_result['data'], dict):
                 analysis_result['data'] = {}
 
-            # Convert string keys back to tuples in the data dictionary
-            converted_data = {}
+            # Clean up the keys in the data dictionary
+            cleaned_data = {}
             for key, value in analysis_result['data'].items():
-                if ':' in key:
-                    # Convert "key:value" back to tuple
-                    k, v = key.split(':', 1)
-                    converted_data[(k, v)] = value
-                else:
-                    converted_data[key] = value
-            
-            analysis_result['data'] = converted_data
+                # Remove specific words from keys
+                cleaned_key = key
+                cleaned_key = re.sub(r'\(composite\)', '', cleaned_key, flags=re.IGNORECASE)
+                cleaned_key = re.sub(r'\(direct\)', '', cleaned_key, flags=re.IGNORECASE)
+                cleaned_key = re.sub(r'\(indirect\)', '', cleaned_key, flags=re.IGNORECASE)
+                cleaned_key = re.sub(r',\s*composite', '', cleaned_key, flags=re.IGNORECASE)
+                cleaned_key = re.sub(r',\s*direct', '', cleaned_key, flags=re.IGNORECASE)
+                cleaned_key = re.sub(r',\s*indirect', '', cleaned_key, flags=re.IGNORECASE)
+                # Remove extra spaces and clean up parentheses
+                cleaned_key = re.sub(r'\s+', ' ', cleaned_key)
+                cleaned_key = re.sub(r'\(\s*\)', '', cleaned_key)
+                cleaned_key = re.sub(r'\(\s*,\s*\)', '', cleaned_key)
+                cleaned_key = cleaned_key.strip()
+                cleaned_data[cleaned_key] = value
+
+            analysis_result['data'] = cleaned_data
 
             return {
                 'data': analysis_result['data'],
@@ -700,17 +707,23 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
             try:
                 # Remove any non-JSON text before and after the JSON object
                 json_str = re.search(r'\{.*\}', response, re.DOTALL).group()
-                # Convert tuple keys to strings
-                json_str = re.sub(tuple_pattern, replace_tuple, json_str)
+                # Remove comments starting with //
+                json_str = re.sub(r'//.*$', '', json_str, flags=re.MULTILINE)
+                # Remove specific words from keys
+                json_str = re.sub(r'\(composite\)', '', json_str, flags=re.IGNORECASE)
+                json_str = re.sub(r'\(direct\)', '', json_str, flags=re.IGNORECASE)
+                json_str = re.sub(r'\(indirect\)', '', json_str, flags=re.IGNORECASE)
+                json_str = re.sub(r',\s*composite', '', json_str, flags=re.IGNORECASE)
+                json_str = re.sub(r',\s*direct', '', json_str, flags=re.IGNORECASE)
+                json_str = re.sub(r',\s*indirect', '', json_str, flags=re.IGNORECASE)
+                # Remove trailing commas before closing braces and brackets
+                json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)
                 # Convert all single quotes to double quotes
                 json_str = json_str.replace("'", '"')
                 # Add quotes around all unquoted property names
                 json_str = re.sub(r'([{,])\s*([a-zA-Z0-9_]+)\s*:', r'\1"\2":', json_str)
                 # Add quotes around all unquoted values
                 json_str = re.sub(r':\s*([a-zA-Z0-9_]+)([,}])', r':"\1"\2', json_str)
-                # Remove any trailing commas
-                json_str = re.sub(r',\s*}', '}', json_str)
-                json_str = re.sub(r',\s*]', ']', json_str)
                 
                 logger.debug(f"Last attempt cleaned JSON: {json_str}")
                 analysis_result = json.loads(json_str)
@@ -719,18 +732,26 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
                     analysis_result = {'data': analysis_result}
                 elif not isinstance(analysis_result['data'], dict):
                     analysis_result['data'] = {}
-                
-                # Convert string keys back to tuples in the data dictionary
-                converted_data = {}
+
+                # Clean up the keys in the data dictionary
+                cleaned_data = {}
                 for key, value in analysis_result['data'].items():
-                    if ':' in key:
-                        # Convert "key:value" back to tuple
-                        k, v = key.split(':', 1)
-                        converted_data[(k, v)] = value
-                    else:
-                        converted_data[key] = value
-                
-                analysis_result['data'] = converted_data
+                    # Remove specific words from keys
+                    cleaned_key = key
+                    cleaned_key = re.sub(r'\(composite\)', '', cleaned_key, flags=re.IGNORECASE)
+                    cleaned_key = re.sub(r'\(direct\)', '', cleaned_key, flags=re.IGNORECASE)
+                    cleaned_key = re.sub(r'\(indirect\)', '', cleaned_key, flags=re.IGNORECASE)
+                    cleaned_key = re.sub(r',\s*composite', '', cleaned_key, flags=re.IGNORECASE)
+                    cleaned_key = re.sub(r',\s*direct', '', cleaned_key, flags=re.IGNORECASE)
+                    cleaned_key = re.sub(r',\s*indirect', '', cleaned_key, flags=re.IGNORECASE)
+                    # Remove extra spaces and clean up parentheses
+                    cleaned_key = re.sub(r'\s+', ' ', cleaned_key)
+                    cleaned_key = re.sub(r'\(\s*\)', '', cleaned_key)
+                    cleaned_key = re.sub(r'\(\s*,\s*\)', '', cleaned_key)
+                    cleaned_key = cleaned_key.strip()
+                    cleaned_data[cleaned_key] = value
+
+                analysis_result['data'] = cleaned_data
                     
                 return {
                     'data': analysis_result['data'],

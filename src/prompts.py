@@ -144,7 +144,8 @@ Example of output:
 Guidelines:
 - Classify all the elements given to you, do not miss any elements.
 - Only use the CSS selectors given to you with the element data. Do not add any other text.
-- Return ONLY the JSON object and nothing else without any additional text like comments or explanations.
+- Return ONLY the valid JSON object and nothing else without any additional text like comments or explanations.
+- Be careful about escaping the colon in the keys of the JSON object as it is a special character in JSON.
 """
 
 POLICY_TRANSLATION = f"""

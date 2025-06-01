@@ -606,6 +606,8 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
                 json_str = json_str.replace("'", '"')
                 # 4. Fix missing quotes around values
                 json_str = re.sub(r':\s*([a-zA-Z0-9_]+)([,}])', r':"\1"\2', json_str)
+                # 5. Fix unquoted property names with colons
+                json_str = re.sub(r'([{,])\s*([^"{\s][^:]*?):\s*', r'\1"\2":', json_str)
                 
                 logger.debug(f"Cleaned JSON string: {json_str}")
                 analysis_result = json.loads(json_str)
@@ -616,6 +618,8 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
                 response = re.sub(r'([{,])\s*"([^"]+)"\s*:', r'\1"\2":', response)
                 response = response.replace("'", '"')
                 response = re.sub(r':\s*([a-zA-Z0-9_]+)([,}])', r':"\1"\2', response)
+                # Fix unquoted property names with colons
+                response = re.sub(r'([{,])\s*([^"{\s][^:]*?):\s*', r'\1"\2":', response)
                 
                 logger.debug(f"Cleaned full response: {response}")
                 analysis_result = json.loads(response)
@@ -1020,7 +1024,7 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any] | list, highlight
             'error': f'Highlighting failed: {str(e)}'
         }
 
-def clear_element_highlighting() -> Dict[str, Any]:
+def clear_custom_css() -> Dict[str, Any]:
     """
     Clear all CSS highlighting from the page
     
@@ -1244,7 +1248,7 @@ def get_allowed_and_not_allowed_elements(data_required: Dict[str, Any], html_str
     return allowed_elements, not_allowed_elements
             
 def infer_permissions_from_html(screenshot_data: bytes) -> Dict[str, Any]:
-    clear_element_highlighting()
+    clear_custom_css()
 
     # Get the HTML source and create minimal version
     html_result = get_html_source()
@@ -1290,3 +1294,126 @@ def infer_permissions_from_html(screenshot_data: bytes) -> Dict[str, Any]:
 
     logger.info(f"[browser_agent_core.py] Allowed elements: {allowed_elements}")
     logger.info(f"[browser_agent_core.py] Not allowed elements: {not_allowed_elements}")
+
+    handle_not_allowed_elements(not_allowed_elements)
+
+def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> Dict[str, Any]:
+    """
+    Handle elements that are not allowed to be read or written to by adding CSS rules.
+    For read elements: Black out with a message
+    For write elements: Disable interaction and show a message
+    
+    Args:
+        not_allowed_elements (Dict[str, List[str]]): Dictionary with 'read' and 'write' lists of CSS selectors
+        
+    Returns:
+        dict: Result of the CSS injection operation
+    """
+    try:
+        css_rules = ""
+        
+        # Handle read elements - black out with message
+        for selector in not_allowed_elements.get('read', []):
+            if not isinstance(selector, str) or not selector.strip():
+                continue
+                
+            css_rules += f"""
+            {selector} {{
+                position: relative !important;
+                filter: blur(8px) !important;
+                pointer-events: none !important;
+                user-select: none !important;
+            }}
+            {selector}::before {{
+                content: 'Data not permissioned for viewing' !important;
+                position: absolute !important;
+                top: 50% !important;
+                left: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                background: rgba(0, 0, 0, 0.8) !important;
+                color: white !important;
+                padding: 8px 12px !important;
+                border-radius: 4px !important;
+                font-size: 14px !important;
+                font-weight: bold !important;
+                z-index: 9999 !important;
+                white-space: nowrap !important;
+                pointer-events: none !important;
+            }}
+            """
+            
+        # Handle write elements - disable interaction
+        for selector in not_allowed_elements.get('write', []):
+            if not isinstance(selector, str) or not selector.strip():
+                continue
+                
+            css_rules += f"""
+            {selector} {{
+                position: relative !important;
+                opacity: 0.7 !important;
+                pointer-events: none !important;
+                cursor: not-allowed !important;
+            }}
+            {selector}::before {{
+                content: 'No permission to interact' !important;
+                position: absolute !important;
+                top: -20px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                background: rgba(255, 0, 0, 0.8) !important;
+                color: white !important;
+                padding: 4px 8px !important;
+                border-radius: 4px !important;
+                font-size: 12px !important;
+                font-weight: bold !important;
+                z-index: 9999 !important;
+                white-space: nowrap !important;
+                pointer-events: none !important;
+            }}
+            """
+            
+        if not css_rules:
+            logger.warning("No valid selectors found to handle")
+            return {
+                'success': False,
+                'error': 'No valid selectors found to handle'
+            }
+            
+        # Send CSS to the injection endpoint
+        payload = {
+            'css': css_rules
+        }
+        
+        logger.info("Sending CSS rules to handle non-allowed elements")
+        response = requests.post('http://localhost:8080/inject-css', 
+                               json=payload, 
+                               timeout=10)
+        
+        if response.status_code == 200:
+            result = response.json()
+            logger.info("Successfully handled non-allowed elements")
+            return {
+                'success': True,
+                'message': 'Non-allowed elements handled',
+                'css_applied': result.get('css_applied', '')
+            }
+        else:
+            error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {}
+            logger.error(f"Failed to inject CSS: {response.status_code} - {error_data}")
+            return {
+                'success': False,
+                'error': f'CSS injection failed: {error_data.get("error", "Unknown error")}'
+            }
+            
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error connecting to CSS injection server: {str(e)}")
+        return {
+            'success': False,
+            'error': f'Connection error: {str(e)}'
+        }
+    except Exception as e:
+        logger.error(f"Error handling non-allowed elements: {str(e)}", exc_info=True)
+        return {
+            'success': False,
+            'error': f'Handling failed: {str(e)}'
+        }

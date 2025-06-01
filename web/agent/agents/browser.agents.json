@@ -1,0 +1,8 @@
+{
+  "https://example.com/": {
+    "verified": true,
+    "read": [],
+    "write": [],
+    "data": {}
+  }
+}

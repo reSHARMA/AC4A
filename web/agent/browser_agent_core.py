@@ -1,6 +1,7 @@
 import logging
 from enum import Enum
 from typing import Dict, Any, Tuple, List
+import os
 import requests
 import base64
 import re
@@ -534,7 +535,7 @@ User: {user_input}
         
         if response:
             return create_message(
-                content=active_tab_url + "\n" + response,
+                content=response,
                 role="assistant",
                 msg_type=MessageType.ASSISTANT
             )
@@ -1286,6 +1287,25 @@ def get_dom_tree_with_selectors(html_content: str) -> Dict[str, Any]:
             'tree': None
         }
 
+def get_base_url(url: str) -> str:
+    """
+    Get the base URL from a full URL
+    
+    Args:
+        url (str): Full URL
+        
+    Returns:
+        str: Base URL (protocol + domain)
+    """
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        base_url = f"{parsed.scheme}://{parsed.netloc}"
+        return base_url
+    except Exception as e:
+        logger.error(f"Error parsing URL {url}: {str(e)}")
+        return url
+
 def get_allowed_and_not_allowed_elements(data_required: Dict[str, Any], html_structure: Dict[str, Any]) -> Tuple[Dict[str, List[str]], Dict[str, List[str]]]:
     """
     Get allowed and not allowed elements based on data requirements
@@ -1328,7 +1348,12 @@ def get_allowed_and_not_allowed_elements(data_required: Dict[str, Any], html_str
     return allowed_elements, not_allowed_elements
             
 def infer_permissions_from_html(screenshot_data: bytes) -> Dict[str, Any]:
-    clear_custom_css()
+
+    success = handle_from_config()
+    if success:
+        logger.info(f"[browser_agent_core.py] Success in handle_from_config, returning")
+        return
+    logger.info(f"[browser_agent_core.py] Failed to handle from config, inferring permissions from HTML")
 
     # Get the HTML source and create minimal version
     html_result = get_html_source()
@@ -1369,6 +1394,8 @@ def infer_permissions_from_html(screenshot_data: bytes) -> Dict[str, Any]:
         )
 
     logger.info(f"[browser_agent_core.py] Data required: {data_required}")
+
+    add_to_config(html_structure, data_required)
 
     allowed_elements, not_allowed_elements = get_allowed_and_not_allowed_elements(data_required, html_structure)
 
@@ -1515,3 +1542,122 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
             'success': False,
             'error': f'Handling failed: {str(e)}'
         }
+
+def add_to_config(html_structure: Dict[str, Any], data_required: Dict[str, Any]) -> None:
+    """
+    Add the HTML structure and data required to the config
+    
+    Args:
+        html_structure (Dict[str, Any]): HTML structure with read and write elements
+        data_required (Dict[str, Any]): Data requirements with data type as key and list of CSS selectors as value
+    """
+    # check if the config file exists, browser.agents.json
+    config_file = os.path.join(os.path.dirname(__file__), 'agents', 'browser.agents.json')
+    if not os.path.exists(config_file):
+        # create the file
+        with open(config_file, 'w') as f:
+            json.dump({}, f)
+
+    # load the config
+    with open(config_file, 'r') as f:
+        config = json.load(f)
+
+    # Get the active tab URL
+    active_tab = get_active_tab_url()
+    if not active_tab.get('success', False):
+        logger.error("Failed to get active tab URL")
+        return
+
+    active_url = active_tab.get('url', 'unknown')
+    
+    # Create or update the entry for this URL
+    if active_url not in config:
+        config[active_url] = {
+            'verified': False,
+            'read': [],
+            'write': [],
+            'data': {}
+        }
+    
+    # Update read and write selectors
+    config[active_url]['read'] = html_structure.get('read', [])
+    config[active_url]['write'] = html_structure.get('write', [])
+    
+    # Update data requirements
+    if 'data' in data_required:
+        config[active_url]['data'] = data_required['data']
+    
+    # Save the updated config
+    with open(config_file, 'w') as f:
+        json.dump(config, f, indent=2)
+    
+    logger.info(f"Updated config for URL: {active_url}")
+
+def handle_from_config() -> bool:
+    """
+    Handle permissions based on the config file
+    
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        # Get the active tab URL
+        active_tab = get_active_tab_url()
+        if not active_tab.get('success', False):
+            logger.error("Failed to get active tab URL")
+            return False
+
+        active_url = active_tab.get('url', 'unknown')
+        active_base_url = get_base_url(active_url)
+        
+        # Load the config
+        config_file = os.path.join(os.path.dirname(__file__), 'agents', 'browser.agents.json')
+        if not os.path.exists(config_file):
+            logger.info("Config file not found")
+            return False
+            
+        with open(config_file, 'r') as f:
+            config = json.load(f)
+            
+        # Check if we have an entry for this URL or its base URL
+        matching_url = None
+        for url in config:
+            if url == active_url or get_base_url(url) == active_base_url:
+                matching_url = url
+                break
+                
+        if not matching_url:
+            logger.info(f"No config entry found for URL: {active_url} or base URL: {active_base_url}")
+            return False
+            
+        url_config = config[matching_url]
+        
+        # If not verified, we need to do a fresh analysis
+        if not url_config.get('verified', False):
+            logger.info(f"URL {matching_url} not verified, will do fresh analysis")
+            return False
+ 
+        # Create HTML structure from config
+        html_structure = {
+            'read': url_config.get('read', []),
+            'write': url_config.get('write', []),
+            'success': True
+        }
+        
+        # Create data required from config
+        data_required = {
+            'data': url_config.get('data', {}),
+            'success': True
+        }
+        
+        logger.info(f"[browser_agent_core.py] Found config for URL: {active_url}")
+
+        # Handle not allowed elements
+        allowed_elements, not_allowed_elements = get_allowed_and_not_allowed_elements(data_required, html_structure)
+        handle_not_allowed_elements(not_allowed_elements)
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error handling from config: {str(e)}", exc_info=True)
+        return False

@@ -972,27 +972,27 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any] | list, highlight
                 color_index += 1
                 
                 css_rules += f"""
-                {selector} {{
-                    border: 2px solid {border_color} !important;
-                    box-shadow: 0 0 5px {border_color} !important;
-                    position: relative !important;
-                }}
-                {selector}::after {{
-                    content: '{label_prefix}Element';
-                    position: absolute;
-                    top: -18px;
-                    right: 0;
-                    background: {bg_color};
-                    color: white;
-                    padding: 1px 4px;
-                    font-size: 9px;
-                    font-family: monospace;
-                    border-radius: 2px;
-                    z-index: 9999;
-                    pointer-events: none;
-                    font-weight: bold;
-                }}
-                """
+{selector} {{
+    border: 2px solid {border_color} !important;
+    box-shadow: 0 0 5px {border_color} !important;
+    position: relative !important;
+}}
+{selector}::after {{
+    content: '{label_prefix}Element';
+    position: absolute;
+    top: -18px;
+    right: 0;
+    background: {bg_color};
+    color: white;
+    padding: 1px 4px;
+    font-size: 9px;
+    font-family: monospace;
+    border-radius: 2px;
+    z-index: 9999;
+    pointer-events: none;
+    font-weight: bold;
+}}
+"""
         # Handle dictionary input (existing functionality)
         elif isinstance(html_structure, dict):
             # Get the data dictionary from the structure
@@ -1029,27 +1029,27 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any] | list, highlight
                     label_prefix = "Write: " if highlight_type == "write" else "Read: "
                     
                     css_rules += f"""
-                    {selector} {{
-                        border: 2px solid {border_color} !important;
-                        box-shadow: 0 0 5px {border_color} !important;
-                        position: relative !important;
-                    }}
-                    {selector}::after {{
-                        content: '{label_prefix}{data_type}';
-                        position: absolute;
-                        top: -18px;
-                        right: 0;
-                        background: {bg_color};
-                        color: white;
-                        padding: 1px 4px;
-                        font-size: 9px;
-                        font-family: monospace;
-                        border-radius: 2px;
-                        z-index: 9999;
-                        pointer-events: none;
-                        font-weight: bold;
-                    }}
-                    """
+{selector} {{
+    border: 2px solid {border_color} !important;
+    box-shadow: 0 0 5px {border_color} !important;
+    position: relative !important;
+}}
+{selector}::after {{
+    content: '{label_prefix}{data_type}';
+    position: absolute;
+    top: -18px;
+    right: 0;
+    background: {bg_color};
+    color: white;
+    padding: 1px 4px;
+    font-size: 9px;
+    font-family: monospace;
+    border-radius: 2px;
+    z-index: 9999;
+    pointer-events: none;
+    font-weight: bold;
+}}
+"""
         else:
             logger.error("Invalid input type for html_structure")
             return {
@@ -1393,14 +1393,7 @@ def get_allowed_and_not_allowed_elements_from_config(data_required: Dict[str, An
     return allowed_elements, not_allowed_elements
 
 def infer_permissions_from_html(screenshot_data: bytes) -> Dict[str, Any]:
-
-    success = handle_from_config()
-    if success:
-        logger.info(f"[browser_agent_core.py] Success in handle_from_config, returning")
-        return
-    logger.info(f"[browser_agent_core.py] Failed to handle from config, inferring permissions from HTML")
-
-    # Get the HTML source and create minimal version
+  # Get the HTML source and create minimal version
     html_result = get_html_source()
     if not html_result.get('success', False) or not html_result.get('html'):
         return create_message(
@@ -1411,6 +1404,14 @@ def infer_permissions_from_html(screenshot_data: bytes) -> Dict[str, Any]:
 
     # Create minimal HTML with element paths
     minimal_html = get_element_paths(html_result['html'])
+
+    success = handle_from_config(minimal_html)
+    if success:
+        logger.info(f"[browser_agent_core.py] Success in handle_from_config, returning")
+        return
+    logger.info(f"[browser_agent_core.py] Failed to handle from config, inferring permissions from HTML")
+
+  
 
     # First analyze HTML structure to get read/write elements
     html_structure = analyze_html_structure(screenshot_data, minimal_html)
@@ -1452,7 +1453,7 @@ def infer_permissions_from_html(screenshot_data: bytes) -> Dict[str, Any]:
 def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> Dict[str, Any]:
     """
     Handle elements that are not allowed to be read or written to by adding CSS rules.
-    For read elements: Black out with a message
+    For read elements: Show emoji icon and tooltip for all, hide all child content, make non-interactive and disable form elements
     For write elements: Disable interaction and show a message
     
     Args:
@@ -1463,102 +1464,176 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
     """
     try:
         css_rules = ""
-        
-        # Handle read elements - black out with message
         for selector in not_allowed_elements.get('read', []):
             if not isinstance(selector, str) or not selector.strip():
                 continue
-                
+            sel = selector.strip()
             css_rules += f"""
-            {selector} {{
-                position: relative !important;
-                background: #000 !important;
-                color: transparent !important;
-                text-shadow: 0 0 8px rgba(0,0,0,0.5) !important;
-                pointer-events: none !important;
-                user-select: none !important;
-            }}
-            {selector}::before {{
-                content: 'Data not permissioned for viewing' !important;
-                position: absolute !important;
-                top: 50% !important;
-                left: 50% !important;
-                transform: translate(-50%, -50%) !important;
-                background: rgba(0, 0, 0, 0.9) !important;
-                color: white !important;
-                padding: 12px 16px !important;
-                border-radius: 6px !important;
-                font-size: 16px !important;
-                font-weight: bold !important;
-                z-index: 99999 !important;
-                white-space: nowrap !important;
-                pointer-events: none !important;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
-                border: 2px solid rgba(255,255,255,0.2) !important;
-            }}
-            """
-            
-        # Handle write elements - disable interaction
+{sel},
+{sel} * {{
+    pointer-events: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    tabindex: -1 !important;
+    outline: none !important;
+    cursor: not-allowed !important;
+}}
+{sel}[tabindex], {sel} *[tabindex] {{
+    tabindex: -1 !important;
+}}
+{sel}[role], {sel} *[role] {{
+    pointer-events: none !important;
+    user-select: none !important;
+    cursor: not-allowed !important;
+    aria-disabled: true !important;
+    disabled: true !important;
+}}
+{sel} {{
+    position: relative !important;
+    background: #000 !important;
+    color: transparent !important;
+    overflow: hidden !important;
+    z-index: 999999 !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
+    box-sizing: border-box !important;
+}}
+{sel} *, {sel} input, {sel} button, {sel} select, {sel} textarea, {sel} label, {sel} a {{
+    visibility: hidden !important;
+    pointer-events: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    outline: none !important;
+    border: none !important;
+    background: transparent !important;
+    color: transparent !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+    caret-color: transparent !important;
+    -webkit-tap-highlight-color: transparent !important;
+    opacity: 1 !important;
+    filter: none !important;
+    transition: none !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    pointer-events: none !important;
+    cursor: not-allowed !important;
+    disabled: true !important;
+}}
+{sel} input, {sel} button, {sel} select, {sel} textarea {{
+    pointer-events: none !important;
+    user-select: none !important;
+    cursor: not-allowed !important;
+    disabled: true !important;
+}}
+{sel}::before {{
+    content: '🚫';
+    font-size: 18px !important;
+    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif !important;
+    background: transparent !important;
+    color: #fff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 9999999 !important;
+    pointer-events: auto !important;
+    width: 24px !important;
+    height: 24px !important;
+}}
+{sel}:hover::after {{
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}}
+{sel}::after {{
+    content: 'Data not permissioned for viewing' !important;
+    position: absolute !important;
+    left: 50% !important;
+    top: -32px !important;
+    transform: translateX(-50%) !important;
+    background: #222 !important;
+    color: #fff !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    font-weight: normal !important;
+    white-space: nowrap !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: 10000000 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    transition: opacity 0.2s;
+}}
+"""
+        # Handle write elements - disable interaction (unchanged)
         for selector in not_allowed_elements.get('write', []):
             if not isinstance(selector, str) or not selector.strip():
                 continue
-                
             css_rules += f"""
-            {selector} {{
-                position: relative !important;
-                opacity: 0.5 !important;
-                pointer-events: none !important;
-                cursor: not-allowed !important;
-            }}
-            {selector}::before {{
-                content: 'No permission to interact' !important;
-                position: absolute !important;
-                top: -24px !important;
-                left: 50% !important;
-                transform: translateX(-50%) !important;
-                background: rgba(255, 0, 0, 0.9) !important;
-                color: white !important;
-                padding: 6px 12px !important;
-                border-radius: 4px !important;
-                font-size: 14px !important;
-                font-weight: bold !important;
-                z-index: 99999 !important;
-                white-space: nowrap !important;
-                pointer-events: none !important;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
-                border: 2px solid rgba(255,255,255,0.2) !important;
-            }}
-            {selector}::after {{
-                content: '' !important;
-                position: absolute !important;
-                top: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                bottom: 0 !important;
-                background: rgba(255, 0, 0, 0.1) !important;
-                z-index: 99998 !important;
-                pointer-events: auto !important;
-                cursor: not-allowed !important;
-            }}
-            """
-            
+{selector} {{
+    position: relative !important;
+    opacity: 0.5 !important;
+    pointer-events: none !important;
+    cursor: not-allowed !important;
+    z-index: 999999 !important;
+    overflow: hidden !important;
+}}
+{selector}::before {{
+    content: 'No permission to interact' !important;
+    position: absolute !important;
+    top: -24px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    background: rgba(255, 0, 0, 0.9) !important;
+    color: white !important;
+    padding: 6px 12px !important;
+    border-radius: 4px !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    z-index: 9999999 !important;
+    white-space: nowrap !important;
+    pointer-events: none !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+    border: 2px solid rgba(255,255,255,0.2) !important;
+    max-width: 90% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}}
+{selector}::after {{
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(255, 0, 0, 0.1) !important;
+    z-index: 9999998 !important;
+    pointer-events: auto !important;
+    cursor: not-allowed !important;
+}}
+"""
         if not css_rules:
             logger.warning("No valid selectors found to handle")
             return {
                 'success': False,
                 'error': 'No valid selectors found to handle'
             }
-            
         # Send CSS to the injection endpoint
         payload = {
             'css': css_rules
         }
-        
         logger.info("Sending CSS rules to handle non-allowed elements")
         response = requests.post('http://localhost:8080/inject-css', 
                                json=payload, 
                                timeout=10)
-        
         if response.status_code == 200:
             result = response.json()
             logger.info("Successfully handled non-allowed elements")
@@ -1574,7 +1649,6 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
                 'success': False,
                 'error': f'CSS injection failed: {error_data.get("error", "Unknown error")}'
             }
-            
     except requests.exceptions.RequestException as e:
         logger.error(f"Error connecting to CSS injection server: {str(e)}")
         return {
@@ -1638,10 +1712,48 @@ def add_to_config(html_structure: Dict[str, Any], data_required: Dict[str, Any])
     
     logger.info(f"Updated config for URL: {active_url}")
 
-def handle_from_config() -> bool:
+def convert_text_to_selector(text: str, minimal_html: Dict[str, str]) -> str:
+    """
+    Convert a text-based selector (text(some text)) to a CSS selector using minimal_html mapping
+    
+    Args:
+        text (str): Text-based selector in format text(some text)
+        minimal_html (Dict[str, str]): Mapping of text content to CSS selectors
+        
+    Returns:
+        str: CSS selector for the element containing the text, or original text if not found
+    """
+    try:
+        # Extract text from text(some text) format
+        match = re.match(r'text\((.*?)\)', text)
+        if not match:
+            return text  # Return original if not in text() format
+            
+        search_text = match.group(1)
+        
+        # Look for exact match in minimal_html keys
+        for content, selector in minimal_html.items():
+            if content.strip() == search_text:
+                return selector
+                
+        # If no exact match, try partial match
+        for content, selector in minimal_html.items():
+            if search_text in content.strip():
+                return selector
+                
+        return text  # Return original if no match found
+        
+    except Exception as e:
+        logger.error(f"Error converting text to selector: {str(e)}")
+        return text  # Return original on error
+
+def handle_from_config(minimal_html: Dict[str, str]) -> bool:
     """
     Handle permissions based on the config file
     
+    Args:
+        minimal_html (Dict[str, str]): Mapping of text content to CSS selectors
+        
     Returns:
         bool: True if successful, False otherwise
     """
@@ -1681,17 +1793,26 @@ def handle_from_config() -> bool:
         if not url_config.get('verified', False):
             logger.info(f"URL {matching_url} not verified, will do fresh analysis")
             return False
- 
-        # Create HTML structure from config
+
+        # Convert text-based selectors to CSS selectors while preserving direct CSS selectors
+        converted_read = [convert_text_to_selector(sel, minimal_html) for sel in url_config.get('read', [])]
+        converted_write = [convert_text_to_selector(sel, minimal_html) for sel in url_config.get('write', [])]
+        
+        # Create HTML structure from config with converted selectors
         html_structure = {
-            'read': url_config.get('read', []),
-            'write': url_config.get('write', []),
+            'read': converted_read,
+            'write': converted_write,
             'success': True
         }
         
-        # Create data required from config
+        # Convert text-based selectors in data requirements while preserving direct CSS selectors
+        converted_data = {}
+        for data_type, selectors in url_config.get('data', {}).items():
+            converted_data[data_type] = [convert_text_to_selector(sel, minimal_html) for sel in selectors]
+        
+        # Create data required from config with converted selectors
         data_required = {
-            'data': url_config.get('data', {}),
+            'data': converted_data,
             'success': True
         }
         

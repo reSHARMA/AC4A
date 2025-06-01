@@ -18,11 +18,7 @@
       ".uitk-button.uitk-button-large.uitk-button-as-link.uitk-button-primary.uitk-button-has-text",
       ".is-visually-hidden",
       "#property-type-carousel",
-      "div#tabo1-gdfhdd3-0",
-      "#tab-ddxg61paa-0",
-      "#tab-gb4nbxju-0",
-      "#tab-5zwnuzhei-0"
-
+      ".RecentSearches"
     ],
     "write": [
       "#traveler_selector_add_room",
@@ -32,13 +28,12 @@
       "Expedia:Experience(*)": [
         "#property-type-carousel",
         ".uitk-tab-text",
-        "div#tabo1-gdfhdd3-0",
         ".uitk-checkbox-label-content"
       ],
       "Expedia:Destination(*)": [
         ".uitk-tab-text",
-        "#tab-5zwnuzhei-0",
-        "#search_button"
+        "#search_button",
+        ".RecentSearches"
       ],
       "Expedia:Flight(*)": [
         ".uitk-tab-text"

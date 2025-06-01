@@ -77,9 +77,9 @@ Return your analysis as a JSON object with this exact structure:
 }
 """
 
-BROWSER_INFER_DATA = """You are an expert in reasoning about the content on any webpage. Your task is to analyze the text, icons, images, buttons, links, etc given to you as a list of data from an html element and their unique CSS selector in <HTML ELEMENTS> and the screenshot of the current state of the webpage to find out the data directly or indirectly represented by the element.
+BROWSER_INFER_DATA = """You are an expert in reasoning about the content on any webpage. Your task is to analyze the text, icons, images, buttons, links, etc given to you as a list of data from html elements and their unique CSS selector in <HTML ELEMENTS> and the screenshot of the current state of the webpage to find out what data is directly or indirectly represented by the element.
 
-## Each element given to you must be associated with a direct or indirect data type.
+## Each element given to you must be associated with a direct or indirect data type and a data value.
 When the data in the element is the actual data, it is a direct data type.
 Examples of direct data:
 - Calendar: Events, Tasks
@@ -98,7 +98,7 @@ When analyzing elements, consider that data is often displayed as a composite of
 - A hotel listing might show price, rating, amenities, and location information
 - A credit card entry might show card number, expiry date, and cardholder name
 
-You are also provided with all the possible data types which are supported as well as the schema of the data values in <ALL DATA> and <ALL DATA SCHEMA>. You must use this information along with the screenshot and the DOM tree given in <DOM TREE> to associate each element in the <HTML ELEMENTS> with a direct or indirect data type from <ALL DATA> and <ALL DATA SCHEMA>.
+You are also provided with all the possible data types which are supported as well as the schema of the data values in <ALL DATA> and <ALL DATA SCHEMA> respectively. You must use this information along with the screenshot and the DOM tree given in <DOM TREE> to associate each element in the <HTML ELEMENTS> with a direct or indirect data type and a data value based on <ALL DATA> and <ALL DATA SCHEMA> respectively.
 
 ## Direct Data Examples:
 - If the data is, "Text: Toggle button on. Show the daily view. (Alt+Shift+1)'" then it represents all Calendar Day data because this button when pressed shows the daily view of the calendar and since there is no specific day mentioned, the data value is all.
@@ -126,24 +126,15 @@ For example, if we have three composite HTML elements, one for the date, one for
 Return your analysis as a JSON object with this exact structure:
 {
     "data": {
-        "data type strictly from <ALL DATA> and data value associated with the element strictly following the schema in <ALL DATA SCHEMA>": ["css_selector_1", "css_selector_2", ...], // reasoning why does these CSS selectors represent the data
-        "data type strictly from <ALL DATA> and data value associated with the element strictly following the schema in <ALL DATA SCHEMA>": ["css_selector_3", "css_selector_4", ...], // reasoning why does these CSS selectors represent the data
+        "data type strictly from <ALL DATA> and the data value as all or strictly following the schema in <ALL DATA SCHEMA>": ["css_selector_1", "css_selector_2", ...], // reasoning why does these CSS selectors represent the data
         ...
     }
 }
 
-Example of output:
-{
-    "data": {
-        "Calendar data for all the years": ["#calendar-year-dropdown"],
-        "Calendar data for year 2025": ["#calendar-year-dropdown", "#year-2025-button"],
-        "Calendar data for October month": ["#calendar-month-dropdown", "#month-october-button"],
-        "Calendar data for year 2025 and October month": ["#calendar-year-dropdown", "#year-2025-button", "#calendar-month-dropdown", "#month-october-button"]
-    }
-}
 Guidelines:
 - Classify all the elements given to you, do not miss any elements.
 - Only use the CSS selectors given to you with the element data. Do not add any other text.
+- Do not add redundant data type and data value entries.
 - Return ONLY the valid JSON object and nothing else without any additional text like comments or explanations.
 - Be careful about escaping the colon in the keys of the JSON object as it is a special character in JSON.
 """

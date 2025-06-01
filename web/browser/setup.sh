@@ -97,37 +97,44 @@ conda activate "$ENV_NAME"
 
 # Step 4: Install Xvfb and its dependencies
 echo "Installing Xvfb and dependencies..."
-sudo apt-get update
-sudo apt-get install -y \
-    xvfb \
-    x11vnc \
-    x11-xserver-utils \
-    x11-utils \
-    x11-apps \
-    x11-session-utils \
-    x11-xkb-utils \
-    x11-xserver-utils \
-    x11proto-dev \
-    x11proto-core-dev \
-    x11proto-dri2-dev \
-    x11proto-fonts-dev \
-    x11proto-input-dev \
-    x11proto-kb-dev \
-    x11proto-present-dev \
-    x11proto-randr-dev \
-    x11proto-record-dev \
-    x11proto-render-dev \
-    x11proto-scrnsaver-dev \
-    x11proto-video-dev \
-    x11proto-xext-dev \
-    x11proto-xf86dri-dev \
-    x11proto-xinerama-dev \
-    libxkbfile-dev \
-    libxfont-dev \
-    libxau-dev \
-    libxdmcp-dev \
-    libgl1-mesa-dev \
-    x11proto-gl-dev
+
+# Check if running as root
+if ! command -v sudo >/dev/null 2>&1 || ! sudo -n true 2>/dev/null; then
+    echo "Error: This script requires sudo access to install X11 dependencies."
+    echo "Please build them locally and run the script again."
+else
+    sudo apt-get update
+    sudo apt-get install -y \
+        xvfb \
+        x11vnc \
+        x11-xserver-utils \
+        x11-utils \
+        x11-apps \
+        x11-session-utils \
+        x11-xkb-utils \
+        x11-xserver-utils \
+        x11proto-dev \
+        x11proto-core-dev \
+        x11proto-dri2-dev \
+        x11proto-fonts-dev \
+        x11proto-input-dev \
+        x11proto-kb-dev \
+        x11proto-present-dev \
+        x11proto-randr-dev \
+        x11proto-record-dev \
+        x11proto-render-dev \
+        x11proto-scrnsaver-dev \
+        x11proto-video-dev \
+        x11proto-xext-dev \
+        x11proto-xf86dri-dev \
+        x11proto-xinerama-dev \
+        libxkbfile-dev \
+        libxfont-dev \
+        libxau-dev \
+        libxdmcp-dev \
+        libgl1-mesa-dev \
+        x11proto-gl-dev
+fi
 
 # Step 5: Install Playwright and browsers
 if [ ! -d "$INSTALL_DIR/playwright-project" ]; then

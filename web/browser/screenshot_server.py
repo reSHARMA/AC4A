@@ -622,6 +622,37 @@ def get_status():
     
     return jsonify(status)
 
+@app.route('/active-tab-url', methods=['GET'])
+def get_active_tab_url():
+    """
+    Get the URL of the currently active tab
+    
+    Returns:
+        JSON: URL of the active tab or error message
+    """
+    try:
+        # Get the active tab
+        active_tab = get_active_tab()
+        if not active_tab:
+            return jsonify({
+                'error': 'No active browser tab found',
+                'message': 'Chrome DevTools Protocol connection failed or no tabs available'
+            }), 404
+        
+        return jsonify({
+            'success': True,
+            'url': active_tab.get('url', 'unknown'),
+            'title': active_tab.get('title', 'unknown'),
+            'timestamp': time.time()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting active tab URL: {str(e)}")
+        return jsonify({
+            'error': 'Internal server error',
+            'message': str(e)
+        }), 500
+
 def run_server(host='localhost', port=8080, screenshot_path=None):
     """
     Run the Flask server

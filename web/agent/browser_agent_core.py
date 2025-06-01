@@ -360,6 +360,53 @@ def get_html_source() -> Dict[str, Any]:
             'html': None
         }
 
+def get_active_tab_url() -> Dict[str, Any]:
+    """
+    Get the URL of the currently active tab
+    
+    Returns:
+        dict: URL data or error information
+    """
+    try:
+        # Get the active tab URL from the Flask API
+        response = requests.get('http://localhost:8080/active-tab-url', timeout=10)
+        
+        if response.status_code == 200:
+            url_data = response.json()
+            return url_data
+        elif response.status_code == 404:
+            logger.warning("No active browser tab found")
+            return {
+                'success': False,
+                'error': 'No active browser tab found',
+                'url': None,
+                'title': None
+            }
+        else:
+            logger.error(f"Failed to get active tab URL: {response.status_code} - {response.text}")
+            return {
+                'success': False,
+                'error': f'HTTP {response.status_code}',
+                'url': None,
+                'title': None
+            }
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error connecting to screenshot server: {str(e)}", exc_info=True)
+        return {
+            'success': False,
+            'error': f'Connection error: {str(e)}',
+            'url': None,
+            'title': None
+        }
+    except Exception as e:
+        logger.error(f"Error getting active tab URL: {str(e)}", exc_info=True)
+        return {
+            'success': False,
+            'error': f'Unexpected error: {str(e)}',
+            'url': None,
+            'title': None
+        }
+
 def compress_screenshot(screenshot_data: bytes, max_size: tuple = (800, 600), quality: int = 55) -> bytes:
     """
     Compress and resize screenshot data to reduce size
@@ -487,7 +534,7 @@ User: {user_input}
         
         if response:
             return create_message(
-                content=response,
+                content=active_tab_url + "\n" + response,
                 role="assistant",
                 msg_type=MessageType.ASSISTANT
             )

@@ -1,6 +1,6 @@
 import logging
 from enum import Enum
-from typing import Dict, Any
+from typing import Dict, Any, Tuple, List
 import requests
 import base64
 import re
@@ -8,6 +8,7 @@ import json
 import time
 from src.utils.dummy_data import call_openai_api
 from .agent_manager import agent_manager
+from src.policy_system.policy_system import PolicySystem
 from PIL import Image
 import io
 from src.prompts import BROWSER_INFER_DATA, BROWSER_CLASSIFY_DATA
@@ -475,17 +476,20 @@ def process_with_computer_use(user_input: str) -> Dict[str, Any]:
                 filtered_minimal_html[element] = selector
 
         # Now infer data from the filtered HTML structure for all elements
-        read_data_structure = infer_data_from_html_structure(screenshot_data, filtered_minimal_html, html_result['html'])
-        if not read_data_structure.get('success', False):
+        data_required = infer_data_from_html_structure(screenshot_data, filtered_minimal_html, html_result['html'])
+        if not data_required.get('success', False):
             return create_message(
-                content=read_data_structure.get('error', 'Failed to infer data from HTML structure'),
+                content=data_required.get('error', 'Failed to infer data from HTML structure'),
                 role="system",
                 msg_type=MessageType.ERROR
             )
 
-        logger.info(f"[browser_agent_core.py] Read data structure: {read_data_structure}")
-        # Highlight the read elements first
-        highlight_analyzed_elements(read_data_structure, highlight_type="read")
+        logger.info(f"[browser_agent_core.py] Data required: {data_required}")
+
+        allowed_elements, not_allowed_elements = get_allowed_and_not_allowed_elements(data_required, html_structure)
+
+        logger.info(f"[browser_agent_core.py] Allowed elements: {allowed_elements}")
+        logger.info(f"[browser_agent_core.py] Not allowed elements: {not_allowed_elements}")
 
         # Convert screenshot to base64
         screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
@@ -627,14 +631,10 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
             response = re.sub(r'//.*$', '', response, flags=re.MULTILINE)
             logger.debug(f"Response after removing comments: {response}")
 
-            # Remove specific words from keys
-            response = re.sub(r'\(composite\)', '', response, flags=re.IGNORECASE)
-            response = re.sub(r'\(direct\)', '', response, flags=re.IGNORECASE)
-            response = re.sub(r'\(indirect\)', '', response, flags=re.IGNORECASE)
-            response = re.sub(r',\s*composite', '', response, flags=re.IGNORECASE)
-            response = re.sub(r',\s*direct', '', response, flags=re.IGNORECASE)
-            response = re.sub(r',\s*indirect', '', response, flags=re.IGNORECASE)
-            logger.debug(f"Response after removing specific words: {response}")
+            # Remove trailing commas in arrays
+            response = re.sub(r',(\s*])', r'\1', response)
+            # Remove trailing commas in objects
+            response = re.sub(r',(\s*})', r'\1', response)
 
             # Extract JSON from response if it's wrapped in other text
             json_match = re.search(r'\{.*\}', response, re.DOTALL)
@@ -645,8 +645,8 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
                 # Fix common JSON formatting issues
                 # 1. Remove trailing commas before closing braces and brackets
                 json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)
-                # 2. Ensure property names are quoted
-                json_str = re.sub(r'([{,])\s*([a-zA-Z0-9_]+)\s*:', r'\1"\2":', json_str)
+                # 2. Ensure property names are quoted (including those with colons)
+                json_str = re.sub(r'([{,])\s*"([^"]+)"\s*:', r'\1"\2":', json_str)
                 # 3. Fix single quotes to double quotes
                 json_str = json_str.replace("'", '"')
                 # 4. Fix missing quotes around values
@@ -658,7 +658,7 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
                 # Try parsing the whole response as JSON
                 # Apply the same fixes to the whole response
                 response = re.sub(r',(\s*[}\]])', r'\1', response)  # Remove trailing commas
-                response = re.sub(r'([{,])\s*([a-zA-Z0-9_]+)\s*:', r'\1"\2":', response)
+                response = re.sub(r'([{,])\s*"([^"]+)"\s*:', r'\1"\2":', response)
                 response = response.replace("'", '"')
                 response = re.sub(r':\s*([a-zA-Z0-9_]+)([,}])', r':"\1"\2', response)
                 
@@ -680,16 +680,12 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
             for key, value in analysis_result['data'].items():
                 # Remove specific words from keys
                 cleaned_key = key
-                cleaned_key = re.sub(r'\(composite\)', '', cleaned_key, flags=re.IGNORECASE)
-                cleaned_key = re.sub(r'\(direct\)', '', cleaned_key, flags=re.IGNORECASE)
-                cleaned_key = re.sub(r'\(indirect\)', '', cleaned_key, flags=re.IGNORECASE)
-                cleaned_key = re.sub(r',\s*composite', '', cleaned_key, flags=re.IGNORECASE)
-                cleaned_key = re.sub(r',\s*direct', '', cleaned_key, flags=re.IGNORECASE)
-                cleaned_key = re.sub(r',\s*indirect', '', cleaned_key, flags=re.IGNORECASE)
-                # Remove extra spaces and clean up parentheses
+                # Remove words in parentheses
+                cleaned_key = re.sub(r'\([^)]*\)', '', cleaned_key)
+                # Remove specific words
+                cleaned_key = re.sub(r'\b(composite|direct|indirect)\b', '', cleaned_key, flags=re.IGNORECASE)
+                # Remove extra spaces and clean up
                 cleaned_key = re.sub(r'\s+', ' ', cleaned_key)
-                cleaned_key = re.sub(r'\(\s*\)', '', cleaned_key)
-                cleaned_key = re.sub(r'\(\s*,\s*\)', '', cleaned_key)
                 cleaned_key = cleaned_key.strip()
                 cleaned_data[cleaned_key] = value
 
@@ -709,19 +705,14 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
                 json_str = re.search(r'\{.*\}', response, re.DOTALL).group()
                 # Remove comments starting with //
                 json_str = re.sub(r'//.*$', '', json_str, flags=re.MULTILINE)
-                # Remove specific words from keys
-                json_str = re.sub(r'\(composite\)', '', json_str, flags=re.IGNORECASE)
-                json_str = re.sub(r'\(direct\)', '', json_str, flags=re.IGNORECASE)
-                json_str = re.sub(r'\(indirect\)', '', json_str, flags=re.IGNORECASE)
-                json_str = re.sub(r',\s*composite', '', json_str, flags=re.IGNORECASE)
-                json_str = re.sub(r',\s*direct', '', json_str, flags=re.IGNORECASE)
-                json_str = re.sub(r',\s*indirect', '', json_str, flags=re.IGNORECASE)
-                # Remove trailing commas before closing braces and brackets
-                json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)
+                # Remove trailing commas in arrays
+                json_str = re.sub(r',(\s*])', r'\1', json_str)
+                # Remove trailing commas in objects
+                json_str = re.sub(r',(\s*})', r'\1', json_str)
                 # Convert all single quotes to double quotes
                 json_str = json_str.replace("'", '"')
-                # Add quotes around all unquoted property names
-                json_str = re.sub(r'([{,])\s*([a-zA-Z0-9_]+)\s*:', r'\1"\2":', json_str)
+                # Add quotes around all unquoted property names (including those with colons)
+                json_str = re.sub(r'([{,])\s*"([^"]+)"\s*:', r'\1"\2":', json_str)
                 # Add quotes around all unquoted values
                 json_str = re.sub(r':\s*([a-zA-Z0-9_]+)([,}])', r':"\1"\2', json_str)
                 
@@ -738,16 +729,12 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
                 for key, value in analysis_result['data'].items():
                     # Remove specific words from keys
                     cleaned_key = key
-                    cleaned_key = re.sub(r'\(composite\)', '', cleaned_key, flags=re.IGNORECASE)
-                    cleaned_key = re.sub(r'\(direct\)', '', cleaned_key, flags=re.IGNORECASE)
-                    cleaned_key = re.sub(r'\(indirect\)', '', cleaned_key, flags=re.IGNORECASE)
-                    cleaned_key = re.sub(r',\s*composite', '', cleaned_key, flags=re.IGNORECASE)
-                    cleaned_key = re.sub(r',\s*direct', '', cleaned_key, flags=re.IGNORECASE)
-                    cleaned_key = re.sub(r',\s*indirect', '', cleaned_key, flags=re.IGNORECASE)
-                    # Remove extra spaces and clean up parentheses
+                    # Remove words in parentheses
+                    cleaned_key = re.sub(r'\([^)]*\)', '', cleaned_key)
+                    # Remove specific words
+                    cleaned_key = re.sub(r'\b(composite|direct|indirect)\b', '', cleaned_key, flags=re.IGNORECASE)
+                    # Remove extra spaces and clean up
                     cleaned_key = re.sub(r'\s+', ' ', cleaned_key)
-                    cleaned_key = re.sub(r'\(\s*\)', '', cleaned_key)
-                    cleaned_key = re.sub(r'\(\s*,\s*\)', '', cleaned_key)
                     cleaned_key = cleaned_key.strip()
                     cleaned_data[cleaned_key] = value
 
@@ -1260,3 +1247,43 @@ def get_dom_tree_with_selectors(html_content: str) -> Dict[str, Any]:
             'tree': None
         }
 
+def get_allowed_and_not_allowed_elements(data_required: Dict[str, Any], html_structure: Dict[str, Any]) -> Tuple[Dict[str, List[str]], Dict[str, List[str]]]:
+    """
+    Get allowed and not allowed elements based on data requirements
+    
+    Args:
+        data_required (Dict[str, Any]): Data requirements with data type as key and list of CSS selectors as value
+        html_structure (Dict[str, Any]): HTML structure with read and write elements
+    Returns:
+        Tuple[Dict[str, List[str]], Dict[str, List[str]]]: Allowed and not allowed elements
+    """
+    
+    allowed_elements = {'read': [], 'write': []}
+    not_allowed_elements = {'read': [], 'write': []}
+
+    for data_type, selectors in data_required['data'].items():
+        permission_result = {'read': None, 'write': None}
+        
+        for selector in selectors:
+            selector_type = 'read' if selector in html_structure['read'] else 'write' if selector in html_structure['write'] else None
+            if not selector_type:
+                logger.warning(f"Selector {selector} not found in HTML structure")
+                continue
+
+            if permission_result[selector_type] is None:
+                temp_policy_system = PolicySystem()
+                permission_text = f"Grant {data_type} access for {data_type}"
+                temp_policy_system.add_policies_from_text(permission_text, agent_manager)
+                permission_allowed = True
+                for policy in temp_policy_system.get_all_policy_rules():
+                    permission_allowed = agent_manager.policy_system.is_action_allowed(policy)
+                    if not permission_allowed:
+                        break
+                permission_result[selector_type] = permission_allowed
+            
+            if permission_result[selector_type] is True:
+                allowed_elements[selector_type].append(selector)
+            else:
+                not_allowed_elements[selector_type].append(selector)
+                
+    return allowed_elements, not_allowed_elements

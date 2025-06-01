@@ -142,6 +142,9 @@ class PolicySystem:
             prompts.append(self.text(policy=policy, mode="prompt"))
         return prompts
 
+    def get_all_policy_rules(self):
+        return self.policy_rules
+
     def add_policy(self, policy_rule):
         # Validate granular_data hierarchy
         if 'granular_data' in policy_rule and 'granular_data' in self.attribute_definitions:

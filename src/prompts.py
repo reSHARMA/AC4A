@@ -126,8 +126,8 @@ For example, if we have three composite HTML elements, one for the date, one for
 Return your analysis as a JSON object with this exact structure:
 {
     "data": {
-        "data associated with the element": ["css_selector_1", "css_selector_2", ...], // reasoning why does these CSS selectors represent the data
-        "data associated with the element": ["css_selector_3", "css_selector_4", ...], // reasoning why does these CSS selectors represent the data
+        "data type strictly from <ALL DATA> and data value associated with the element strictly following the schema in <ALL DATA SCHEMA>": ["css_selector_1", "css_selector_2", ...], // reasoning why does these CSS selectors represent the data
+        "data type strictly from <ALL DATA> and data value associated with the element strictly following the schema in <ALL DATA SCHEMA>": ["css_selector_3", "css_selector_4", ...], // reasoning why does these CSS selectors represent the data
         ...
     }
 }

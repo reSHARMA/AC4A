@@ -1765,65 +1765,44 @@ def handle_from_config(minimal_html: Dict[str, str]) -> bool:
             return False
 
         active_url = active_tab.get('url', 'unknown')
-        active_base_url = get_base_url(active_url)
-        
-        # Load the config
+        # Only match the full URL, not the base URL
         config_file = os.path.join(os.path.dirname(__file__), 'agents', 'browser.agents.json')
         if not os.path.exists(config_file):
             logger.info("Config file not found")
             return False
-            
         with open(config_file, 'r') as f:
             config = json.load(f)
-            
-        # Check if we have an entry for this URL or its base URL
-        matching_url = None
-        for url in config:
-            if url == active_url or get_base_url(url) == active_base_url:
-                matching_url = url
-                break
-                
-        if not matching_url:
-            logger.info(f"No config entry found for URL: {active_url} or base URL: {active_base_url}")
+        if active_url not in config:
+            logger.info(f"No config entry found for URL: {active_url}")
             return False
-            
-        url_config = config[matching_url]
-        
+        url_config = config[active_url]
         # If not verified, we need to do a fresh analysis
         if not url_config.get('verified', False):
-            logger.info(f"URL {matching_url} not verified, will do fresh analysis")
+            logger.info(f"URL {active_url} not verified, will do fresh analysis")
             return False
-
         # Convert text-based selectors to CSS selectors while preserving direct CSS selectors
         converted_read = [convert_text_to_selector(sel, minimal_html) for sel in url_config.get('read', [])]
         converted_write = [convert_text_to_selector(sel, minimal_html) for sel in url_config.get('write', [])]
-        
         # Create HTML structure from config with converted selectors
         html_structure = {
             'read': converted_read,
             'write': converted_write,
             'success': True
         }
-        
         # Convert text-based selectors in data requirements while preserving direct CSS selectors
         converted_data = {}
         for data_type, selectors in url_config.get('data', {}).items():
             converted_data[data_type] = [convert_text_to_selector(sel, minimal_html) for sel in selectors]
-        
         # Create data required from config with converted selectors
         data_required = {
             'data': converted_data,
             'success': True
         }
-        
         logger.info(f"[browser_agent_core.py] Found config for URL: {active_url}")
-
         # Handle not allowed elements
         allowed_elements, not_allowed_elements = get_allowed_and_not_allowed_elements_from_config(data_required, html_structure)
         handle_not_allowed_elements(not_allowed_elements)
-        
         return True
-        
     except Exception as e:
         logger.error(f"Error handling from config: {str(e)}", exc_info=True)
         return False

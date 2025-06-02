@@ -1484,10 +1484,40 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
             console.log('Text attribute observer set up');
         })();
         """ % (
-            '\n'.join(f"document.querySelectorAll('{sel.split('[')[0]}').forEach(el => {{ if (el.textContent.includes('{text}')) {{ console.log('Setting attribute for element:', el); el.setAttribute('data-axiom-text', '{text}'); }} }});" 
-                     for sel, text in [(sel, re.search(r'data-axiom-text=\'([^\']+)\'', sel).group(1)) for sel in converted_read if 'data-axiom-text' in sel]),
-            '\n'.join(f"document.querySelectorAll('{sel.split('[')[0]}').forEach(el => {{ if (el.textContent.includes('{text}')) {{ console.log('Setting attribute for element:', el); el.setAttribute('data-axiom-text', '{text}'); }} }});" 
-                     for sel, text in [(sel, re.search(r'data-axiom-text=\'([^\']+)\'', sel).group(1)) for sel in converted_write if 'data-axiom-text' in sel])
+            '\n'.join(f"""
+                document.querySelectorAll('{sel.split('[')[0]}').forEach(el => {{
+                    if (el.textContent.includes('{text}')) {{
+                        // Only set if no child also contains the text
+                        let hasChildWithText = false;
+                        el.querySelectorAll('*').forEach(child => {{
+                            if (child !== el && child.textContent.includes('{text}')) {{
+                                hasChildWithText = true;
+                            }}
+                        }});
+                        if (!hasChildWithText) {{
+                            console.log('Setting attribute for element:', el);
+                            el.setAttribute('data-axiom-text', '{text}');
+                        }}
+                    }}
+                }});
+            """ for sel, text in [(sel, re.search(r'data-axiom-text=\'([^\']+)\'', sel).group(1)) for sel in converted_read if 'data-axiom-text' in sel]),
+            '\n'.join(f"""
+                document.querySelectorAll('{sel.split('[')[0]}').forEach(el => {{
+                    if (el.textContent.includes('{text}')) {{
+                        // Only set if no child also contains the text
+                        let hasChildWithText = false;
+                        el.querySelectorAll('*').forEach(child => {{
+                            if (child !== el && child.textContent.includes('{text}')) {{
+                                hasChildWithText = true;
+                            }}
+                        }});
+                        if (!hasChildWithText) {{
+                            console.log('Setting attribute for element:', el);
+                            el.setAttribute('data-axiom-text', '{text}');
+                        }}
+                    }}
+                }});
+            """ for sel, text in [(sel, re.search(r'data-axiom-text=\'([^\']+)\'', sel).group(1)) for sel in converted_write if 'data-axiom-text' in sel])
         )
 
         logger.info(f"[DEBUG] Generated JavaScript code: {js_code}")
@@ -1546,6 +1576,7 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
     min-width: 16px !important;
     min-height: 16px !important;
     box-sizing: border-box !important;
+    display: inline-block !important;
 }}
 {sel} *, {sel} input, {sel} button, {sel} select, {sel} textarea, {sel} label, {sel} a {{
     visibility: hidden !important;

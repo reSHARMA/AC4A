@@ -59,5 +59,90 @@
         ".uitk-button.uitk-button-large.uitk-button-as-link.uitk-button-primary.uitk-button-has-text"
       ]
     }
+  },
+  "chrome://newtab/": {
+    "verified": true,
+    "read": [],
+    "write": [],
+    "data": {}
+  },
+  "https://outlook.live.com/calendar/0/view/workweek": {
+    "verified": true,
+    "read": [
+      "#id__105",
+      "#id__107",
+      "#id__111",
+      "#id__113",
+      "#id__114",
+      "#id__116",
+      "#id__117",
+      "#id__119",
+      "#id__66",
+      ".aoWWb",
+      "#id__48",
+      "#id__50",
+      "#id__123",
+      "#id__125",
+      "#id__126",
+      "#id__128",
+      "#id__63",
+      ".ATH58",
+      ".kOcfd",
+      "#searchBoxId-Calendar",
+      "#id__105",
+      "#2520"
+    ],
+    "write": [
+      "#id__99",
+      "#id__101",
+      ".ATH58"
+    ],
+    "data": {
+      "Calendar:Year(2025)": [
+        "#id__63"
+      ],
+      "Calendar:Month(June)": [
+        "#id__63"
+      ],
+      "Calendar:Day(*)": [
+        "#id__114",
+        "#id__116",
+        "#id__66",
+        "#id__105"
+      ],
+      "Calendar:Day(1)": [
+        "#id__63"
+      ],
+      "Calendar:Day(2)": [],
+      "Calendar:Day(3)": [],
+      "Calendar:Day(4)": [],
+      "Calendar:Day(5)": [],
+      "Calendar:Day(6)": [],
+      "Calendar:Month(*)": [
+        "#id__117",
+        "#id__119",
+        "#2520"
+      ],
+      "Calendar:Year(*)": [
+        "#id__99",
+        "#id__101",
+        "#id__48",
+        "#id__50",
+        "#id__123",
+        "#id__125",
+        "#id__126",
+        "#id__128",
+        "#id__66",
+        "#id__48",
+        "#id__50",
+        "#id__123",
+        "#id__125",
+        "#id__126",
+        "#id__128",
+        ".ATH58",
+        ".aoWWb",
+        ".kOcfd"
+      ]
+    }
   }
 }

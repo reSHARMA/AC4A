@@ -12,7 +12,7 @@ from .agent_manager import agent_manager
 from src.policy_system.policy_system import PolicySystem
 from PIL import Image
 import io
-from src.prompts import BROWSER_INFER_DATA, BROWSER_CLASSIFY_DATA
+from src.prompts import BROWSER_INFER_DATA, BROWSER_CLASSIFY_DATA, BROWSER_AGENT
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -498,13 +498,7 @@ def process_with_computer_use(user_input: str) -> Dict[str, Any]:
         screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
         
         # Create the system prompt for computer use
-        system_prompt = """You are an AI agent with the ability to control a browser. You can ask the user to do one action at a time with the keyboard or the mouse. You are given a task and you have to successfully complete it by asking the user to perform actions one by one.
-
-        You will also be given a screenshot of the browser after each action and also the list of past actions. You should check the screenshot to see if your action was successful and decide what to do next. 
-
-        Only output the next action to take or ask the user for confirmation or resolve choices or give missing information.
-        Do not output any other text.
-        Once you have completed the requested task you should output done."""
+        system_prompt = BROWSER_AGENT
         
         global browser_chat_history
         _input = f"""
@@ -531,7 +525,7 @@ User: {user_input}
         }
         
         # Call the OpenAI API using the existing function
-        response = None # call_openai_api(system_prompt, input_content, "computer-use")
+        response = call_openai_api(system_prompt, input_content, "computer-use")
         
         if response:
             return create_message(
@@ -634,43 +628,14 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
             response = re.sub(r'//.*$', '', response, flags=re.MULTILINE)
             logger.debug(f"Response after removing comments: {response}")
 
-            # Remove trailing commas in arrays
-            response = re.sub(r',(\s*])', r'\1', response)
-            # Remove trailing commas in objects
-            response = re.sub(r',(\s*})', r'\1', response)
-
+            # Remove trailing commas in arrays and objects
+            response = re.sub(r',(\s*[}\]])', r'\1', response)
+            
             # Extract JSON from response if it's wrapped in other text
             json_match = re.search(r'\{.*\}', response, re.DOTALL)
             if json_match:
                 json_str = json_match.group()
                 logger.debug(f"Extracted JSON string: {json_str}")
-                
-                # Fix common JSON formatting issues
-                # 1. Remove trailing commas before closing braces and brackets
-                json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)
-                
-                # 2. Fix property names - handle both quoted and unquoted cases
-                # First, find all property names (both quoted and unquoted)
-                property_names = re.findall(r'([{,])\s*(?:"([^"]+)"|([^"{\s][^:]*?)):\s*', json_str)
-                
-                # Replace each property name with its properly quoted version
-                for match in property_names:
-                    prefix, quoted_name, unquoted_name = match
-                    name = quoted_name if quoted_name else unquoted_name
-                    if name:
-                        # Escape any double quotes in the name
-                        escaped_name = name.replace('"', '\\"')
-                        # Replace the original property name with the properly quoted version
-                        json_str = json_str.replace(f'{prefix} {name}:', f'{prefix} "{escaped_name}":')
-                        json_str = json_str.replace(f'{prefix}"{name}":', f'{prefix} "{escaped_name}":')
-                
-                # 3. Fix single quotes to double quotes
-                json_str = json_str.replace("'", '"')
-                
-                # 4. Fix missing quotes around values
-                json_str = re.sub(r':\s*([a-zA-Z0-9_]+)([,}])', r':"\1"\2', json_str)
-                
-                logger.debug(f"Cleaned JSON string: {json_str}")
                 try:
                     analysis_result = json.loads(json_str)
                 except json.JSONDecodeError as e:
@@ -680,23 +645,6 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
                     analysis_result = json.loads(json_str)
             else:
                 # Try parsing the whole response as JSON
-                # Apply the same fixes to the whole response
-                response = re.sub(r',(\s*[}\]])', r'\1', response)  # Remove trailing commas
-                
-                # Fix property names in the whole response
-                property_names = re.findall(r'([{,])\s*(?:"([^"]+)"|([^"{\s][^:]*?)):\s*', response)
-                for match in property_names:
-                    prefix, quoted_name, unquoted_name = match
-                    name = quoted_name if quoted_name else unquoted_name
-                    if name:
-                        escaped_name = name.replace('"', '\\"')
-                        response = response.replace(f'{prefix} {name}:', f'{prefix} "{escaped_name}":')
-                        response = response.replace(f'{prefix}"{name}":', f'{prefix} "{escaped_name}":')
-                
-                response = response.replace("'", '"')
-                response = re.sub(r':\s*([a-zA-Z0-9_]+)([,}])', r':"\1"\2', response)
-                
-                logger.debug(f"Cleaned full response: {response}")
                 try:
                     analysis_result = json.loads(response)
                 except json.JSONDecodeError as e:
@@ -745,14 +693,12 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
                 json_str = re.search(r'\{.*\}', response, re.DOTALL).group()
                 # Remove comments starting with //
                 json_str = re.sub(r'//.*$', '', json_str, flags=re.MULTILINE)
-                # Remove trailing commas in arrays
-                json_str = re.sub(r',(\s*])', r'\1', json_str)
-                # Remove trailing commas in objects
-                json_str = re.sub(r',(\s*})', r'\1', json_str)
+                # Remove trailing commas in arrays and objects
+                json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)
                 # Convert all single quotes to double quotes
                 json_str = json_str.replace("'", '"')
-                # Add quotes around all unquoted property names (including those with colons)
-                json_str = re.sub(r'([{,])\s*"([^"]+)"\s*:', r'\1"\2":', json_str)
+                # Add quotes around all unquoted property names
+                json_str = re.sub(r'([{,])\s*([^"{\s][^:]*?):\s*', r'\1"\2":', json_str)
                 # Add quotes around all unquoted values
                 json_str = re.sub(r':\s*([a-zA-Z0-9_]+)([,}])', r':"\1"\2', json_str)
                 

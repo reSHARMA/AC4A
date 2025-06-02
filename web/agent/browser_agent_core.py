@@ -1291,6 +1291,7 @@ def get_allowed_and_not_allowed_elements_from_text(data_required: Dict[str, Any]
     
     allowed_elements = {'read': [], 'write': []}
     not_allowed_elements = {'read': [], 'write': []}
+    granular_data = {}
 
     for data_type, selectors in data_required['data'].items():
         permission_result = {'read': None, 'write': None}
@@ -1304,7 +1305,20 @@ def get_allowed_and_not_allowed_elements_from_text(data_required: Dict[str, Any]
             if permission_result[selector_type] is None:
                 temp_policy_system = PolicySystem()
                 permission_text = f"Grant {selector_type} access for {data_type}"
-                temp_policy_system.add_policies_from_text(permission_text, agent_manager)
+                if data_type not in granular_data:
+                    temp_policy_system.add_policies_from_text(permission_text, agent_manager)
+                    granular_data[data_type] = [
+                        policy.get('granular_data')
+                        for policy in temp_policy_system.get_all_policy_rules()
+                    ]
+                else: 
+                    for granular_data_type in granular_data[data_type]:
+                        temp_policy_system.add_policy({
+                            "granular_data": f"{granular_data_type}",
+                            "data_access": "Read" if selector_type == 'read' else "Write",
+                            "position": "Current"
+                        })
+
                 permission_allowed = True
                 for policy in temp_policy_system.get_all_policy_rules():
                     permission_allowed = agent_manager.policy_system.is_action_allowed(policy)
@@ -1316,7 +1330,8 @@ def get_allowed_and_not_allowed_elements_from_text(data_required: Dict[str, Any]
                 allowed_elements[selector_type].append(selector)
             else:
                 not_allowed_elements[selector_type].append(selector)
-                
+
+    update_config(granular_data)
     return allowed_elements, not_allowed_elements
             
 def get_allowed_and_not_allowed_elements_from_config(data_required: Dict[str, Any], html_structure: Dict[str, Any]) -> Tuple[Dict[str, List[str]], Dict[str, List[str]]]:
@@ -1679,6 +1694,38 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
             'success': False,
             'error': f'Handling failed: {str(e)}'
         }
+
+def update_config(granular_data: Dict[str, Any]) -> None:
+    """
+    Update the config with the granular data
+    """
+    config_file = os.path.join(os.path.dirname(__file__), 'agents', 'browser.agents.json')
+    with open(config_file, 'r') as f:
+        config = json.load(f)
+
+    # Get the active tab URL
+    active_tab = get_active_tab_url()
+    if not active_tab.get('success', False):
+        logger.error("Failed to get active tab URL")
+        return
+
+    active_url = active_tab.get('url', 'unknown')
+
+    for data_type, granular_data_type in granular_data.items():
+        data_value = config[active_url]['data'].get(data_type, [])
+        for gd in granular_data_type:
+            if not gd in config[active_url]['data']:
+                config[active_url]['data'][gd] = data_value
+            else:
+                config[active_url]['data'][gd].extend(data_value)
+        # remove the data_type from the config
+        del config[active_url]['data'][data_type]
+
+    # Save the updated config
+    with open(config_file, 'w') as f:
+        json.dump(config, f, indent=2)
+    
+    logger.info(f"Updated config for URL: {active_url}")
 
 def add_to_config(html_structure: Dict[str, Any], data_required: Dict[str, Any]) -> None:
     """

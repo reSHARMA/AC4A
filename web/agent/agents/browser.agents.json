@@ -69,34 +69,28 @@
     "data": {}
   },
   "https://outlook.live.com/calendar/0/view/workweek": {
-    "verified": true,
+    "verified": false,
     "read": [
       "span:contains('Day')",
       "span:contains('Work week')",
       "span:contains('Week')",
       "span:contains('Month')",
       "span:contains('Today')",
-      "span:contains('Filter')",
-      "span:contains('Share')",
-      "span:contains('Print')",
       "span:contains('June 2025')",
       "span:contains('June 2\u20136, 2025')",
-      "[title='Saturday']",
+      "span:contains('Selected date June 2, 2025')",
+      "span:contains('My calendars')",
       "[title='Monday']",
       "[title='Tuesday']",
       "[title='Wednesday']",
       "[title='Thursday']",
       "[title='Friday']",
+      "[title='Saturday']",
       "span:contains('2')",
       "span:contains('3')",
       "span:contains('4')",
       "span:contains('5')",
       "span:contains('6')",
-      "div:contains('2')",
-      "div:contains('3')",
-      "div:contains('4')",
-      "div:contains('5')",
-      "div:contains('6')",
       "span:contains('7')",
       "span:contains('8')",
       "span:contains('9')",
@@ -146,8 +140,9 @@
       "time:contains('9 PM')",
       "time:contains('10 PM')",
       "time:contains('11 PM')",
-      "div:contains('Calendar')",
-      "span:contains('My calendars')"
+      "span:contains('Filter')",
+      "span:contains('Share')",
+      "span:contains('Print')"
     ],
     "write": [
       "span:contains('New event')",
@@ -162,189 +157,232 @@
         "span:contains('June 2025')",
         "span:contains('June 2\u20136, 2025')"
       ],
-      "Calendar:Day(2)": [
+      "Calendar:Year(2025)::Calendar:Month(June)::Calendar:Day(2)": [
         "span:contains('2')",
-        "div:contains('2')"
+        "span:contains('Selected date June 2, 2025')"
       ],
-      "Calendar:Day(3)": [
-        "span:contains('3')",
-        "div:contains('3')"
+      "Calendar:Year(2025)::Calendar:Month(June)::Calendar:Day(3)": [
+        "span:contains('3')"
       ],
-      "Calendar:Day(4)": [
-        "span:contains('4')",
-        "div:contains('4')"
+      "Calendar:Year(2025)::Calendar:Month(June)::Calendar:Day(4)": [
+        "span:contains('4')"
       ],
-      "Calendar:Day(5)": [
-        "span:contains('5')",
-        "div:contains('5')"
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(5)": [
+        "span:contains('5')"
       ],
-      "Calendar:Day(6)": [
-        "span:contains('6')",
-        "div:contains('6')"
+      "Calendar:Year(2025)::Calendar:Month(June)::Calendar:Day(6)": [
+        "span:contains('6')"
       ],
-      "Calendar:Day(7)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(7)": [
         "span:contains('7')"
       ],
-      "Calendar:Day(8)": [
+      "Calendar:Year(2025)::Calendar:Month(June)::Calendar:Day(8)": [
         "span:contains('8')"
       ],
-      "Calendar:Day(9)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(9)": [
         "span:contains('9')"
       ],
-      "Calendar:Day(10)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(10)": [
         "span:contains('10')"
       ],
-      "Calendar:Day(11)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(11)": [
         "span:contains('11')"
       ],
-      "Calendar:Day(12)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(12)": [
         "span:contains('12')"
       ],
-      "Calendar:Day(13)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(13)": [
         "span:contains('13')"
       ],
-      "Calendar:Day(14)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(14)": [
         "span:contains('14')"
       ],
-      "Calendar:Day(15)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(15)": [
         "span:contains('15')"
       ],
-      "Calendar:Day(16)": [
+      "Calendar:Year(2025)::Calendar:Month(June)::Calendar:Day(16)": [
         "span:contains('16')"
       ],
-      "Calendar:Day(17)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(17)": [
         "span:contains('17')"
       ],
-      "Calendar:Day(18)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(18)": [
         "span:contains('18')"
       ],
-      "Calendar:Day(19)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(19)": [
         "span:contains('19')"
       ],
-      "Calendar:Day(20)": [
+      "Calendar:Year(2025)::Calendar:Month(June)::Calendar:Day(20)": [
         "span:contains('20')"
       ],
       "Calendar:Day(21)": [
         "span:contains('21')"
       ],
-      "Calendar:Day(22)": [
+      "Calendar:Year(2025)::Calendar:Month(June)::Calendar:Day(22)": [
         "span:contains('22')"
       ],
-      "Calendar:Day(23)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(23)": [
         "span:contains('23')"
       ],
-      "Calendar:Day(24)": [
+      "Calendar:Year(2025)::Calendar:Month(June)::Calendar:Day(24)": [
         "span:contains('24')"
       ],
-      "Calendar:Day(25)": [
+      "Calendar:Year(2025)::Calendar:Month(June)::Calendar:Day(25)": [
         "span:contains('25')"
       ],
-      "Calendar:Day(26)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(26)": [
         "span:contains('26')"
       ],
-      "Calendar:Day(27)": [
+      "Calendar:Year(2025)::Calendar:Month(June)::Calendar:Day(27)": [
         "span:contains('27')"
       ],
-      "Calendar:Day(28)": [
+      "Calendar:Year(*)::Calendar:Month(January)::Calendar:Day(28)": [
         "span:contains('28')"
       ],
-      "Calendar:Day(29)": [
+      "Calendar:Year(*)::Calendar:Month(February)::Calendar:Day(28)": [
+        "span:contains('28')"
+      ],
+      "Calendar:Year(*)::Calendar:Month(March)::Calendar:Day(28)": [
+        "span:contains('28')"
+      ],
+      "Calendar:Year(*)::Calendar:Month(April)::Calendar:Day(28)": [
+        "span:contains('28')"
+      ],
+      "Calendar:Year(*)::Calendar:Month(May)::Calendar:Day(28)": [
+        "span:contains('28')"
+      ],
+      "Calendar:Year(*)::Calendar:Month(June)::Calendar:Day(28)": [
+        "span:contains('28')"
+      ],
+      "Calendar:Year(*)::Calendar:Month(July)::Calendar:Day(28)": [
+        "span:contains('28')"
+      ],
+      "Calendar:Year(*)::Calendar:Month(August)::Calendar:Day(28)": [
+        "span:contains('28')"
+      ],
+      "Calendar:Year(*)::Calendar:Month(September)::Calendar:Day(28)": [
+        "span:contains('28')"
+      ],
+      "Calendar:Year(*)::Calendar:Month(October)::Calendar:Day(28)": [
+        "span:contains('28')"
+      ],
+      "Calendar:Year(*)::Calendar:Month(November)::Calendar:Day(28)": [
+        "span:contains('28')"
+      ],
+      "Calendar:Year(*)::Calendar:Month(December)::Calendar:Day(28)": [
+        "span:contains('28')"
+      ],
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(29)": [
         "span:contains('29')"
       ],
-      "Calendar:Day(30)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(30)": [
         "span:contains('30')"
       ],
-      "Calendar:Day(31)": [
+      "Calendar:Year(*)::Calendar:Month(January)::Calendar:Day(31)": [
         "span:contains('31')"
       ],
-      "Calendar:Hour(0)": [
+      "Calendar:Year(*)::Calendar:Month(March)::Calendar:Day(31)": [
+        "span:contains('31')"
+      ],
+      "Calendar:Year(*)::Calendar:Month(May)::Calendar:Day(31)": [
+        "span:contains('31')"
+      ],
+      "Calendar:Year(*)::Calendar:Month(July)::Calendar:Day(31)": [
+        "span:contains('31')"
+      ],
+      "Calendar:Year(*)::Calendar:Month(August)::Calendar:Day(31)": [
+        "span:contains('31')"
+      ],
+      "Calendar:Year(*)::Calendar:Month(October)::Calendar:Day(31)": [
+        "span:contains('31')"
+      ],
+      "Calendar:Year(*)::Calendar:Month(December)::Calendar:Day(31)": [
+        "span:contains('31')"
+      ],
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(0)": [
         "time:contains('12 AM')"
       ],
-      "Calendar:Hour(1)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(1)": [
         "time:contains('1 AM')"
       ],
-      "Calendar:Hour(2)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(2)": [
         "time:contains('2 AM')"
       ],
-      "Calendar:Hour(3)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(3)": [
         "time:contains('3 AM')"
       ],
-      "Calendar:Hour(4)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(4)": [
         "time:contains('4 AM')"
       ],
-      "Calendar:Hour(5)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(5)": [
         "time:contains('5 AM')"
       ],
-      "Calendar:Hour(6)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(6)": [
         "time:contains('6 AM')"
       ],
-      "Calendar:Hour(7)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(7)": [
         "time:contains('7 AM')"
       ],
-      "Calendar:Hour(8)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(8)": [
         "time:contains('8 AM')"
       ],
-      "Calendar:Hour(9)": [
+      "Calendar:Year(2025)::Calendar:Month(June)::Calendar:Day(2)::Calendar:Hour(9)": [
         "time:contains('9 AM')"
       ],
-      "Calendar:Hour(10)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(10)": [
         "time:contains('10 AM')"
       ],
-      "Calendar:Hour(11)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(11)": [
         "time:contains('11 AM')"
       ],
-      "Calendar:Hour(12)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(12)": [
         "time:contains('12 PM')"
       ],
-      "Calendar:Hour(13)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(13)": [
         "time:contains('1 PM')"
       ],
-      "Calendar:Hour(14)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(14)": [
         "time:contains('2 PM')"
       ],
-      "Calendar:Hour(15)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(15)": [
         "time:contains('3 PM')"
       ],
-      "Calendar:Hour(16)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(16)": [
         "time:contains('4 PM')"
       ],
-      "Calendar:Hour(17)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(17)": [
         "time:contains('5 PM')"
       ],
-      "Calendar:Hour(18)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(18)": [
         "time:contains('6 PM')"
       ],
-      "Calendar:Hour(19)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(19)": [
         "time:contains('7 PM')"
       ],
-      "Calendar:Hour(20)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(20)": [
         "time:contains('8 PM')"
       ],
-      "Calendar:Hour(21)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(21)": [
         "time:contains('9 PM')"
       ],
-      "Calendar:Hour(22)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(22)": [
         "time:contains('10 PM')"
       ],
-      "Calendar:Hour(23)": [
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(23)": [
         "time:contains('11 PM')"
       ],
-      "Calendar:Month(*)": [
-        "span:contains('Month')",
-        "span:contains('Week')"
+      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)": [
+        "span:contains('Selected date June 2, 2025')"
       ],
-      "Calendar:Day(*)": [
-        "span:contains('Work week')",
-        "span:contains('Day')",
+      "Calendar:Month(*)": [
+        "span:contains('Month')"
+      ],
+      "Calendar:Year(*)": [
+        "div:contains('Add calendar')",
+        "span:contains('My calendars')",
         "span:contains('Filter')",
         "span:contains('Share')",
         "span:contains('Print')",
-        "span:contains('Today')",
-        "div:contains('Add calendar')",
-        "span:contains('My calendars')",
-        "div:contains('Calendar')"
-      ],
-      "Calendar:CreateEvent(*)": [
         "span:contains('New event')"
       ]
     }

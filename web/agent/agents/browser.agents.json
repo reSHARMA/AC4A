@@ -92,7 +92,8 @@
       ".kOcfd",
       "#searchBoxId-Calendar",
       "#id__105",
-      "#2520"
+      "#2520",
+      "span.zytMo"
     ],
     "write": [
       "#id__99",
@@ -124,6 +125,9 @@
         "#id__117",
         "#id__119",
         "#2520"
+      ],
+      "Calendar:Month($data{span.zytMo}[0]{month_to_number})": [
+        "span.zytMo"
       ],
       "Calendar:Year(*)": [
         "#id__99",

@@ -13,6 +13,7 @@ from src.policy_system.policy_system import PolicySystem
 from PIL import Image
 import io
 from src.prompts import BROWSER_INFER_DATA, BROWSER_CLASSIFY_DATA, BROWSER_AGENT
+from .text_transforms import process_text_value
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -1701,6 +1702,194 @@ def convert_text_to_selector(text: str, minimal_html: Dict[str, str]) -> str:
         logger.error(f"Error converting text to selector: {str(e)}")
         return text  # Return original on error
 
+def extract_dynamic_data(selector: str, html_content: str, attr_type: str = 'text') -> List[str]:
+    """
+    Extract dynamic data from HTML elements based on a selector.
+    Uses CDP (Chrome DevTools Protocol) for complex selectors to ensure accurate element selection.
+    
+    Args:
+        selector (str): CSS selector to find elements
+        html_content (str): HTML content to search in
+        attr_type (str): Type of data to extract ('text', 'aria-label', 'value', etc.)
+        
+    Returns:
+        List[str]: List of extracted data values
+    """
+    try:
+        logger.info(f"[DEBUG] Extracting data with selector: {selector}")
+        logger.info(f"[DEBUG] Attribute type: {attr_type}")
+        
+        # For complex selectors, use CDP to get the element directly from the browser
+        try:
+            # Create JavaScript to get the element's text or attribute
+            js_code = f"""
+            (function() {{
+                const element = document.querySelector(`{selector}`);
+                if (!element) return null;
+                return element.{attr_type if attr_type == 'text' else f'getAttribute("{attr_type}")'};
+            }})()
+            """
+            
+            # Send the JavaScript to the browser via CDP
+            response = requests.post('http://localhost:8080/evaluate', 
+                                  json={'expression': js_code},
+                                  timeout=10)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result.get('success') and result.get('result') is not None:
+                    value = result['result']
+                    logger.info(f"[DEBUG] CDP extracted value: {value}")
+                    return [value] if value else []
+            
+            logger.info(f"[DEBUG] CDP evaluation failed, falling back to BeautifulSoup")
+            
+        except Exception as e:
+            logger.error(f"[DEBUG] CDP evaluation error: {str(e)}")
+            logger.info(f"[DEBUG] Falling back to BeautifulSoup")
+        
+        # Fallback to BeautifulSoup if CDP fails
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html_content, 'html.parser')
+        
+        # Log a sample of the HTML content for debugging
+        logger.info(f"[DEBUG] HTML content sample (first 500 chars): {html_content[:500]}")
+        
+        # Try different selector strategies
+        elements = []
+        
+        # Strategy 1: Try the full selector
+        elements = soup.select(selector)
+        logger.info(f"[DEBUG] Strategy 1 (full selector) found {len(elements)} elements")
+        
+        # Strategy 2: Try breaking down the selector
+        if not elements:
+            # Try using just the last part of the selector
+            last_part = selector.split('>')[-1].strip()
+            logger.info(f"[DEBUG] Trying last part of selector: {last_part}")
+            elements = soup.select(last_part)
+            logger.info(f"[DEBUG] Strategy 2 (last part) found {len(elements)} elements")
+        
+        # Strategy 3: Try using class names
+        if not elements:
+            # Extract class names from the selector
+            class_names = re.findall(r'\.([a-zA-Z0-9_-]+)', selector)
+            if class_names:
+                class_selector = '.' + '.'.join(class_names)
+                logger.info(f"[DEBUG] Trying class selector: {class_selector}")
+                elements = soup.select(class_selector)
+                logger.info(f"[DEBUG] Strategy 3 (class names) found {len(elements)} elements")
+        
+        if not elements:
+            logger.info(f"[DEBUG] No elements found for selector: {selector}")
+            return []
+            
+        # Extract data from each element
+        data_values = []
+        for i, element in enumerate(elements):
+            if attr_type == 'text':
+                # Get text content
+                text = element.get_text(strip=True)
+                logger.info(f"[DEBUG] Element {i} text content: {text}")
+                if text:
+                    data_values.append(text)
+            else:
+                # Get attribute value
+                attr_value = element.get(attr_type, '')
+                logger.info(f"[DEBUG] Element {i} {attr_type} attribute: {attr_value}")
+                if attr_value:
+                    data_values.append(attr_value)
+        
+        logger.info(f"[DEBUG] Extracted data values: {data_values}")
+        return data_values
+        
+    except Exception as e:
+        logger.error(f"[DEBUG] Error extracting dynamic data: {str(e)}", exc_info=True)
+        return []
+
+def process_dynamic_data_key(key: str, html_content: str) -> str:
+    """
+    Process a key containing dynamic data extraction syntax.
+    
+    Args:
+        key (str): Key in format "Type:Field($data{selector}[idx]{transform}@attr)"
+        html_content (str): HTML content to extract data from
+        
+    Returns:
+        str: Processed key with extracted data
+    """
+    try:
+        logger.info(f"[DEBUG] Processing dynamic data key: {key}")
+        
+        # Check if key contains dynamic data syntax
+        if '$data{' not in key:
+            logger.info(f"[DEBUG] No dynamic data syntax found in key: {key}")
+            return key
+            
+        # Extract the dynamic data part with all possible components
+        # Format: $data{selector}[idx]{transform}@attr
+        match = re.search(r'\$data\{([^}]+)\}(?:\[([:\d]+)\])?(?:\{([^}]+)\})?(?:@([a-zA-Z-]+))?', key)
+        if not match:
+            logger.info(f"[DEBUG] Failed to match dynamic data pattern in key: {key}")
+            return key
+            
+        selector = match.group(1)
+        idx_str = match.group(2)
+        transform = match.group(3)  # Optional transform
+        attr_type = match.group(4) or 'text'  # Default to text if no attr specified
+        
+        logger.info(f"[DEBUG] Extracted components:")
+        logger.info(f"[DEBUG] - Selector: {selector}")
+        logger.info(f"[DEBUG] - Index: {idx_str}")
+        logger.info(f"[DEBUG] - Transform: {transform}")
+        logger.info(f"[DEBUG] - Attribute type: {attr_type}")
+        
+        # Extract data
+        data_values = extract_dynamic_data(selector, html_content, attr_type)
+        logger.info(f"[DEBUG] Extracted data values: {data_values}")
+        
+        if not data_values:
+            logger.info(f"[DEBUG] No data values found for selector: {selector}")
+            return key
+            
+        # Get the value
+        value = data_values[0]  # Always get first element since we're using unique selectors
+        logger.info(f"[DEBUG] Selected value: {value}")
+        
+        # Handle index
+        if idx_str == ':':
+            # Use complete string without splitting
+            logger.info(f"[DEBUG] Using complete string ([:]): {value}")
+            pass
+        elif idx_str is not None:
+            # Split into words and get specific index
+            words = value.split()
+            idx = int(idx_str)
+            logger.info(f"[DEBUG] Split into words: {words}")
+            logger.info(f"[DEBUG] Requested index: {idx}")
+            if idx < len(words):
+                value = words[idx]
+                logger.info(f"[DEBUG] Selected word at index {idx}: {value}")
+            else:
+                logger.info(f"[DEBUG] Index {idx} out of range for words: {words}")
+                return key
+            
+        # Apply transformation if specified
+        if transform:
+            logger.info(f"[DEBUG] Applying transform '{transform}' to value: {value}")
+            value = process_text_value(value, transform)
+            logger.info(f"[DEBUG] Transformed value: {value}")
+            
+        # Replace the dynamic part with the processed value
+        pattern = f'\\$data{{{selector}}}(?:\\[{idx_str}\\])?(?:\\{{{transform}}})?(?:@{attr_type})?'
+        result = re.sub(pattern, value, key)
+        logger.info(f"[DEBUG] Final result: {result}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"[DEBUG] Error processing dynamic data key: {str(e)}", exc_info=True)
+        return key
+
 def handle_from_config(minimal_html: Dict[str, str]) -> bool:
     """
     Handle permissions based on the config file
@@ -1719,40 +1908,64 @@ def handle_from_config(minimal_html: Dict[str, str]) -> bool:
             return False
 
         active_url = active_tab.get('url', 'unknown')
+        logger.info(f"[DEBUG] Active URL: {active_url}")
+        
         # Only match the full URL, not the base URL
         config_file = os.path.join(os.path.dirname(__file__), 'agents', 'browser.agents.json')
         if not os.path.exists(config_file):
             logger.info("Config file not found")
             return False
+            
         with open(config_file, 'r') as f:
             config = json.load(f)
+            
         if active_url not in config:
             logger.info(f"No config entry found for URL: {active_url}")
             return False
+            
         url_config = config[active_url]
         # If not verified, we need to do a fresh analysis
         if not url_config.get('verified', False):
             logger.info(f"URL {active_url} not verified, will do fresh analysis")
             return False
+            
+        # Get HTML content for dynamic data extraction
+        html_result = get_html_source()
+        if not html_result.get('success', False) or not html_result.get('html'):
+            logger.error("Failed to get HTML source")
+            return False
+            
+        logger.info(f"[DEBUG] Got HTML source, length: {len(html_result['html'])}")
+        logger.info(f"[DEBUG] HTML source sample (first 500 chars): {html_result['html'][:500]}")
+            
         # Convert text-based selectors to CSS selectors while preserving direct CSS selectors
         converted_read = [convert_text_to_selector(sel, minimal_html) for sel in url_config.get('read', [])]
         converted_write = [convert_text_to_selector(sel, minimal_html) for sel in url_config.get('write', [])]
+        
         # Create HTML structure from config with converted selectors
         html_structure = {
             'read': converted_read,
             'write': converted_write,
             'success': True
         }
+        
         # Convert text-based selectors in data requirements while preserving direct CSS selectors
+        # and process any dynamic data keys
         converted_data = {}
         for data_type, selectors in url_config.get('data', {}).items():
-            converted_data[data_type] = [convert_text_to_selector(sel, minimal_html) for sel in selectors]
+            logger.info(f"[DEBUG] Processing data type: {data_type}")
+            # Process the data type key for dynamic data
+            processed_data_type = process_dynamic_data_key(data_type, html_result['html'])
+            logger.info(f"[DEBUG] Processed data type: {processed_data_type}")
+            converted_data[processed_data_type] = [convert_text_to_selector(sel, minimal_html) for sel in selectors]
+            
         # Create data required from config with converted selectors
         data_required = {
             'data': converted_data,
             'success': True
         }
-        logger.info(f"[browser_agent_core.py] Found config for URL: {active_url}")
+        
+        logger.info(f"[DEBUG] Found config for URL: {active_url}")
         # Handle not allowed elements
         allowed_elements, not_allowed_elements = get_allowed_and_not_allowed_elements_from_config(data_required, html_structure)
         handle_not_allowed_elements(not_allowed_elements)

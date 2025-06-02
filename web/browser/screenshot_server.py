@@ -653,6 +653,109 @@ def get_active_tab_url():
             'message': str(e)
         }), 500
 
+@app.route('/evaluate', methods=['POST'])
+def evaluate_javascript():
+    """
+    Evaluate JavaScript in the currently active page using Chrome DevTools Protocol
+    
+    Expects JSON payload:
+    {
+        "expression": "JavaScript code to evaluate"
+    }
+    
+    Returns:
+        JSON: Result of the evaluation or error message
+    """
+    try:
+        data = request.get_json()
+        if not data or 'expression' not in data:
+            return jsonify({
+                'error': 'No expression provided',
+                'message': 'Request must contain JSON data with "expression" field'
+            }), 400
+        
+        # Get the active tab
+        active_tab = get_active_tab()
+        if not active_tab:
+            return jsonify({
+                'error': 'No active browser tab found',
+                'message': 'Chrome DevTools Protocol connection failed or no tabs available'
+            }), 404
+        
+        # Get the WebSocket URL for the tab
+        response = requests.get(f"{CDP_BASE_URL}/json", timeout=5)
+        tabs = response.json()
+        
+        target_tab = None
+        for tab in tabs:
+            if tab.get('id') == active_tab.get('id'):
+                target_tab = tab
+                break
+        
+        if not target_tab or 'webSocketDebuggerUrl' not in target_tab:
+            return jsonify({
+                'error': 'Cannot connect to tab',
+                'message': 'WebSocket URL not found for active tab'
+            }), 500
+        
+        ws_url = target_tab['webSocketDebuggerUrl']
+        ws = websocket.create_connection(ws_url, timeout=10)
+        
+        try:
+            # Enable Runtime domain
+            enable_cmd = {"id": 1, "method": "Runtime.enable"}
+            ws.send(json.dumps(enable_cmd))
+            
+            # Wait for Runtime.enable response
+            while True:
+                response = json.loads(ws.recv())
+                if 'id' in response and response['id'] == 1:
+                    break
+                elif 'method' in response:
+                    continue
+            
+            # Evaluate the JavaScript expression
+            eval_cmd = {
+                "id": 2,
+                "method": "Runtime.evaluate",
+                "params": {
+                    "expression": data['expression'],
+                    "returnByValue": True
+                }
+            }
+            ws.send(json.dumps(eval_cmd))
+            
+            # Wait for evaluation response
+            while True:
+                response = json.loads(ws.recv())
+                if 'id' in response and response['id'] == 2:
+                    break
+                elif 'method' in response:
+                    continue
+            
+            if 'result' in response and 'result' in response['result']:
+                result = response['result']['result']
+                return jsonify({
+                    'success': True,
+                    'result': result.get('value'),
+                    'type': result.get('type')
+                })
+            else:
+                return jsonify({
+                    'error': 'Evaluation failed',
+                    'message': 'Unexpected response from browser'
+                }), 500
+                
+        finally:
+            ws.close()
+            
+    except Exception as e:
+        logger.error(f"Error evaluating JavaScript: {str(e)}")
+        return jsonify({
+            'error': 'Internal server error',
+            'message': str(e)
+        }), 500
+
 def run_server(host='localhost', port=8080, screenshot_path=None):
     """
     Run the Flask server

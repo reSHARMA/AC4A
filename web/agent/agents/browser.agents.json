@@ -19,7 +19,8 @@
       ".is-visually-hidden",
       "#property-type-carousel",
       ".RecentSearches",
-      "text(See all flights)"
+      "text(See all flights)",
+      "#primary-navigation"
     ],
     "write": [
       "#traveler_selector_add_room",
@@ -34,7 +35,8 @@
       "Expedia:Destination(*)": [
         ".uitk-tab-text",
         "#search_button",
-        ".RecentSearches"
+        ".RecentSearches",
+        "#primary-navigation"
       ],
       "Expedia:Flight(*)": [
         ".uitk-tab-text",

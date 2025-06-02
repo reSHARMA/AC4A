@@ -1596,6 +1596,11 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
     margin-top: 4px;
     z-index: 10000000;
 }}
+{sel} * {{
+    visibility: hidden !important;
+    color: transparent !important;
+    pointer-events: none !important;
+}}
 """
         # Handle write elements - disable interaction and hide data
         for selector in converted_write:
@@ -1645,9 +1650,10 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
     margin-top: 4px;
     z-index: 10000000;
 }}
-{selector} *, {selector} input, {selector} button, {selector} select, {selector} textarea, {selector} label, {selector} a {{
+{selector} * {{
     visibility: hidden !important;
     color: transparent !important;
+    pointer-events: none !important;
 }}
 """
         if not css_rules:

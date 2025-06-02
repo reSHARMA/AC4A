@@ -1546,157 +1546,93 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
             sel = selector.strip()
             logger.info(f"[DEBUG] Adding CSS rules for read selector: {sel}")
             css_rules += f"""
-{sel},
-{sel} * {{
-    pointer-events: none !important;
-    user-select: none !important;
-    -webkit-user-select: none !important;
-    -moz-user-select: none !important;
-    -ms-user-select: none !important;
-    tabindex: -1 !important;
-    outline: none !important;
-    cursor: not-allowed !important;
-}}
-{sel}[tabindex], {sel} *[tabindex] {{
-    tabindex: -1 !important;
-}}
-{sel}[role], {sel} *[role] {{
-    pointer-events: none !important;
-    user-select: none !important;
-    cursor: not-allowed !important;
-    aria-disabled: true !important;
-    disabled: true !important;
-}}
 {sel} {{
+    background: rgba(40,40,40,0.85) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
     position: relative !important;
-    background: #000 !important;
-    color: transparent !important;
-    overflow: hidden !important;
-    z-index: 999999 !important;
-    min-width: 16px !important;
-    min-height: 16px !important;
-    box-sizing: border-box !important;
-    display: inline-block !important;
-}}
-{sel} *, {sel} input, {sel} button, {sel} select, {sel} textarea, {sel} label, {sel} a {{
-    visibility: hidden !important;
-    pointer-events: none !important;
-    user-select: none !important;
-    -webkit-user-select: none !important;
-    -moz-user-select: none !important;
-    -ms-user-select: none !important;
-    outline: none !important;
-    border: none !important;
-    background: transparent !important;
-    color: transparent !important;
-    text-shadow: none !important;
-    box-shadow: none !important;
-    caret-color: transparent !important;
-    -webkit-tap-highlight-color: transparent !important;
-    opacity: 1 !important;
-    filter: none !important;
-    transition: none !important;
-    -webkit-appearance: none !important;
-    appearance: none !important;
-    pointer-events: none !important;
-    cursor: not-allowed !important;
-    disabled: true !important;
-}}
-{sel} input, {sel} button, {sel} select, {sel} textarea {{
-    pointer-events: none !important;
-    user-select: none !important;
-    cursor: not-allowed !important;
-    disabled: true !important;
 }}
 {sel}::before {{
     content: '🚫';
-    font-size: 18px !important;
-    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif !important;
-    background: transparent !important;
-    color: #fff !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    font-size: 22px !important;
     position: absolute !important;
-    left: 50% !important;
-    top: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    z-index: 9999999 !important;
-    pointer-events: auto !important;
-    width: 24px !important;
-    height: 24px !important;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.8;
 }}
 {sel}:hover::after {{
     opacity: 1 !important;
-    pointer-events: auto !important;
 }}
 {sel}::after {{
-    content: 'Data not permissioned for viewing' !important;
-    position: absolute !important;
-    left: 50% !important;
-    top: -32px !important;
-    transform: translateX(-50%) !important;
-    background: #222 !important;
-    color: #fff !important;
-    padding: 4px 8px !important;
-    border-radius: 4px !important;
-    font-size: 12px !important;
-    font-weight: normal !important;
-    white-space: nowrap !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-    z-index: 10000000 !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
-    border: 1px solid rgba(255,255,255,0.2) !important;
+    content: 'Access restricted';
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    background: #222;
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    opacity: 0;
+    pointer-events: none;
     transition: opacity 0.2s;
+    margin-top: 4px;
+    z-index: 10000000;
 }}
 """
-        # Handle write elements - disable interaction
+        # Handle write elements - disable interaction and hide data
         for selector in converted_write:
             if not isinstance(selector, str) or not selector.strip():
                 continue
             logger.info(f"[DEBUG] Adding CSS rules for write selector: {selector}")
             css_rules += f"""
 {selector} {{
+    background: #ff4d4f !important;
+    border-radius: 8px !important;
+    border: 2px solid #ff7875 !important;
+    color: #fff !important;
     position: relative !important;
-    opacity: 0.5 !important;
     pointer-events: none !important;
     cursor: not-allowed !important;
-    z-index: 999999 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
     overflow: hidden !important;
 }}
 {selector}::before {{
-    content: 'No permission to interact' !important;
+    content: '🚫';
+    font-size: 22px !important;
     position: absolute !important;
-    top: -24px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    background: rgba(255, 0, 0, 0.9) !important;
-    color: white !important;
-    padding: 6px 12px !important;
-    border-radius: 4px !important;
-    font-size: 14px !important;
-    font-weight: bold !important;
-    z-index: 9999999 !important;
-    white-space: nowrap !important;
-    pointer-events: none !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
-    border: 2px solid rgba(255,255,255,0.2) !important;
-    max-width: 90% !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.8;
+}}
+{selector}:hover::after {{
+    opacity: 1 !important;
 }}
 {selector}::after {{
-    content: '' !important;
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    background: rgba(255, 0, 0, 0.1) !important;
-    z-index: 9999998 !important;
-    pointer-events: auto !important;
-    cursor: not-allowed !important;
+    content: 'No permission to interact';
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    background: #ff4d4f;
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    margin-top: 4px;
+    z-index: 10000000;
+}}
+{selector} *, {selector} input, {selector} button, {selector} select, {selector} textarea, {selector} label, {selector} a {{
+    visibility: hidden !important;
+    color: transparent !important;
 }}
 """
         if not css_rules:

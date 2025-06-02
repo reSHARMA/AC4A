@@ -1436,11 +1436,85 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
         dict: Result of the CSS injection operation
     """
     try:
+        logger.info(f"[DEBUG] Starting handle_not_allowed_elements with elements: {not_allowed_elements}")
         css_rules = ""
-        for selector in not_allowed_elements.get('read', []):
+        
+        def convert_text_selector(selector: str) -> str:
+            """Convert text-based selector to valid CSS selector"""
+            logger.info(f"[DEBUG] Converting selector: {selector}")
+            # Handle :contains() selector
+            match = re.match(r'(.*?):contains\([\'"](.*?)[\'"]\)', selector)
+            if match:
+                tag = match.group(1) or '*'
+                text = match.group(2)
+                # Escape special characters in text
+                text = text.replace("'", "\\'").replace('"', '\\"')
+                # Create a data attribute selector that will be set via JavaScript
+                converted = f"{tag}[data-axiom-text='{text}']"
+                logger.info(f"[DEBUG] Converted selector: {selector} -> {converted}")
+                return converted
+            logger.info(f"[DEBUG] No conversion needed for selector: {selector}")
+            return selector
+
+        # Convert all selectors to valid CSS
+        converted_read = [convert_text_selector(sel) for sel in not_allowed_elements.get('read', [])]
+        converted_write = [convert_text_selector(sel) for sel in not_allowed_elements.get('write', [])]
+        
+        logger.info(f"[DEBUG] Converted read selectors: {converted_read}")
+        logger.info(f"[DEBUG] Converted write selectors: {converted_write}")
+        
+        # Add JavaScript to set data attributes for text matching
+        js_code = """
+        (function() {
+            function setTextAttributes() {
+                console.log('Setting text attributes...');
+                // Handle read elements
+                %s
+                
+                // Handle write elements
+                %s
+            }
+            setTextAttributes();
+            // Re-run after any DOM changes
+            const observer = new MutationObserver(() => {
+                console.log('DOM changed, updating text attributes...');
+                setTextAttributes();
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+            console.log('Text attribute observer set up');
+        })();
+        """ % (
+            '\n'.join(f"document.querySelectorAll('{sel.split('[')[0]}').forEach(el => {{ if (el.textContent.includes('{text}')) {{ console.log('Setting attribute for element:', el); el.setAttribute('data-axiom-text', '{text}'); }} }});" 
+                     for sel, text in [(sel, re.search(r'data-axiom-text=\'([^\']+)\'', sel).group(1)) for sel in converted_read if 'data-axiom-text' in sel]),
+            '\n'.join(f"document.querySelectorAll('{sel.split('[')[0]}').forEach(el => {{ if (el.textContent.includes('{text}')) {{ console.log('Setting attribute for element:', el); el.setAttribute('data-axiom-text', '{text}'); }} }});" 
+                     for sel, text in [(sel, re.search(r'data-axiom-text=\'([^\']+)\'', sel).group(1)) for sel in converted_write if 'data-axiom-text' in sel])
+        )
+
+        logger.info(f"[DEBUG] Generated JavaScript code: {js_code}")
+
+        # Inject JavaScript first
+        logger.info("[DEBUG] Injecting JavaScript for text matching...")
+        js_response = requests.post('http://localhost:8080/evaluate', 
+                                  json={'expression': js_code},
+                                  timeout=10)
+        
+        if js_response.status_code != 200:
+            logger.error(f"[DEBUG] Failed to inject JavaScript: {js_response.status_code}")
+            logger.error(f"[DEBUG] JavaScript response: {js_response.text}")
+            return {
+                'success': False,
+                'error': 'Failed to inject JavaScript for text matching'
+            }
+        
+        logger.info("[DEBUG] JavaScript injected successfully")
+
+        # Now add CSS rules using converted selectors
+        logger.info("[DEBUG] Generating CSS rules...")
+        for selector in converted_read:
             if not isinstance(selector, str) or not selector.strip():
                 continue
             sel = selector.strip()
+            logger.info(f"[DEBUG] Adding CSS rules for read selector: {sel}")
             css_rules += f"""
 {sel},
 {sel} * {{
@@ -1546,10 +1620,11 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
     transition: opacity 0.2s;
 }}
 """
-        # Handle write elements - disable interaction (unchanged)
-        for selector in not_allowed_elements.get('write', []):
+        # Handle write elements - disable interaction
+        for selector in converted_write:
             if not isinstance(selector, str) or not selector.strip():
                 continue
+            logger.info(f"[DEBUG] Adding CSS rules for write selector: {selector}")
             css_rules += f"""
 {selector} {{
     position: relative !important;
@@ -1594,22 +1669,25 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
 }}
 """
         if not css_rules:
-            logger.warning("No valid selectors found to handle")
+            logger.warning("[DEBUG] No valid selectors found to handle")
             return {
                 'success': False,
                 'error': 'No valid selectors found to handle'
             }
+            
+        logger.info(f"[DEBUG] Generated CSS rules (first 500 chars): {css_rules[:500]}")
+        
         # Send CSS to the injection endpoint
         payload = {
             'css': css_rules
         }
-        logger.info("Sending CSS rules to handle non-allowed elements")
+        logger.info("[DEBUG] Sending CSS rules to injection endpoint...")
         response = requests.post('http://localhost:8080/inject-css', 
                                json=payload, 
                                timeout=10)
         if response.status_code == 200:
             result = response.json()
-            logger.info("Successfully handled non-allowed elements")
+            logger.info(f"[DEBUG] CSS injection successful. Result: {result}")
             return {
                 'success': True,
                 'message': 'Non-allowed elements handled',
@@ -1617,19 +1695,19 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
             }
         else:
             error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {}
-            logger.error(f"Failed to inject CSS: {response.status_code} - {error_data}")
+            logger.error(f"[DEBUG] Failed to inject CSS: {response.status_code} - {error_data}")
             return {
                 'success': False,
                 'error': f'CSS injection failed: {error_data.get("error", "Unknown error")}'
             }
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error connecting to CSS injection server: {str(e)}")
+        logger.error(f"[DEBUG] Error connecting to CSS injection server: {str(e)}")
         return {
             'success': False,
             'error': f'Connection error: {str(e)}'
         }
     except Exception as e:
-        logger.error(f"Error handling non-allowed elements: {str(e)}", exc_info=True)
+        logger.error(f"[DEBUG] Error handling non-allowed elements: {str(e)}", exc_info=True)
         return {
             'success': False,
             'error': f'Handling failed: {str(e)}'

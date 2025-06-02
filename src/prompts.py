@@ -114,7 +114,7 @@ When analyzing elements, consider that data is often displayed as a composite of
 - A hotel listing might show price, rating, amenities, and location information
 - A credit card entry might show card number, expiry date, and cardholder name
 
-You are also provided with all the possible data types which are supported as well as the schema of the data values in <ALL DATA> and <ALL DATA SCHEMA> respectively. You must use this information along with the screenshot and the DOM tree given in <DOM TREE> to associate each element in the <HTML ELEMENTS> with a direct or indirect data type and a data value based on <ALL DATA> and <ALL DATA SCHEMA> respectively.
+You are also provided with all the possible data types which are supported as well as the schema of the data values in <ALL DATA> and <ALL DATA SCHEMA> respectively. You must use this information along with the screenshot to associate each element in the <HTML ELEMENTS> with a direct or indirect data type and a data value based on <ALL DATA> and <ALL DATA SCHEMA> respectively.
 
 ## Direct Data Examples:
 - If the data is, "Text: Toggle button on. Show the daily view. (Alt+Shift+1)'" then it represents all Calendar Day data because this button when pressed shows the daily view of the calendar and since there is no specific day mentioned, the data value is all.
@@ -123,7 +123,7 @@ You are also provided with all the possible data types which are supported as we
 
 - Similarly, if it was a button to create a new event for 14th of June 2025 then the data associated with the button would be the calendar data for year 2025, month June and day 14.
 
-If the content of the HTML element is not related to the data type and data value, then it could also represent a composite data type which is a combination of multiple data types. Using the screenshot and the DOM tree, you must infer the composite data type. 
+If the content of the HTML element is not related to the data type and data value, then it could also represent a composite data type which is a combination of multiple data types. Using the screenshot, you must infer the composite data type. 
 
 ## Indirect Data Examples:
 If the data is neither direct nor composite, then it is an indirect data type. Predict what will happen when the element is clicked and what will be the side effect. What data will be shown or modified when the element is clicked. 

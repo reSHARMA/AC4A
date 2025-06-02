@@ -6,7 +6,7 @@
     "data": {}
   },
   "https://www.expedia.com/": {
-    "verified": true,
+    "verified": false,
     "read": [
       ".uitk-tab-text",
       "#search_button",
@@ -71,83 +71,281 @@
   "https://outlook.live.com/calendar/0/view/workweek": {
     "verified": true,
     "read": [
-      "#id__105",
-      "#id__107",
-      "#id__111",
-      "#id__113",
-      "#id__114",
-      "#id__116",
-      "#id__117",
-      "#id__119",
-      "#id__66",
-      ".aoWWb",
-      "#id__48",
-      "#id__50",
-      "#id__123",
-      "#id__125",
-      "#id__126",
-      "#id__128",
-      "#id__63",
-      ".ATH58",
-      ".kOcfd",
-      "#searchBoxId-Calendar",
-      "#id__105",
-      "#2520",
-      "span.zytMo"
+      "span:contains('Day')",
+      "span:contains('Work week')",
+      "span:contains('Week')",
+      "span:contains('Month')",
+      "span:contains('Today')",
+      "span:contains('Filter')",
+      "span:contains('Share')",
+      "span:contains('Print')",
+      "span:contains('June 2025')",
+      "span:contains('June 2\u20136, 2025')",
+      "[title='Saturday']",
+      "[title='Monday']",
+      "[title='Tuesday']",
+      "[title='Wednesday']",
+      "[title='Thursday']",
+      "[title='Friday']",
+      "span:contains('2')",
+      "span:contains('3')",
+      "span:contains('4')",
+      "span:contains('5')",
+      "span:contains('6')",
+      "div:contains('2')",
+      "div:contains('3')",
+      "div:contains('4')",
+      "div:contains('5')",
+      "div:contains('6')",
+      "span:contains('7')",
+      "span:contains('8')",
+      "span:contains('9')",
+      "span:contains('10')",
+      "span:contains('11')",
+      "span:contains('12')",
+      "span:contains('13')",
+      "span:contains('14')",
+      "span:contains('15')",
+      "span:contains('16')",
+      "span:contains('17')",
+      "span:contains('18')",
+      "span:contains('19')",
+      "span:contains('20')",
+      "span:contains('21')",
+      "span:contains('22')",
+      "span:contains('23')",
+      "span:contains('24')",
+      "span:contains('25')",
+      "span:contains('26')",
+      "span:contains('27')",
+      "span:contains('28')",
+      "span:contains('29')",
+      "span:contains('30')",
+      "span:contains('31')",
+      "time:contains('12 AM')",
+      "time:contains('1 AM')",
+      "time:contains('2 AM')",
+      "time:contains('3 AM')",
+      "time:contains('4 AM')",
+      "time:contains('5 AM')",
+      "time:contains('6 AM')",
+      "time:contains('7 AM')",
+      "time:contains('8 AM')",
+      "time:contains('9 AM')",
+      "time:contains('10 AM')",
+      "time:contains('11 AM')",
+      "time:contains('12 PM')",
+      "time:contains('1 PM')",
+      "time:contains('2 PM')",
+      "time:contains('3 PM')",
+      "time:contains('4 PM')",
+      "time:contains('5 PM')",
+      "time:contains('6 PM')",
+      "time:contains('7 PM')",
+      "time:contains('8 PM')",
+      "time:contains('9 PM')",
+      "time:contains('10 PM')",
+      "time:contains('11 PM')",
+      "div:contains('Calendar')",
+      "span:contains('My calendars')"
     ],
     "write": [
-      "#id__99",
-      "#id__101",
-      ".ATH58"
+      "span:contains('New event')",
+      "div:contains('Add calendar')"
     ],
     "data": {
       "Calendar:Year(2025)": [
-        "#id__63"
+        "span:contains('June 2025')",
+        "span:contains('June 2\u20136, 2025')"
       ],
       "Calendar:Month(June)": [
-        "#id__63"
+        "span:contains('June 2025')",
+        "span:contains('June 2\u20136, 2025')"
+      ],
+      "Calendar:Day(2)": [
+        "span:contains('2')",
+        "div:contains('2')"
+      ],
+      "Calendar:Day(3)": [
+        "span:contains('3')",
+        "div:contains('3')"
+      ],
+      "Calendar:Day(4)": [
+        "span:contains('4')",
+        "div:contains('4')"
+      ],
+      "Calendar:Day(5)": [
+        "span:contains('5')",
+        "div:contains('5')"
+      ],
+      "Calendar:Day(6)": [
+        "span:contains('6')",
+        "div:contains('6')"
+      ],
+      "Calendar:Day(7)": [
+        "span:contains('7')"
+      ],
+      "Calendar:Day(8)": [
+        "span:contains('8')"
+      ],
+      "Calendar:Day(9)": [
+        "span:contains('9')"
+      ],
+      "Calendar:Day(10)": [
+        "span:contains('10')"
+      ],
+      "Calendar:Day(11)": [
+        "span:contains('11')"
+      ],
+      "Calendar:Day(12)": [
+        "span:contains('12')"
+      ],
+      "Calendar:Day(13)": [
+        "span:contains('13')"
+      ],
+      "Calendar:Day(14)": [
+        "span:contains('14')"
+      ],
+      "Calendar:Day(15)": [
+        "span:contains('15')"
+      ],
+      "Calendar:Day(16)": [
+        "span:contains('16')"
+      ],
+      "Calendar:Day(17)": [
+        "span:contains('17')"
+      ],
+      "Calendar:Day(18)": [
+        "span:contains('18')"
+      ],
+      "Calendar:Day(19)": [
+        "span:contains('19')"
+      ],
+      "Calendar:Day(20)": [
+        "span:contains('20')"
+      ],
+      "Calendar:Day(21)": [
+        "span:contains('21')"
+      ],
+      "Calendar:Day(22)": [
+        "span:contains('22')"
+      ],
+      "Calendar:Day(23)": [
+        "span:contains('23')"
+      ],
+      "Calendar:Day(24)": [
+        "span:contains('24')"
+      ],
+      "Calendar:Day(25)": [
+        "span:contains('25')"
+      ],
+      "Calendar:Day(26)": [
+        "span:contains('26')"
+      ],
+      "Calendar:Day(27)": [
+        "span:contains('27')"
+      ],
+      "Calendar:Day(28)": [
+        "span:contains('28')"
+      ],
+      "Calendar:Day(29)": [
+        "span:contains('29')"
+      ],
+      "Calendar:Day(30)": [
+        "span:contains('30')"
+      ],
+      "Calendar:Day(31)": [
+        "span:contains('31')"
+      ],
+      "Calendar:Hour(0)": [
+        "time:contains('12 AM')"
+      ],
+      "Calendar:Hour(1)": [
+        "time:contains('1 AM')"
+      ],
+      "Calendar:Hour(2)": [
+        "time:contains('2 AM')"
+      ],
+      "Calendar:Hour(3)": [
+        "time:contains('3 AM')"
+      ],
+      "Calendar:Hour(4)": [
+        "time:contains('4 AM')"
+      ],
+      "Calendar:Hour(5)": [
+        "time:contains('5 AM')"
+      ],
+      "Calendar:Hour(6)": [
+        "time:contains('6 AM')"
+      ],
+      "Calendar:Hour(7)": [
+        "time:contains('7 AM')"
+      ],
+      "Calendar:Hour(8)": [
+        "time:contains('8 AM')"
+      ],
+      "Calendar:Hour(9)": [
+        "time:contains('9 AM')"
+      ],
+      "Calendar:Hour(10)": [
+        "time:contains('10 AM')"
+      ],
+      "Calendar:Hour(11)": [
+        "time:contains('11 AM')"
+      ],
+      "Calendar:Hour(12)": [
+        "time:contains('12 PM')"
+      ],
+      "Calendar:Hour(13)": [
+        "time:contains('1 PM')"
+      ],
+      "Calendar:Hour(14)": [
+        "time:contains('2 PM')"
+      ],
+      "Calendar:Hour(15)": [
+        "time:contains('3 PM')"
+      ],
+      "Calendar:Hour(16)": [
+        "time:contains('4 PM')"
+      ],
+      "Calendar:Hour(17)": [
+        "time:contains('5 PM')"
+      ],
+      "Calendar:Hour(18)": [
+        "time:contains('6 PM')"
+      ],
+      "Calendar:Hour(19)": [
+        "time:contains('7 PM')"
+      ],
+      "Calendar:Hour(20)": [
+        "time:contains('8 PM')"
+      ],
+      "Calendar:Hour(21)": [
+        "time:contains('9 PM')"
+      ],
+      "Calendar:Hour(22)": [
+        "time:contains('10 PM')"
+      ],
+      "Calendar:Hour(23)": [
+        "time:contains('11 PM')"
+      ],
+      "Calendar:Month(*)": [
+        "span:contains('Month')",
+        "span:contains('Week')"
       ],
       "Calendar:Day(*)": [
-        "#id__114",
-        "#id__116",
-        "#id__66",
-        "#id__105"
+        "span:contains('Work week')",
+        "span:contains('Day')",
+        "span:contains('Filter')",
+        "span:contains('Share')",
+        "span:contains('Print')",
+        "span:contains('Today')",
+        "div:contains('Add calendar')",
+        "span:contains('My calendars')",
+        "div:contains('Calendar')"
       ],
-      "Calendar:Day(1)": [
-        "#id__63"
-      ],
-      "Calendar:Day(2)": [],
-      "Calendar:Day(3)": [],
-      "Calendar:Day(4)": [],
-      "Calendar:Day(5)": [],
-      "Calendar:Day(6)": [],
-      "Calendar:Month(*)": [
-        "#id__117",
-        "#id__119",
-        "#2520"
-      ],
-      "Calendar:Month($data{span.zytMo}[0]{month_to_number})": [
-        "span.zytMo"
-      ],
-      "Calendar:Year(*)": [
-        "#id__99",
-        "#id__101",
-        "#id__48",
-        "#id__50",
-        "#id__123",
-        "#id__125",
-        "#id__126",
-        "#id__128",
-        "#id__66",
-        "#id__48",
-        "#id__50",
-        "#id__123",
-        "#id__125",
-        "#id__126",
-        "#id__128",
-        ".ATH58",
-        ".aoWWb",
-        ".kOcfd"
+      "Calendar:CreateEvent(*)": [
+        "span:contains('New event')"
       ]
     }
   }

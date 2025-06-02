@@ -586,10 +586,6 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
         <HTML ELEMENTS>
         {str(minimal_html)}
         </HTML ELEMENTS>
-        
-        <DOM TREE>
-        {str(dom_tree)}
-        </DOM TREE>
         """
         logger.info(f"[browser_agent_core.py] Analysis text: {analysis_text}")
         # Create input content with HTML and screenshot
@@ -1093,7 +1089,8 @@ def clear_custom_css() -> Dict[str, Any]:
 def get_minimum_element_path(element) -> str:
     """
     Generate a unique CSS selector for an HTML element using the minimum necessary path.
-    Prioritizes IDs, then classes, and falls back to tag names with nth-child if needed.
+    Uses a combination of structural selectors, text content, and semantic attributes to create
+    deterministic selectors that don't rely heavily on IDs or classes.
     
     Args:
         element: BeautifulSoup element to generate selector for
@@ -1104,31 +1101,59 @@ def get_minimum_element_path(element) -> str:
     if not element:
         return ""
         
-    # If element has an ID, use that as it's unique
-    if element.get('id'):
-        return f"#{element['id']}"
-        
-    # Build selector using classes if available
-    classes = element.get('class', [])
-    if classes:
-        class_selector = '.'.join(classes)
-        # Check if this class combination is unique
-        siblings = element.find_previous_siblings() + element.find_next_siblings()
-        if not any(s.get('class') == classes for s in siblings):
-            return f".{class_selector}"
-            
-    # If no unique identifier found, use tag name with nth-child
+    # Strategy 1: Use semantic attributes (most reliable)
+    semantic_attrs = {
+        'role': element.get('role'),
+        'aria-label': element.get('aria-label'),
+        'aria-labelledby': element.get('aria-labelledby'),
+        'name': element.get('name'),
+        'type': element.get('type'),
+        'alt': element.get('alt'),
+        'title': element.get('title')
+    }
+    
+    # Try each semantic attribute
+    for attr, value in semantic_attrs.items():
+        if value:
+            # For aria-labelledby, we need to handle it differently
+            if attr == 'aria-labelledby':
+                return f"[aria-labelledby='{value}']"
+            # For other attributes, use a simple attribute selector
+            return f"[{attr}='{value}']"
+    
+    # Strategy 2: Use text content with tag name
+    text = element.get_text(strip=True)
+    if text and len(text) < 50:  # Only use text if it's not too long
+        tag = element.name
+        # Escape single quotes in text
+        text = text.replace("'", "\\'")
+        return f"{tag}:contains('{text}')"
+    
+    # Strategy 3: Use structural selectors
     tag = element.name
     if not tag:
         return ""
         
-    # Count position among siblings
-    position = 1
-    for sibling in element.find_previous_siblings():
-        if sibling.name == tag:
-            position += 1
-            
-    return f"{tag}:nth-of-type({position})"
+    # Build a path using parent-child relationships
+    path = []
+    current = element
+    
+    while current and current.name not in ['html', 'body']:
+        # Get position among siblings
+        position = 1
+        for sibling in current.find_previous_siblings():
+            if sibling.name == current.name:
+                position += 1
+        
+        # Add to path
+        path.append(f"{current.name}:nth-of-type({position})")
+        current = current.parent
+    
+    # Reverse the path to get top-down order
+    path.reverse()
+    
+    # Join with > to create a direct child selector
+    return ' > '.join(path)
 
 def get_element_paths(html_content: str) -> Dict[str, str]:
     """

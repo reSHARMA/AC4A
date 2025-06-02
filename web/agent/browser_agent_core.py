@@ -1303,7 +1303,7 @@ def get_allowed_and_not_allowed_elements_from_text(data_required: Dict[str, Any]
 
             if permission_result[selector_type] is None:
                 temp_policy_system = PolicySystem()
-                permission_text = f"Grant {data_type} access for {data_type}"
+                permission_text = f"Grant {selector_type} access for {data_type}"
                 temp_policy_system.add_policies_from_text(permission_text, agent_manager)
                 permission_allowed = True
                 for policy in temp_policy_system.get_all_policy_rules():

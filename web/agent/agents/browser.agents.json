@@ -18,7 +18,8 @@
       ".uitk-button.uitk-button-large.uitk-button-as-link.uitk-button-primary.uitk-button-has-text",
       ".is-visually-hidden",
       "#property-type-carousel",
-      ".RecentSearches"
+      ".RecentSearches",
+      "text(See all flights)"
     ],
     "write": [
       "#traveler_selector_add_room",
@@ -36,7 +37,8 @@
         ".RecentSearches"
       ],
       "Expedia:Flight(*)": [
-        ".uitk-tab-text"
+        ".uitk-tab-text",
+        "text(See all flights)"
       ],
       "Expedia:CarRental(*)": [
         ".uitk-tab-text"

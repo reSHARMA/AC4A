@@ -1404,6 +1404,7 @@ def infer_permissions_from_html(screenshot_data: bytes) -> Dict[str, Any]:
 
     # Create minimal HTML with element paths
     minimal_html = get_element_paths(html_result['html'])
+    logger.info(f"[browser_agent_core.py] Minimal HTML: {minimal_html}")
 
     success = handle_from_config(minimal_html)
     if success:
@@ -1724,23 +1725,30 @@ def convert_text_to_selector(text: str, minimal_html: Dict[str, str]) -> str:
         str: CSS selector for the element containing the text, or original text if not found
     """
     try:
+        logger.info(f"Converting text selector: {text}")
+        
         # Extract text from text(some text) format
         match = re.match(r'text\((.*?)\)', text)
         if not match:
+            logger.info(f"No text() format found, returning original: {text}")
             return text  # Return original if not in text() format
             
         search_text = match.group(1)
+        logger.info(f"Searching for text: {search_text}")
         
         # Look for exact match in minimal_html keys
         for content, selector in minimal_html.items():
             if content.strip() == search_text:
+                logger.info(f"Found exact match, returning selector: {selector}")
                 return selector
                 
         # If no exact match, try partial match
         for content, selector in minimal_html.items():
             if search_text in content.strip():
+                logger.info(f"Found partial match, returning selector: {selector}")
                 return selector
                 
+        logger.info(f"No match found, returning original: {text}")
         return text  # Return original if no match found
         
     except Exception as e:

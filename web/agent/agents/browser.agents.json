@@ -69,7 +69,7 @@
     "data": {}
   },
   "https://outlook.live.com/calendar/0/view/workweek": {
-    "verified": false,
+    "verified": true,
     "read": [
       "span:contains('Day')",
       "span:contains('Work week')",

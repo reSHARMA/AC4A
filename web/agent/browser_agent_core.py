@@ -495,6 +495,8 @@ def process_with_computer_use(user_input: str) -> Dict[str, Any]:
 
         infer_permissions_from_html(screenshot_data)
 
+        time.sleep(1)
+        screenshot_data = get_latest_screenshot()
         # Convert screenshot to base64
         screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
         

@@ -14,7 +14,7 @@ For calendar related tasks use outlook.live.com/calendar
 For any other task, ask the user to provide the website to use.
 
 Do not output any other text.
-Once you have completed the requested task you should output done.
+Once you have completed the requested task you should output done and nothing else.
 
 Today is {date.today().strftime('%Y-%m-%d')}.
 """

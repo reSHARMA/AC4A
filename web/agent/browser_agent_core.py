@@ -1944,68 +1944,71 @@ def process_dynamic_data_key(key: str, html_content: str) -> str:
     try:
         logger.info(f"[DEBUG] Processing dynamic data key: {key}")
         
-        # Check if key contains dynamic data syntax
-        if '$data{' not in key:
-            logger.info(f"[DEBUG] No dynamic data syntax found in key: {key}")
-            return key
-            
-        # Extract the dynamic data part with all possible components
-        # Format: $data{selector}[idx]{transform}@attr
-        match = re.search(r'\$data\{([^}]+)\}(?:\[([:\d]+)\])?(?:\{([^}]+)\})?(?:@([a-zA-Z-]+))?', key)
-        if not match:
-            logger.info(f"[DEBUG] Failed to match dynamic data pattern in key: {key}")
-            return key
-            
-        selector = match.group(1)
-        idx_str = match.group(2)
-        transform = match.group(3)  # Optional transform
-        attr_type = match.group(4) or 'text'  # Default to text if no attr specified
+        # Find all dynamic data parts in the key and collect their replacements
+        replacements = []
+        dynamic_parts = re.finditer(r'\$data\{([^}]+)\}(?:\[([:\d]+)\])?(?:\{([^}]+)\})?(?:@([a-zA-Z-]+))?', key)
         
-        logger.info(f"[DEBUG] Extracted components:")
-        logger.info(f"[DEBUG] - Selector: {selector}")
-        logger.info(f"[DEBUG] - Index: {idx_str}")
-        logger.info(f"[DEBUG] - Transform: {transform}")
-        logger.info(f"[DEBUG] - Attribute type: {attr_type}")
-        
-        # Extract data
-        data_values = extract_dynamic_data(selector, html_content, attr_type)
-        logger.info(f"[DEBUG] Extracted data values: {data_values}")
-        
-        if not data_values:
-            logger.info(f"[DEBUG] No data values found for selector: {selector}")
-            return key
+        for match in dynamic_parts:
+            full_match = match.group(0)  # The complete match including $data{...}
+            selector = match.group(1)
+            idx_str = match.group(2)
+            transform = match.group(3)  # Optional transform
+            attr_type = match.group(4) or 'text'  # Default to text if no attr specified
             
-        # Get the value
-        value = data_values[0]  # Always get first element since we're using unique selectors
-        logger.info(f"[DEBUG] Selected value: {value}")
+            logger.info(f"[DEBUG] Extracted components:")
+            logger.info(f"[DEBUG] - Full match: {full_match}")
+            logger.info(f"[DEBUG] - Selector: {selector}")
+            logger.info(f"[DEBUG] - Index: {idx_str}")
+            logger.info(f"[DEBUG] - Transform: {transform}")
+            logger.info(f"[DEBUG] - Attribute type: {attr_type}")
+            
+            # Extract data
+            data_values = extract_dynamic_data(selector, html_content, attr_type)
+            logger.info(f"[DEBUG] Extracted data values: {data_values}")
+            
+            if not data_values:
+                logger.info(f"[DEBUG] No data values found for selector: {selector}")
+                continue
+                
+            # Get the value
+            value = data_values[0]  # Always get first element since we're using unique selectors
+            logger.info(f"[DEBUG] Selected value: {value}")
+            
+            # Handle index
+            if idx_str == ':':
+                # Use complete string without splitting
+                logger.info(f"[DEBUG] Using complete string ([:]): {value}")
+                pass
+            elif idx_str is not None:
+                # Split into words and get specific index
+                words = value.split()
+                idx = int(idx_str)
+                logger.info(f"[DEBUG] Split into words: {words}")
+                logger.info(f"[DEBUG] Requested index: {idx}")
+                if idx < len(words):
+                    value = words[idx]
+                    logger.info(f"[DEBUG] Selected word at index {idx}: {value}")
+                else:
+                    logger.info(f"[DEBUG] Index {idx} out of range for words: {words}")
+                    continue
+                
+            # Apply transformation if specified
+            if transform:
+                logger.info(f"[DEBUG] Applying transform '{transform}' to value: {value}")
+                value = process_text_value(value, transform)
+                logger.info(f"[DEBUG] Transformed value: {value}")
+            
+            # Store the replacement
+            replacements.append((full_match, value))
+            logger.info(f"[DEBUG] Added replacement: {full_match} -> {value}")
         
-        # Handle index
-        if idx_str == ':':
-            # Use complete string without splitting
-            logger.info(f"[DEBUG] Using complete string ([:]): {value}")
-            pass
-        elif idx_str is not None:
-            # Split into words and get specific index
-            words = value.split()
-            idx = int(idx_str)
-            logger.info(f"[DEBUG] Split into words: {words}")
-            logger.info(f"[DEBUG] Requested index: {idx}")
-            if idx < len(words):
-                value = words[idx]
-                logger.info(f"[DEBUG] Selected word at index {idx}: {value}")
-            else:
-                logger.info(f"[DEBUG] Index {idx} out of range for words: {words}")
-                return key
+        # Apply replacements in reverse order to avoid interference
+        result = key
+        for original, replacement in reversed(replacements):
+            result = result.replace(original, replacement)
+            logger.info(f"[DEBUG] Applied replacement: {original} -> {replacement}")
+            logger.info(f"[DEBUG] Intermediate result: {result}")
             
-        # Apply transformation if specified
-        if transform:
-            logger.info(f"[DEBUG] Applying transform '{transform}' to value: {value}")
-            value = process_text_value(value, transform)
-            logger.info(f"[DEBUG] Transformed value: {value}")
-            
-        # Replace the dynamic part with the processed value
-        pattern = f'\\$data{{{selector}}}(?:\\[{idx_str}\\])?(?:\\{{{transform}}})?(?:@{attr_type})?'
-        result = re.sub(pattern, value, key)
         logger.info(f"[DEBUG] Final result: {result}")
         return result
         

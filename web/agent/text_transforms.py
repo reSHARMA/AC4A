@@ -35,7 +35,9 @@ class TextTransformer:
             'month_to_number': self.month_to_number,
             'uppercase': self.uppercase,
             'lowercase': self.lowercase,
-            'capitalize': self.capitalize
+            'capitalize': self.capitalize,
+            'remove_punctuation': self.remove_punctuation,
+            'replace_punctuation': self.replace_punctuation
         }
         
         # Month name to number mapping
@@ -157,6 +159,30 @@ class TextTransformer:
             ```
         """
         return text.capitalize()
+    
+    def remove_punctuation(self, text: str) -> str:
+        """
+        Remove punctuation from text.
+
+        Example:
+            ```python
+            result = text_transformer.remove_punctuation("Hello, world!")  # Returns "Hello world"
+            result = text_transformer.remove_punctuation("Hello, world!")  # Returns "Hello world"
+            ```
+        """
+        return re.sub(r'[^\w\s]', '', text)
+    
+    def replace_punctuation(self, text: str) -> str:
+        """
+        Replace punctuation with a space.
+
+        Example:
+            ```python
+            result = text_transformer.replace_punctuation("Hello, world!")  # Returns "Hello  world"
+            result = text_transformer.replace_punctuation("Hello, world!")  # Returns "Hello  world"
+            ```
+        """
+        return re.sub(r'[^\w\s]', ' ', text)
     
     def register_transform(self, name: str, transform_func: Callable[[str], str]) -> None:
         """

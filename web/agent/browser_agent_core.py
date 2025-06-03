@@ -1567,6 +1567,8 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
     background: rgba(40,40,40,0.85) !important;
     border-radius: 8px !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+    color: transparent !important; /* Hide direct text */
+    text-shadow: none !important;   /* Remove any text shadow */
     position: relative !important;
 }}
 {sel}::before {{
@@ -1614,7 +1616,8 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
     background: #ff4d4f !important;
     border-radius: 8px !important;
     border: 2px solid #ff7875 !important;
-    color: #fff !important;
+    color: transparent !important; /* Hide direct text */
+    text-shadow: none !important;   /* Remove any text shadow */
     position: relative !important;
     pointer-events: none !important;
     cursor: not-allowed !important;

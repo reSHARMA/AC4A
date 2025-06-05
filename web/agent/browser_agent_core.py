@@ -1849,27 +1849,62 @@ def extract_dynamic_data(selector: str, html_content: str, attr_type: str = 'tex
         
         # For complex selectors, use CDP to get the element directly from the browser
         try:
-            # Create JavaScript to get the element's text or attribute
             js_code = f"""
             (function() {{
-                const element = document.querySelector(`{selector}`);
-                if (!element) return null;
-                return element.{attr_type if attr_type == 'text' else f'getAttribute("{attr_type}")'};
+                try {{
+                    // Try the original selector
+                    const element = document.querySelector(`{selector}`);
+                    if (element) {{
+                        if (element.tagName.toLowerCase() === 'input') {{
+                            const value = element.value;
+                            return {{ value: value }};
+                        }}
+                        return {{ value: element.{attr_type if attr_type == 'text' else f'getAttribute("{attr_type}")'} }};
+                    }}
+                    
+                    // If not found, try finding by aria-label
+                    const ariaLabel = '{selector.split("'")[1] if "'" in selector else ""}';
+                    const elements = document.querySelectorAll('input[aria-label]');
+                    const foundElement = Array.from(elements).find(el => 
+                        el.getAttribute('aria-label') === ariaLabel
+                    );
+                    
+                    if (foundElement) {{
+                        if (foundElement.tagName.toLowerCase() === 'input') {{
+                            const value = foundElement.value;
+                            return {{ value: value }};
+                        }}
+                        return {{ value: foundElement.{attr_type if attr_type == 'text' else f'getAttribute("{attr_type}")'} }};
+                    }}
+                    
+                    return {{ value: null }};
+                }} catch (e) {{
+                    return {{ error: e.toString(), value: null }};
+                }}
             }})()
             """
             
-            # Send the JavaScript to the browser via CDP
             response = requests.post('http://localhost:8080/evaluate', 
                                   json={'expression': js_code},
                                   timeout=10)
             
-            if response.status_code == 200:
-                result = response.json()
-                if result.get('success') and result.get('result') is not None:
-                    value = result['result']
-                    logger.info(f"[DEBUG] CDP extracted value: {value}")
-                    return [value] if value else []
+            if response.status_code != 200:
+                logger.error(f"[DEBUG] CDP query failed with status code: {response.status_code}")
+                logger.error(f"[DEBUG] CDP query response: {response.text}")
+                raise Exception("CDP query failed")
             
+            result = response.json()
+            
+            if result.get('success') and result.get('result') is not None:
+                data = result['result']
+                if data.get('value') is not None:
+                    logger.info(f"[DEBUG] CDP extracted value: {data['value']}")
+                    return [data['value']] if data['value'] else []
+                
+                if 'error' in data:
+                    logger.error(f"[DEBUG] JavaScript error: {data['error']}")
+            
+            logger.error(f"[DEBUG] CDP query failed: {result.get('error', 'Unknown error')}")
             logger.info(f"[DEBUG] CDP evaluation failed, falling back to BeautifulSoup")
             
         except Exception as e:
@@ -1907,6 +1942,26 @@ def extract_dynamic_data(selector: str, html_content: str, attr_type: str = 'tex
                 logger.info(f"[DEBUG] Trying class selector: {class_selector}")
                 elements = soup.select(class_selector)
                 logger.info(f"[DEBUG] Strategy 3 (class names) found {len(elements)} elements")
+        
+        # Strategy 4: Try finding by aria-label (case-insensitive)
+        if not elements and 'aria-label' in selector:
+            aria_label = re.search(r'aria-label=[\'"]([^\'"]+)[\'"]', selector)
+            if aria_label:
+                label_value = aria_label.group(1).lower()
+                elements = soup.find_all(attrs={'aria-label': lambda x: x and x.lower() == label_value})
+                logger.info(f"[DEBUG] Strategy 4 (aria-label exact) found {len(elements)} elements")
+                
+                if not elements:
+                    # Try partial match
+                    elements = soup.find_all(attrs={'aria-label': lambda x: x and label_value in x.lower()})
+                    logger.info(f"[DEBUG] Strategy 4 (aria-label partial) found {len(elements)} elements")
+
+        # Strategy 5: Try finding all inputs and filter by attributes
+        if not elements:
+            all_inputs = soup.find_all('input')
+            logger.info(f"[DEBUG] Found {len(all_inputs)} total input elements")
+            for input_elem in all_inputs:
+                logger.info(f"[DEBUG] Input element attributes: {input_elem.attrs}")
         
         if not elements:
             logger.info(f"[DEBUG] No elements found for selector: {selector}")

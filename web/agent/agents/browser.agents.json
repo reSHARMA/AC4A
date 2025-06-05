@@ -158,7 +158,7 @@
       "Calendar:Month($data{span.zytMo}[0])": [
         "span.zytMo"
       ],
-      "Calendar:Year($data{input[aria-label='Start date']}@value)::Calendar:Month($data{input[aria-label='Start date']}@value)::Calendar:Day($data{input[aria-label='Start date']}@value)": [
+      "Calendar:Year($data{input[aria-label='Start date']}{split_slash}[2]@value)::Calendar:Month($data{input[aria-label='Start date']}{split_slash}[0](number_to_month)@value)::Calendar:Day($data{input[aria-label='Start date']}{split_slash}[1]@value)": [
         "span:contains('Save')"
       ],
       "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(1)": [

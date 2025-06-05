@@ -1,6 +1,6 @@
 import re
 import logging
-from typing import Dict, Callable, Any
+from typing import Dict, Callable, Any, List
 
 logger = logging.getLogger(__name__)
 
@@ -33,18 +33,30 @@ class TextTransformer:
             'remove_ordinal': self.remove_ordinal,
             'to_number': self.to_number,
             'month_to_number': self.month_to_number,
+            'number_to_month': self.number_to_month,
             'uppercase': self.uppercase,
             'lowercase': self.lowercase,
             'capitalize': self.capitalize,
             'remove_punctuation': self.remove_punctuation,
-            'replace_punctuation': self.replace_punctuation
+            'replace_punctuation': self.replace_punctuation,
+            'split_space': self.split_space,
+            'split_slash': self.split_slash
         }
         
-        # Month name to number mapping
+        # Dictionary mapping month names to numbers
         self.months = {
-            'january': '1', 'february': '2', 'march': '3', 'april': '4',
-            'may': '5', 'june': '6', 'july': '7', 'august': '8',
-            'september': '9', 'october': '10', 'november': '11', 'december': '12'
+            '1': 'January',
+            '2': 'February',
+            '3': 'March',
+            '4': 'April',
+            '5': 'May',
+            '6': 'June',
+            '7': 'July',
+            '8': 'August',
+            '9': 'September',
+            '10': 'October',
+            '11': 'November',
+            '12': 'December'
         }
     
     def transform(self, text: str, transform_name: str) -> str:
@@ -119,10 +131,25 @@ class TextTransformer:
             ```
         """
         text_lower = text.lower()
-        for month, num in self.months.items():
+        # Create reverse mapping for month names to numbers
+        month_to_num = {v.lower(): k for k, v in self.months.items()}
+        for month, num in month_to_num.items():
             if month in text_lower:
                 return num
         return text
+    
+    def number_to_month(self, text: str) -> str:
+        """
+        Convert number (1-12) to month name.
+
+        Example:
+            ```python
+            result = text_transformer.number_to_month("7")  # Returns "July"
+            result = text_transformer.number_to_month("1")  # Returns "January"
+            result = text_transformer.number_to_month("12") # Returns "December"
+            ```
+        """
+        return self.months[text]
     
     def uppercase(self, text: str) -> str:
         """
@@ -183,6 +210,28 @@ class TextTransformer:
             ```
         """
         return re.sub(r'[^\w\s]', ' ', text)
+    
+    def split_space(self, text: str) -> List[str]:
+        """
+        Split text by space.
+        
+        Example:
+            ```python
+            result = text_transformer.split_space("A B C")  # Returns ["A", "B", "C"]
+            ```
+        """
+        return text.split()
+    
+    def split_slash(self, text: str) -> List[str]:
+        """
+        Split text by forward slash.
+        
+        Example:
+            ```python
+            result = text_transformer.split_slash("A/B C/D E/F")  # Returns ["A", "B C", "D E", "F"]
+            ```
+        """
+        return text.split('/')
     
     def register_transform(self, name: str, transform_func: Callable[[str], str]) -> None:
         """

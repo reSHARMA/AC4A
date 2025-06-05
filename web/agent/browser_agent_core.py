@@ -1995,7 +1995,7 @@ def process_dynamic_data_key(key: str, html_content: str) -> str:
     Process a key containing dynamic data extraction syntax.
     
     Args:
-        key (str): Key in format "Type:Field($data{selector}[idx]{transform}@attr)"
+        key (str): Key in format "Type:Field($data{selector}{transform}[idx](transform)@attr)"
         html_content (str): HTML content to extract data from
         
     Returns:
@@ -2006,20 +2006,23 @@ def process_dynamic_data_key(key: str, html_content: str) -> str:
         
         # Find all dynamic data parts in the key and collect their replacements
         replacements = []
-        dynamic_parts = re.finditer(r'\$data\{([^}]+)\}(?:\[([:\d]+)\])?(?:\{([^}]+)\})?(?:@([a-zA-Z-]+))?', key)
+        # Enforce order: {} transforms, then [] index, then () element transforms
+        dynamic_parts = re.finditer(r'\$data\{([^}]+)\}(?:\{([^}]+)\})?(?:\[([:\d]+)\])?(?:\(([^)]+)\))?(?:@([a-zA-Z-]+))?', key)
         
         for match in dynamic_parts:
             full_match = match.group(0)  # The complete match including $data{...}
             selector = match.group(1)
-            idx_str = match.group(2)
-            transform = match.group(3)  # Optional transform
-            attr_type = match.group(4) or 'text'  # Default to text if no attr specified
+            list_transforms = match.group(2)  # List-level transforms in {}
+            idx_str = match.group(3)  # Index after list transforms
+            element_transforms = match.group(4)  # Element-level transforms in ()
+            attr_type = match.group(5) or 'text'  # Default to text if no attr specified
             
             logger.info(f"[DEBUG] Extracted components:")
             logger.info(f"[DEBUG] - Full match: {full_match}")
             logger.info(f"[DEBUG] - Selector: {selector}")
+            logger.info(f"[DEBUG] - List transforms: {list_transforms}")
             logger.info(f"[DEBUG] - Index: {idx_str}")
-            logger.info(f"[DEBUG] - Transform: {transform}")
+            logger.info(f"[DEBUG] - Element transforms: {element_transforms}")
             logger.info(f"[DEBUG] - Attribute type: {attr_type}")
             
             # Extract data
@@ -2034,32 +2037,47 @@ def process_dynamic_data_key(key: str, html_content: str) -> str:
             value = data_values[0]  # Always get first element since we're using unique selectors
             logger.info(f"[DEBUG] Selected value: {value}")
             
+            # Apply list-level transforms
+            if list_transforms:
+                transforms = [t.strip() for t in list_transforms.split(',')]
+                for transform in transforms:
+                    logger.info(f"[DEBUG] Applying list transform '{transform}' to value: {value}")
+                    value = process_text_value(value, transform)
+                    logger.info(f"[DEBUG] After list transform: {value}")
+            else:
+                # Default list transform is split by space
+                value = value.split()
+                logger.info(f"[DEBUG] Applied default split_space transform: {value}")
+            
             # Handle index
             if idx_str == ':':
                 # Use complete string without splitting
                 logger.info(f"[DEBUG] Using complete string ([:]): {value}")
                 pass
             elif idx_str is not None:
-                # Split into words and get specific index
-                words = value.split()
+                # Get the element at the specified index
                 idx = int(idx_str)
-                logger.info(f"[DEBUG] Split into words: {words}")
-                logger.info(f"[DEBUG] Requested index: {idx}")
-                if idx < len(words):
-                    value = words[idx]
-                    logger.info(f"[DEBUG] Selected word at index {idx}: {value}")
+                if isinstance(value, list):
+                    if idx < len(value):
+                        value = value[idx]
+                        logger.info(f"[DEBUG] Selected element at index {idx}: {value}")
+                    else:
+                        logger.info(f"[DEBUG] Index {idx} out of range for list: {value}")
+                        continue
                 else:
-                    logger.info(f"[DEBUG] Index {idx} out of range for words: {words}")
+                    logger.info(f"[DEBUG] Value is not a list, cannot index: {value}")
                     continue
-                
-            # Apply transformation if specified
-            if transform:
-                logger.info(f"[DEBUG] Applying transform '{transform}' to value: {value}")
-                value = process_text_value(value, transform)
-                logger.info(f"[DEBUG] Transformed value: {value}")
+            
+            # Apply element-level transforms
+            if element_transforms:
+                transforms = [t.strip() for t in element_transforms.split(',')]
+                for transform in transforms:
+                    logger.info(f"[DEBUG] Applying element transform '{transform}' to value: {value}")
+                    value = process_text_value(value, transform)
+                    logger.info(f"[DEBUG] After element transform: {value}")
             
             # Store the replacement
-            replacements.append((full_match, value))
+            replacements.append((full_match, str(value)))
             logger.info(f"[DEBUG] Added replacement: {full_match} -> {value}")
         
         # Apply replacements in reverse order to avoid interference

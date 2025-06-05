@@ -43,12 +43,17 @@ class AttributeTree:
             if value1.lower() == value2.lower():
                 logger.info(f"Value of node1 is equal to node2: {value1} == {value2}")
                 result = 0
+
+            if value2.lower() == '?':
+                logger.info(f"Value of node2 is wildcard: {value2} == ?")
+                result = 0
+                
             elif value1.lower() == '*':
                 logger.info(f"Value of node1 is wildcard: {value1} == *")
                 result = 1
 
             
-            if value1.lower() != '*' and value1.lower() != value2.lower():
+            if result == -1:
                 logger.info(f"Value of node1 is not equal to node2: {value1} != {value2}")
                 return -1
 

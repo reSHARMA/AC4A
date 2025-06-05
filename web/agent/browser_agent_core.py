@@ -1999,7 +1999,7 @@ def process_dynamic_data_key(key: str, html_content: str) -> str:
         html_content (str): HTML content to extract data from
         
     Returns:
-        str: Processed key with extracted data
+        str: Processed key with extracted data, or None if extraction fails
     """
     try:
         logger.info(f"[DEBUG] Processing dynamic data key: {key}")
@@ -2011,7 +2011,7 @@ def process_dynamic_data_key(key: str, html_content: str) -> str:
         
         for match in dynamic_parts:
             full_match = match.group(0)  # The complete match including $data{...}
-            selector = match.group(1)
+            selector = match.group(1)  # The selector inside {}
             list_transforms = match.group(2)  # List-level transforms in {}
             idx_str = match.group(3)  # Index after list transforms
             element_transforms = match.group(4)  # Element-level transforms in ()
@@ -2030,8 +2030,8 @@ def process_dynamic_data_key(key: str, html_content: str) -> str:
             logger.info(f"[DEBUG] Extracted data values: {data_values}")
             
             if not data_values:
-                logger.info(f"[DEBUG] No data values found for selector: {selector}")
-                continue
+                logger.warning(f"[DEBUG] No data values found for selector: {selector}")
+                return None
                 
             # Get the value
             value = data_values[0]  # Always get first element since we're using unique selectors
@@ -2062,11 +2062,11 @@ def process_dynamic_data_key(key: str, html_content: str) -> str:
                         value = value[idx]
                         logger.info(f"[DEBUG] Selected element at index {idx}: {value}")
                     else:
-                        logger.info(f"[DEBUG] Index {idx} out of range for list: {value}")
-                        continue
+                        logger.warning(f"[DEBUG] Index {idx} out of range for list: {value}")
+                        return None
                 else:
-                    logger.info(f"[DEBUG] Value is not a list, cannot index: {value}")
-                    continue
+                    logger.warning(f"[DEBUG] Value is not a list, cannot index: {value}")
+                    return None
             
             # Apply element-level transforms
             if element_transforms:
@@ -2092,7 +2092,7 @@ def process_dynamic_data_key(key: str, html_content: str) -> str:
         
     except Exception as e:
         logger.error(f"[DEBUG] Error processing dynamic data key: {str(e)}", exc_info=True)
-        return key
+        return None
 
 def handle_from_config(minimal_html: Dict[str, str]) -> bool:
     """
@@ -2160,6 +2160,9 @@ def handle_from_config(minimal_html: Dict[str, str]) -> bool:
             logger.info(f"[DEBUG] Processing data type: {data_type}")
             # Process the data type key for dynamic data
             processed_data_type = process_dynamic_data_key(data_type, html_result['html'])
+            if processed_data_type is None:
+                logger.warning(f"[DEBUG] Failed to process dynamic data key: {data_type}")
+                continue
             logger.info(f"[DEBUG] Processed data type: {processed_data_type}")
             converted_data[processed_data_type] = [convert_text_to_selector(sel, minimal_html) for sel in selectors]
             

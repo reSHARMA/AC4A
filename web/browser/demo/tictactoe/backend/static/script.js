@@ -45,11 +45,7 @@ class TicTacToe {
     }
 
     handleCellClick(cell) {
-        console.log('Cell clicked:', cell.dataset.index);
-        if (!this.gameActive) {
-            console.log('Game is not active');
-            return;
-        }
+        if (!this.gameActive) return;
 
         const index = cell.dataset.index;
         if (this.board[index] === '') {
@@ -57,33 +53,24 @@ class TicTacToe {
             this.makeMove(index, 'X');
             
             if (this.checkWinner()) {
-                console.log('Player won!');
                 this.endGame('X');
                 return;
             }
 
             if (this.isBoardFull()) {
-                console.log('Game is a tie!');
                 this.endGame('tie');
                 return;
             }
 
-            // Computer's move (O)
+            // Computer's move (O) - use Minimax
             setTimeout(() => {
-                const emptyCells = this.board
-                    .map((cell, index) => cell === '' ? index : null)
-                    .filter(cell => cell !== null);
-                
-                if (emptyCells.length > 0) {
-                    const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-                    console.log('Computer move:', randomIndex);
-                    this.makeMove(randomIndex, 'O');
+                const bestMove = this.getBestMove();
+                if (bestMove !== null) {
+                    this.makeMove(bestMove, 'O');
 
                     if (this.checkWinner()) {
-                        console.log('Computer won!');
                         this.endGame('O');
                     } else if (this.isBoardFull()) {
-                        console.log('Game is a tie!');
                         this.endGame('tie');
                     }
                 }
@@ -231,6 +218,72 @@ class TicTacToe {
         } catch (err) {
             console.error('Failed to load game:', err);
         }
+    }
+
+    getBestMove() {
+        let bestScore = -Infinity;
+        let move = null;
+        for (let i = 0; i < 9; i++) {
+            if (this.board[i] === '') {
+                this.board[i] = 'O';
+                let score = this.minimax(this.board, 0, false);
+                this.board[i] = '';
+                if (score > bestScore) {
+                    bestScore = score;
+                    move = i;
+                }
+            }
+        }
+        return move;
+    }
+
+    minimax(board, depth, isMaximizing) {
+        const winner = this.getWinnerForMinimax(board);
+        if (winner !== null) {
+            if (winner === 'O') return 10 - depth;
+            if (winner === 'X') return depth - 10;
+            if (winner === 'tie') return 0;
+        }
+
+        if (isMaximizing) {
+            let bestScore = -Infinity;
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === '') {
+                    board[i] = 'O';
+                    let score = this.minimax(board, depth + 1, false);
+                    board[i] = '';
+                    bestScore = Math.max(score, bestScore);
+                }
+            }
+            return bestScore;
+        } else {
+            let bestScore = Infinity;
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === '') {
+                    board[i] = 'X';
+                    let score = this.minimax(board, depth + 1, true);
+                    board[i] = '';
+                    bestScore = Math.min(score, bestScore);
+                }
+            }
+            return bestScore;
+        }
+    }
+
+    getWinnerForMinimax(board) {
+        const winPatterns = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ];
+        for (const pattern of winPatterns) {
+            const [a, b, c] = pattern;
+            if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                return board[a];
+            }
+        }
+        if (!board.includes('')) return 'tie';
+        return null;
     }
 }
 

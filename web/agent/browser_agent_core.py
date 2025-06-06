@@ -1350,10 +1350,16 @@ def get_allowed_and_not_allowed_elements_from_config(data_required: Dict[str, An
     allowed_elements = {'read': [], 'write': []}
     not_allowed_elements = {'read': [], 'write': []}
 
+    logger.info(f"[DEBUG] Processing data required: {data_required}")
+    logger.info(f"[DEBUG] HTML structure: {html_structure}")
+
     for data_type, selectors in data_required['data'].items():
+        logger.info(f"[DEBUG] Processing data type: {data_type}")
+        logger.info(f"[DEBUG] Selectors for this type: {selectors}")
         permission_result = {'read': None, 'write': None}
         
         for selector in selectors:
+            logger.info(f"[DEBUG] Processing selector: {selector}")
             selector_type = 'read' if selector in html_structure['read'] else 'write' if selector in html_structure['write'] else None
             if not selector_type:
                 logger.warning(f"Selector {selector} not found in HTML structure")
@@ -1362,6 +1368,7 @@ def get_allowed_and_not_allowed_elements_from_config(data_required: Dict[str, An
             if permission_result[selector_type] is None:
                 temp_policy_system = PolicySystem()
                 permission_text = f"Grant {selector_type} access for {data_type}"
+                logger.info(f"[DEBUG] Checking permission: {permission_text}")
                 temp_policy_system.add_policy({
                     "granular_data": f"{data_type}",
                     "data_access": "Read" if selector_type == 'read' else "Write",
@@ -1369,16 +1376,22 @@ def get_allowed_and_not_allowed_elements_from_config(data_required: Dict[str, An
                 })
                 permission_allowed = True
                 for policy in temp_policy_system.get_all_policy_rules():
+                    logger.info(f"[DEBUG] Checking policy: {policy}")
                     permission_allowed = agent_manager.policy_system.is_action_allowed(policy)
+                    logger.info(f"[DEBUG] Policy allowed: {permission_allowed}")
                     if not permission_allowed:
                         break
                 permission_result[selector_type] = permission_allowed
             
             if permission_result[selector_type] is True:
+                logger.info(f"[DEBUG] Adding to allowed elements: {selector}")
                 allowed_elements[selector_type].append(selector)
             else:
+                logger.info(f"[DEBUG] Adding to not allowed elements: {selector}")
                 not_allowed_elements[selector_type].append(selector)
                 
+    logger.info(f"[DEBUG] Final allowed elements: {allowed_elements}")
+    logger.info(f"[DEBUG] Final not allowed elements: {not_allowed_elements}")
     return allowed_elements, not_allowed_elements
 
 def infer_permissions_from_html(screenshot_data: bytes) -> Dict[str, Any]:
@@ -2164,7 +2177,19 @@ def handle_from_config(minimal_html: Dict[str, str]) -> bool:
                 logger.warning(f"[DEBUG] Failed to process dynamic data key: {data_type}")
                 continue
             logger.info(f"[DEBUG] Processed data type: {processed_data_type}")
-            converted_data[processed_data_type] = [convert_text_to_selector(sel, minimal_html) for sel in selectors]
+            
+            # Preserve :contains() selectors when converting
+            converted_selectors = []
+            for sel in selectors:
+                    converted_sel = convert_text_to_selector(sel, minimal_html)
+                    logger.info(f"[DEBUG] Converted selector: {sel} -> {converted_sel}")
+                    converted_selectors.append(converted_sel)
+            
+            if processed_data_type in converted_data:
+                converted_data[processed_data_type].extend(converted_selectors)
+            else:
+                converted_data[processed_data_type] = converted_selectors
+            logger.info(f"[DEBUG] Added converted data entry: {processed_data_type} -> {converted_selectors}")
             
         # Create data required from config with converted selectors
         data_required = {
@@ -2173,6 +2198,7 @@ def handle_from_config(minimal_html: Dict[str, str]) -> bool:
         }
         
         logger.info(f"[DEBUG] Found config for URL: {active_url}")
+        logger.info(f"[DEBUG] Data required: {data_required}")
         # Handle not allowed elements
         allowed_elements, not_allowed_elements = get_allowed_and_not_allowed_elements_from_config(data_required, html_structure)
         handle_not_allowed_elements(not_allowed_elements)

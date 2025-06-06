@@ -1,3 +1,5 @@
+const API_URL = 'http://127.0.0.1:5000';
+
 class TicTacToe {
     constructor() {
         console.log('Initializing TicTacToe game...');
@@ -14,8 +16,7 @@ class TicTacToe {
         };
 
         this.initializeElements();
-        this.loadGameHistory();
-        this.updateScoreboard();
+        this.fetchGameHistory();
         this.setupEventListeners();
         console.log('Game initialized successfully');
     }
@@ -115,21 +116,16 @@ class TicTacToe {
         return !this.board.includes('');
     }
 
-    endGame(winner) {
+    async endGame(winner) {
         console.log('Ending game. Winner:', winner);
         this.gameActive = false;
         const gameResult = {
-            id: this.currentGameId,
             board: [...this.board],
             winner: winner,
             date: new Date().toISOString()
         };
-
-        this.gameHistory.push(gameResult);
-        this.saveGameHistory();
-        this.updateScoreboard(winner);
-        this.updateHistoryList();
-        this.currentGameId++;
+        await this.saveGameToBackend(gameResult);
+        await this.fetchGameHistory();
     }
 
     startNewGame() {
@@ -143,43 +139,43 @@ class TicTacToe {
         console.log('New game started');
     }
 
-    updateScoreboard(winner) {
-        if (winner) {
-            this.scores.totalGames++;
-            if (winner === 'X') {
-                this.scores.wins++;
-            } else if (winner === 'O') {
-                this.scores.losses++;
-            } else {
-                this.scores.ties++;
-            }
+    async fetchGameHistory() {
+        try {
+            const res = await fetch(`${API_URL}/games`);
+            const games = await res.json();
+            this.gameHistory = games;
+            this.currentGameId = games.length ? Math.max(...games.map(g => g.id)) + 1 : 1;
+            this.updateScoreboardFromGames(games);
+            this.updateHistoryList();
+        } catch (err) {
+            console.error('Failed to fetch game history:', err);
         }
+    }
 
+    updateScoreboardFromGames(games) {
+        this.scores = { totalGames: 0, wins: 0, losses: 0, ties: 0 };
+        games.forEach(game => {
+            this.scores.totalGames++;
+            if (game.winner === 'X') this.scores.wins++;
+            else if (game.winner === 'O') this.scores.losses++;
+            else this.scores.ties++;
+        });
         document.getElementById('totalGames').textContent = this.scores.totalGames;
         document.getElementById('wins').textContent = this.scores.wins;
         document.getElementById('losses').textContent = this.scores.losses;
         document.getElementById('ties').textContent = this.scores.ties;
     }
 
-    saveGameHistory() {
-        localStorage.setItem('tictactoeHistory', JSON.stringify(this.gameHistory));
-        localStorage.setItem('tictactoeScores', JSON.stringify(this.scores));
-    }
-
-    loadGameHistory() {
-        const savedHistory = localStorage.getItem('tictactoeHistory');
-        const savedScores = localStorage.getItem('tictactoeScores');
-
-        if (savedHistory) {
-            this.gameHistory = JSON.parse(savedHistory);
-            this.currentGameId = this.gameHistory.length + 1;
+    async saveGameToBackend(gameResult) {
+        try {
+            await fetch(`${API_URL}/games`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(gameResult)
+            });
+        } catch (err) {
+            console.error('Failed to save game:', err);
         }
-
-        if (savedScores) {
-            this.scores = JSON.parse(savedScores);
-        }
-
-        this.updateHistoryList();
     }
 
     updateHistoryList() {
@@ -197,7 +193,7 @@ class TicTacToe {
                 this.deleteGame(game.id);
             });
 
-            gameElement.addEventListener('click', () => this.viewGame(game));
+            gameElement.addEventListener('click', () => this.viewGame(game.id));
             this.historyList.appendChild(gameElement);
         });
     }
@@ -211,31 +207,30 @@ class TicTacToe {
         }
     }
 
-    deleteGame(gameId) {
-        const gameIndex = this.gameHistory.findIndex(game => game.id === gameId);
-        if (gameIndex !== -1) {
-            const game = this.gameHistory[gameIndex];
-            this.scores.totalGames--;
-            if (game.winner === 'X') this.scores.wins--;
-            else if (game.winner === 'O') this.scores.losses--;
-            else this.scores.ties--;
-
-            this.gameHistory.splice(gameIndex, 1);
-            this.saveGameHistory();
-            this.updateScoreboard();
-            this.updateHistoryList();
+    async deleteGame(gameId) {
+        try {
+            await fetch(`${API_URL}/games/${gameId}`, { method: 'DELETE' });
+            await this.fetchGameHistory();
+        } catch (err) {
+            console.error('Failed to delete game:', err);
         }
     }
 
-    viewGame(game) {
-        this.board = [...game.board];
-        this.gameActive = false;
-        this.cells.forEach((cell, index) => {
-            cell.classList.remove('x', 'o');
-            if (this.board[index]) {
-                cell.classList.add(this.board[index].toLowerCase());
-            }
-        });
+    async viewGame(gameId) {
+        try {
+            const res = await fetch(`${API_URL}/games/${gameId}`);
+            const game = await res.json();
+            this.board = [...game.board];
+            this.gameActive = false;
+            this.cells.forEach((cell, index) => {
+                cell.classList.remove('x', 'o');
+                if (this.board[index]) {
+                    cell.classList.add(this.board[index].toLowerCase());
+                }
+            });
+        } catch (err) {
+            console.error('Failed to load game:', err);
+        }
     }
 }
 

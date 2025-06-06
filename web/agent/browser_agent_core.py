@@ -1929,8 +1929,10 @@ def evaluate_javascript(expression: str) -> Dict[str, Any]:
         result = response.json()
         
         # Cache successful results
-        if result.get('success'):
-            evaluation_cache.set(expression, tab_id, result)
+        if result.get('success') and result.get('result') is not None:
+            data = result['result']
+            if data.get('value') is not None:
+                evaluation_cache.set(expression, tab_id, result)
         
         return result
         

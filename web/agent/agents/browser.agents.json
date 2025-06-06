@@ -76,16 +76,7 @@
       "span:contains('Week')",
       "span:contains('Month')",
       "span:contains('Today')",
-      "span:contains('June 2025')",
-      "span:contains('June 2\u20136, 2025')",
-      "span:contains('Selected date June 2, 2025')",
       "span:contains('My calendars')",
-      "[title='Monday']",
-      "[title='Tuesday']",
-      "[title='Wednesday']",
-      "[title='Thursday']",
-      "[title='Friday']",
-      "[title='Saturday']",
       "span:contains('1')",
       "span:contains('2')",
       "span:contains('3')",
@@ -117,30 +108,6 @@
       "span:contains('29')",
       "span:contains('30')",
       "span:contains('31')",
-      "time:contains('12 AM')",
-      "time:contains('1 AM')",
-      "time:contains('2 AM')",
-      "time:contains('3 AM')",
-      "time:contains('4 AM')",
-      "time:contains('5 AM')",
-      "time:contains('6 AM')",
-      "time:contains('7 AM')",
-      "time:contains('8 AM')",
-      "time:contains('9 AM')",
-      "time:contains('10 AM')",
-      "time:contains('11 AM')",
-      "time:contains('12 PM')",
-      "time:contains('1 PM')",
-      "time:contains('2 PM')",
-      "time:contains('3 PM')",
-      "time:contains('4 PM')",
-      "time:contains('5 PM')",
-      "time:contains('6 PM')",
-      "time:contains('7 PM')",
-      "time:contains('8 PM')",
-      "time:contains('9 PM')",
-      "time:contains('10 PM')",
-      "time:contains('11 PM')",
       "span:contains('Filter')",
       "span:contains('Share')",
       "span:contains('Print')",
@@ -152,249 +119,110 @@
       "span:contains('Save')"
     ],
     "data": {
-      "Calendar:Year($data{span.zytMo}[2])": [
-        "span.zytMo"
-      ],
-      "Calendar:Month($data{span.zytMo}[0])": [
+      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])": [
         "span.zytMo"
       ],
       "Calendar:Year($data{input[aria-label='Start date']}{split_slash}[2]@value)::Calendar:Month($data{input[aria-label='Start date']}{split_slash}[0](number_to_month)@value)::Calendar:Day($data{input[aria-label='Start date']}{split_slash}[1]@value)": [
         "span:contains('Save')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(1)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])": [
+        "button[aria-label*='select to change the month']"
+      ],
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(1)": [
         "span:contains('1')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(2)": [
-        "span:contains('2')",
-        "span:contains('Selected date June 2, 2025')"
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(2)": [
+        "span:contains('2')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(3)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(3)": [
         "span:contains('3')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(4)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(4)": [
         "span:contains('4')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(5)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(5)": [
         "span:contains('5')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(6)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(6)": [
         "span:contains('6')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(7)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(7)": [
         "span:contains('7')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(8)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(8)": [
         "span:contains('8')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(9)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(9)": [
         "span:contains('9')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(10)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(10)": [
         "span:contains('10')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(11)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(11)": [
         "span:contains('11')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(12)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(12)": [
         "span:contains('12')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(13)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(13)": [
         "span:contains('13')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(14)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(14)": [
         "span:contains('14')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(15)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(15)": [
         "span:contains('15')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(16)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(16)": [
         "span:contains('16')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(17)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(17)": [
         "span:contains('17')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(18)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(18)": [
         "span:contains('18')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(19)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(19)": [
         "span:contains('19')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(20)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(20)": [
         "span:contains('20')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(21)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(21)": [
         "span:contains('21')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(22)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(22)": [
         "span:contains('22')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(23)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(23)": [
         "span:contains('23')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(24)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(24)": [
         "span:contains('24')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(25)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(25)": [
         "span:contains('25')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(26)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(26)": [
         "span:contains('26')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(27)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(27)": [
         "span:contains('27')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(28)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(28)": [
         "span:contains('28')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(29)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(29)": [
         "span:contains('29')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(30)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(30)": [
         "span:contains('30')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(31)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(31)": [
         "span:contains('31')"
       ],
-      "Calendar:Year($data{span.zytMo}[2])::Calendar:Month($data{span.zytMo}[0])::Calendar:Day(*)": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(*)": [
         "div.ZlutZ"
-      ],
-      "Calendar:Year(*)::Calendar:Month(January)": [
-        "span:contains('January')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(February)": [
-        "span:contains('February')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(March)": [
-        "span:contains('March')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(April)": [
-        "span:contains('April')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(May)": [
-        "span:contains('May')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(June)": [
-        "span:contains('June')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(July)": [
-        "span:contains('July')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(August)": [
-        "span:contains('August')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(September)": [
-        "span:contains('September')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(October)": [
-        "span:contains('October')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(November)": [
-        "span:contains('November')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(December)": [
-        "span:contains('December')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(29)": [
-        "span:contains('29')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(30)": [
-        "span:contains('30')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(January)::Calendar:Day(31)": [
-        "span:contains('31')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(March)::Calendar:Day(31)": [
-        "span:contains('31')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(May)::Calendar:Day(31)": [
-        "span:contains('31')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(July)::Calendar:Day(31)": [
-        "span:contains('31')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(August)::Calendar:Day(31)": [
-        "span:contains('31')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(October)::Calendar:Day(31)": [
-        "span:contains('31')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(December)::Calendar:Day(31)": [
-        "span:contains('31')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(0)": [
-        "time:contains('12 AM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(1)": [
-        "time:contains('1 AM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(2)": [
-        "time:contains('2 AM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(3)": [
-        "time:contains('3 AM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(4)": [
-        "time:contains('4 AM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(5)": [
-        "time:contains('5 AM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(6)": [
-        "time:contains('6 AM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(7)": [
-        "time:contains('7 AM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(8)": [
-        "time:contains('8 AM')"
-      ],
-      "Calendar:Year(2025)::Calendar:Month(June)::Calendar:Day(2)::Calendar:Hour(9)": [
-        "time:contains('9 AM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(10)": [
-        "time:contains('10 AM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(11)": [
-        "time:contains('11 AM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(12)": [
-        "time:contains('12 PM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(13)": [
-        "time:contains('1 PM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(14)": [
-        "time:contains('2 PM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(15)": [
-        "time:contains('3 PM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(16)": [
-        "time:contains('4 PM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(17)": [
-        "time:contains('5 PM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(18)": [
-        "time:contains('6 PM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(19)": [
-        "time:contains('7 PM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(20)": [
-        "time:contains('8 PM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(21)": [
-        "time:contains('9 PM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(22)": [
-        "time:contains('10 PM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)::Calendar:Hour(23)": [
-        "time:contains('11 PM')"
-      ],
-      "Calendar:Year(*)::Calendar:Month(*)::Calendar:Day(*)": [
-        "span:contains('Selected date June 2, 2025')"
       ],
       "Calendar:Month(*)": [
         "span:contains('Month')",

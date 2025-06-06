@@ -1516,35 +1516,17 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
         """ % (
             '\n'.join(f"""
                 document.querySelectorAll('{sel.split('[')[0]}').forEach(el => {{
-                    if (el.textContent.includes('{text}')) {{
-                        // Only set if no child also contains the text
-                        let hasChildWithText = false;
-                        el.querySelectorAll('*').forEach(child => {{
-                            if (child !== el && child.textContent.includes('{text}')) {{
-                                hasChildWithText = true;
-                            }}
-                        }});
-                        if (!hasChildWithText) {{
-                            console.log('Setting attribute for element:', el);
-                            el.setAttribute('data-axiom-text', '{text}');
-                        }}
+                    if (el.textContent.trim() === '{text}') {{
+                        console.log('Setting attribute for exact match element:', el);
+                        el.setAttribute('data-axiom-text', '{text}');
                     }}
                 }});
             """ for sel, text in [(sel, re.search(r'data-axiom-text=\'([^\']+)\'', sel).group(1)) for sel in converted_read if 'data-axiom-text' in sel]),
             '\n'.join(f"""
                 document.querySelectorAll('{sel.split('[')[0]}').forEach(el => {{
-                    if (el.textContent.includes('{text}')) {{
-                        // Only set if no child also contains the text
-                        let hasChildWithText = false;
-                        el.querySelectorAll('*').forEach(child => {{
-                            if (child !== el && child.textContent.includes('{text}')) {{
-                                hasChildWithText = true;
-                            }}
-                        }});
-                        if (!hasChildWithText) {{
-                            console.log('Setting attribute for element:', el);
-                            el.setAttribute('data-axiom-text', '{text}');
-                        }}
+                    if (el.textContent.trim() === '{text}') {{
+                        console.log('Setting attribute for exact match element:', el);
+                        el.setAttribute('data-axiom-text', '{text}');
                     }}
                 }});
             """ for sel, text in [(sel, re.search(r'data-axiom-text=\'([^\']+)\'', sel).group(1)) for sel in converted_write if 'data-axiom-text' in sel])
@@ -1872,6 +1854,11 @@ def extract_dynamic_data(selector: str, html_content: str, attr_type: str = 'tex
                             const value = element.value;
                             return {{ value: value }};
                         }}
+                        // For text content, get it from the element itself or its first child
+                        if ('{attr_type}' === 'text') {{
+                            const text = element.textContent || (element.firstElementChild ? element.firstElementChild.textContent : '');
+                            return {{ value: text }};
+                        }}
                         return {{ value: element.{attr_type if attr_type == 'text' else f'getAttribute("{attr_type}")'} }};
                     }}
                     
@@ -1886,6 +1873,11 @@ def extract_dynamic_data(selector: str, html_content: str, attr_type: str = 'tex
                         if (foundElement.tagName.toLowerCase() === 'input') {{
                             const value = foundElement.value;
                             return {{ value: value }};
+                        }}
+                        // For text content, get it from the element itself or its first child
+                        if ('{attr_type}' === 'text') {{
+                            const text = foundElement.textContent || (foundElement.firstElementChild ? foundElement.firstElementChild.textContent : '');
+                            return {{ value: text }};
                         }}
                         return {{ value: foundElement.{attr_type if attr_type == 'text' else f'getAttribute("{attr_type}")'} }};
                     }}

@@ -14,6 +14,7 @@ from PIL import Image
 import io
 from src.prompts import BROWSER_INFER_DATA, BROWSER_CLASSIFY_DATA, BROWSER_AGENT
 from .text_transforms import process_text_value
+from datetime import datetime, timedelta
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -35,6 +36,91 @@ class MessageVisibility(Enum):
 
 # Store browser chat history
 browser_chat_history = []
+
+# Add selector cache implementation
+class SelectorCache:
+    def __init__(self, cache_duration_minutes: int = 30):
+        self.cache = {}
+        self.cache_duration = timedelta(minutes=cache_duration_minutes)
+        logger.info(f"Initialized SelectorCache with {cache_duration_minutes} minute duration")
+    
+    def _get_cache_key(self, url: str, selector_type: str) -> str:
+        """Generate a cache key from URL and selector type"""
+        return f"{url}:{selector_type}"
+    
+    def get(self, url: str, selector_type: str) -> Tuple[Dict[str, Any], bool]:
+        """Get cached selectors for a URL and type"""
+        cache_key = self._get_cache_key(url, selector_type)
+        if cache_key in self.cache:
+            entry = self.cache[cache_key]
+            if datetime.now() - entry['timestamp'] < self.cache_duration:
+                logger.info(f"Cache HIT for {cache_key} (age: {datetime.now() - entry['timestamp']})")
+                return entry['data'], True
+            else:
+                # Remove expired entry
+                logger.info(f"Cache EXPIRED for {cache_key} (age: {datetime.now() - entry['timestamp']})")
+                del self.cache[cache_key]
+        logger.info(f"Cache MISS for {cache_key}")
+        return {}, False
+    
+    def set(self, url: str, selector_type: str, data: Dict[str, Any]) -> None:
+        """Cache selectors for a URL and type"""
+        cache_key = self._get_cache_key(url, selector_type)
+        self.cache[cache_key] = {
+            'data': data,
+            'timestamp': datetime.now()
+        }
+        logger.info(f"Cache SET for {cache_key} (total entries: {len(self.cache)})")
+    
+    def clear(self) -> None:
+        """Clear all cached entries"""
+        logger.info(f"Cache CLEARED (removed {len(self.cache)} entries)")
+        self.cache.clear()
+
+# Initialize global selector cache
+selector_cache = SelectorCache()
+
+class EvaluationCache:
+    def __init__(self, cache_duration_minutes: int = 30):
+        self.cache = {}
+        self.cache_duration = timedelta(minutes=cache_duration_minutes)
+        logger.info(f"Initialized EvaluationCache with {cache_duration_minutes} minute duration")
+    
+    def _get_cache_key(self, expression: str, tab_id: str) -> str:
+        """Generate a cache key from expression and tab ID"""
+        return f"{tab_id}:{expression}"
+    
+    def get(self, expression: str, tab_id: str) -> Tuple[Dict[str, Any], bool]:
+        """Get cached evaluation result"""
+        cache_key = self._get_cache_key(expression, tab_id)
+        if cache_key in self.cache:
+            entry = self.cache[cache_key]
+            if datetime.now() - entry['timestamp'] < self.cache_duration:
+                logger.info(f"Cache HIT for evaluation: {cache_key[:50]}...")
+                return entry['result'], True
+            else:
+                logger.info(f"Cache EXPIRED for evaluation: {cache_key[:50]}...")
+                del self.cache[cache_key]
+        logger.info(f"Cache MISS for evaluation: {cache_key[:50]}...")
+        return None, False
+    
+    def set(self, expression: str, tab_id: str, result: Dict[str, Any]) -> None:
+        """Cache evaluation result"""
+        cache_key = self._get_cache_key(expression, tab_id)
+        self.cache[cache_key] = {
+            'result': result,
+            'timestamp': datetime.now()
+        }
+        logger.info(f"Cache SET for evaluation: {cache_key[:50]}...")
+    
+    def clear(self) -> None:
+        """Clear all cached entries"""
+        logger.info(f"Cache CLEARED (removed {len(self.cache)} entries)")
+        self.cache.clear()
+
+# Initialize caches
+selector_cache = SelectorCache()
+evaluation_cache = EvaluationCache()
 
 def create_message(content: str, role: str, msg_type: MessageType = MessageType.ASSISTANT, 
                   visibility: MessageVisibility = MessageVisibility.PUBLIC) -> Dict[str, Any]:
@@ -744,44 +830,37 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
 
 def analyze_html_structure(screenshot_data: bytes, minimal_html: Dict[str, str]) -> Dict[str, Any]:
     """
-    Analyze the HTML structure using screenshot and HTML source
-    
-    Args:
-        screenshot_data (bytes): Raw PNG image data of the current page
-        minimal_html (Dict[str, str]): Pre-filtered HTML elements and their selectors
-    Returns:
-        dict: Contains 'read' and 'write' lists with valid CSS selectors/paths
+    Analyze HTML structure and extract read/write selectors.
+    Uses caching to improve performance for repeated analysis of the same URL.
     """
     try:
-        # Convert screenshot to base64 for API call
-        screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
+        # Get current URL
+        url_result = get_active_tab_url()
+        if not url_result.get('success'):
+            logger.error("Failed to get active tab URL")
+            return {'success': False, 'error': 'Failed to get active tab URL'}
         
-        # Create system prompt for HTML analysis
-        # Create input text for analysis
-        analysis_text = f"""Please analyze this webpage and classify the elements into read and write elements.
-List of HTML elements and their CSS selectors:
-{str(minimal_html)}"""
-
-        # Create input content with HTML and screenshot
-        input_content = {
-            "text": analysis_text,
-            "image": f"data:image/png;base64,{screenshot_base64}"
-        }
+        current_url = url_result.get('url')
         
-        # Call OpenAI API for analysis
-        response = call_openai_api(BROWSER_CLASSIFY_DATA, input_content, "computer-use")
+        # Try to get from cache first
+        cached_result, found = selector_cache.get(current_url, 'html_structure')
+        if found:
+            logger.info(f"Using cached HTML structure for {current_url}")
+            return cached_result
         
-        logger.info(f"[browser_agent_core.py] Classification response: {response}")
+        # If not in cache, proceed with analysis
+        logger.info("Analyzing HTML structure")
         
-        # response can have comments starting with // remove them till the end of the line
-        response = re.sub(r'//.*', '', response)
-        if not response:
-            logger.error("No response from OpenAI API for HTML analysis")
-            return {
-                'read': [],
-                'write': [],
-                'error': 'No response from analysis model'
-            }
+        # Convert minimal_html to string for analysis
+        minimal_html_str = json.dumps(minimal_html)
+        
+        # Get the analysis from the model
+        response = get_completion(
+            BROWSER_CLASSIFY_DATA.format(
+                minimal_html=minimal_html_str
+            ),
+            model="gpt-4-turbo-preview"
+        )
         
         # Try to parse the JSON response
         try:
@@ -829,79 +908,73 @@ List of HTML elements and their CSS selectors:
                 if isinstance(selector, str) and selector.strip():
                     valid_write_selectors.append(selector.strip())
             
-            logger.info(f"HTML analysis found {len(valid_read_selectors)} read elements and {len(valid_write_selectors)} write elements")
-            logger.info(f"Valid read selectors: {valid_read_selectors}")
-            logger.info(f"Valid write selectors: {valid_write_selectors}")
-            
-            return {
+            result = {
+                'success': True,
                 'read': valid_read_selectors,
-                'write': valid_write_selectors,
-                'success': True
+                'write': valid_write_selectors
             }
+            
+            # Cache the result
+            selector_cache.set(current_url, 'html_structure', result)
+            
+            return result
             
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON response from analysis: {str(e)}")
-            logger.debug(f"Raw response: {response}")
+            logger.error(f"Failed to parse JSON response: {str(e)}")
             return {
-                'read': [],
-                'write': [],
-                'error': f'Failed to parse analysis response: {str(e)}'
+                'success': False,
+                'error': f'Failed to parse JSON response: {str(e)}'
             }
         except Exception as e:
-            logger.error(f"Error processing analysis response: {str(e)}")
+            logger.error(f"Error analyzing HTML structure: {str(e)}")
             return {
-                'read': [],
-                'write': [],
-                'error': f'Error processing response: {str(e)}'
+                'success': False,
+                'error': str(e)
             }
             
     except Exception as e:
-        logger.error(f"Error in HTML structure analysis: {str(e)}", exc_info=True)
+        logger.error(f"Error in analyze_html_structure: {str(e)}")
         return {
-            'read': [],
-            'write': [],
-            'error': f'Analysis failed: {str(e)}'
+            'success': False,
+            'error': str(e)
         }
 
 def highlight_analyzed_elements(html_structure: Dict[str, Any] | list, highlight_type: str = "both") -> Dict[str, Any]:
     """
-    Highlight the analyzed HTML elements by injecting CSS borders
-    
-    Args:
-        html_structure (dict | list): Either:
-            - Dictionary containing data types as keys and arrays of CSS selectors as values
-            - List of CSS selectors to highlight
-        highlight_type (str): What to highlight - "read", "write", or "both"
-        
-    Returns:
-        dict: Result of the CSS injection operation
+    Highlight elements in the browser based on their read/write status.
+    Uses caching to improve performance for repeated highlighting of the same URL.
     """
     try:
-        logger.info(f"Starting to highlight {highlight_type} elements")
+        # Get current URL
+        url_result = get_active_tab_url()
+        if not url_result.get('success'):
+            logger.error("Failed to get active tab URL")
+            return {'success': False, 'error': 'Failed to get active tab URL'}
         
-        # Define colors for read and write elements
-        read_colors = [
-            ('#4CAF50', '#4CAF50'),  # Green
-            ('#2196F3', '#2196F3'),  # Blue
-            ('#00BCD4', '#00BCD4'),  # Cyan
-            ('#607D8B', '#607D8B'),  # Blue Grey
-        ]
+        current_url = url_result.get('url')
         
-        write_colors = [
-            ('#F44336', '#F44336'),  # Red
-            ('#FF9800', '#FF9800'),  # Orange
-            ('#9C27B0', '#9C27B0'),  # Purple
-            ('#E91E63', '#E91E63'),  # Pink
-        ]
+        # Try to get from cache first
+        cache_key = f"highlight_{highlight_type}"
+        cached_result, found = selector_cache.get(current_url, cache_key)
+        if found:
+            logger.info(f"Using cached highlight rules for {current_url}")
+            return cached_result
         
-        # Choose color palette based on highlight type
-        colors = write_colors if highlight_type == "write" else read_colors
-        logger.info(f"Using {'write' if highlight_type == 'write' else 'read'} color palette")
+        # If not in cache, proceed with highlighting
+        logger.info(f"Generating highlight rules for type: {highlight_type}")
         
         css_rules = ""
-        color_index = 0
         total_selectors = 0
-
+        colors = [
+            ('#ff6b6b', '#ff4d4f'),  # Red
+            ('#4dabf7', '#339af0'),  # Blue
+            ('#51cf66', '#37b24d'),  # Green
+            ('#ffd43b', '#fcc419'),  # Yellow
+            ('#cc5de8', '#be4bdb'),  # Purple
+            ('#20c997', '#12b886'),  # Teal
+        ]
+        color_index = 0
+        
         # Handle list input
         if isinstance(html_structure, list):
             logger.info(f"Processing list of {len(html_structure)} selectors")
@@ -938,30 +1011,22 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any] | list, highlight
     font-weight: bold;
 }}
 """
-        # Handle dictionary input (existing functionality)
+        # Handle dictionary input
         elif isinstance(html_structure, dict):
-            # Get the data dictionary from the structure
-            data_dict = html_structure.get('data', {})
-            if not data_dict:
-                logger.error("No data found in HTML structure")
-                return {
-                    'success': False,
-                    'error': 'No data found in HTML structure'
-                }
-            
-            logger.info(f"Found {len(data_dict)} data types to highlight")
-            
-            # Process each data type and its selectors
-            for data_type, selectors in data_dict.items():
+            for data_type, selectors in html_structure.items():
                 if not isinstance(selectors, list):
-                    logger.warning(f"Selectors for {data_type} is not a list, skipping")
                     continue
                     
-                # Get color for this data type
+                # Skip if not the requested highlight type
+                if highlight_type != "both":
+                    if highlight_type == "read" and data_type not in html_structure.get('read', []):
+                        continue
+                    if highlight_type == "write" and data_type not in html_structure.get('write', []):
+                        continue
+                
+                # Get colors for this data type
                 border_color, bg_color = colors[color_index % len(colors)]
                 color_index += 1
-                
-                logger.info(f"Processing {len(selectors)} selectors for data type: {data_type}")
                 
                 # Add CSS rules for each selector in this data type
                 for selector in selectors:
@@ -1021,33 +1086,29 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any] | list, highlight
                                json=payload, 
                                timeout=10)
         
-        if response.status_code == 200:
-            result = response.json()
-            logger.info(f"Successfully highlighted {highlight_type} elements")
-            return {
-                'success': True,
-                'message': f'Highlighted {highlight_type} elements',
-                'css_applied': result.get('css_applied', '')
-            }
-        else:
-            error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {}
-            logger.error(f"Failed to inject CSS: {response.status_code} - {error_data}")
+        if response.status_code != 200:
+            logger.error(f"Failed to inject CSS: {response.text}")
             return {
                 'success': False,
-                'error': f'CSS injection failed: {error_data.get("error", "Unknown error")}'
+                'error': f'Failed to inject CSS: {response.text}'
             }
-            
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error connecting to CSS injection server: {str(e)}")
-        return {
-            'success': False,
-            'error': f'Connection error: {str(e)}'
+        
+        result = {
+            'success': True,
+            'message': f'Highlighted {total_selectors} elements',
+            'css': css_rules
         }
+        
+        # Cache the result
+        selector_cache.set(current_url, cache_key, result)
+        
+        return result
+        
     except Exception as e:
-        logger.error(f"Error highlighting elements: {str(e)}", exc_info=True)
+        logger.error(f"Error in highlight_analyzed_elements: {str(e)}")
         return {
             'success': False,
-            'error': f'Highlighting failed: {str(e)}'
+            'error': str(e)
         }
 
 def clear_custom_css() -> Dict[str, Any]:
@@ -1825,175 +1886,79 @@ def convert_text_to_selector(text: str, minimal_html: Dict[str, str]) -> str:
         logger.error(f"Error converting text to selector: {str(e)}")
         return text  # Return original on error
 
-def extract_dynamic_data(selector: str, html_content: str, attr_type: str = 'text') -> List[str]:
+def evaluate_javascript(expression: str) -> Dict[str, Any]:
     """
-    Extract dynamic data from HTML elements based on a selector.
-    Uses CDP (Chrome DevTools Protocol) for complex selectors to ensure accurate element selection.
+    Evaluate JavaScript in the currently active page using the evaluate endpoint.
+    Uses caching to improve performance for repeated evaluations.
     
     Args:
-        selector (str): CSS selector to find elements
-        html_content (str): HTML content to search in
-        attr_type (str): Type of data to extract ('text', 'aria-label', 'value', etc.)
+        expression (str): JavaScript code to evaluate
         
     Returns:
-        List[str]: List of extracted data values
+        dict: Result of the evaluation or error information
     """
     try:
-        logger.info(f"[DEBUG] Extracting data with selector: {selector}")
-        logger.info(f"[DEBUG] Attribute type: {attr_type}")
+        # Get the active tab
+        active_tab = get_active_tab_url()
+        if not active_tab.get('success'):
+            return {
+                'success': False,
+                'error': 'Failed to get active tab URL'
+            }
         
-        # For complex selectors, use CDP to get the element directly from the browser
-        try:
-            js_code = f"""
-            (function() {{
-                try {{
-                    // Try the original selector
-                    const element = document.querySelector(`{selector}`);
-                    if (element) {{
-                        if (element.tagName.toLowerCase() === 'input') {{
-                            const value = element.value;
-                            return {{ value: value }};
-                        }}
-                        // For text content, get it from the element itself or its first child
-                        if ('{attr_type}' === 'text') {{
-                            const text = element.textContent || (element.firstElementChild ? element.firstElementChild.textContent : '');
-                            return {{ value: text }};
-                        }}
-                        return {{ value: element.{attr_type if attr_type == 'text' else f'getAttribute("{attr_type}")'} }};
-                    }}
-                    
-                    // If not found, try finding by aria-label
-                    const ariaLabel = '{selector.split("'")[1] if "'" in selector else ""}';
-                    const elements = document.querySelectorAll('input[aria-label]');
-                    const foundElement = Array.from(elements).find(el => 
-                        el.getAttribute('aria-label') === ariaLabel
-                    );
-                    
-                    if (foundElement) {{
-                        if (foundElement.tagName.toLowerCase() === 'input') {{
-                            const value = foundElement.value;
-                            return {{ value: value }};
-                        }}
-                        // For text content, get it from the element itself or its first child
-                        if ('{attr_type}' === 'text') {{
-                            const text = foundElement.textContent || (foundElement.firstElementChild ? foundElement.firstElementChild.textContent : '');
-                            return {{ value: text }};
-                        }}
-                        return {{ value: foundElement.{attr_type if attr_type == 'text' else f'getAttribute("{attr_type}")'} }};
-                    }}
-                    
-                    return {{ value: null }};
-                }} catch (e) {{
-                    return {{ error: e.toString(), value: null }};
-                }}
-            }})()
-            """
-            
-            response = requests.post('http://localhost:8080/evaluate', 
-                                  json={'expression': js_code},
-                                  timeout=10)
-            
-            if response.status_code != 200:
-                logger.error(f"[DEBUG] CDP query failed with status code: {response.status_code}")
-                logger.error(f"[DEBUG] CDP query response: {response.text}")
-                raise Exception("CDP query failed")
-            
-            result = response.json()
-            
-            if result.get('success') and result.get('result') is not None:
-                data = result['result']
-                if data.get('value') is not None:
-                    logger.info(f"[DEBUG] CDP extracted value: {data['value']}")
-                    return [data['value']] if data['value'] else []
-                
-                if 'error' in data:
-                    logger.error(f"[DEBUG] JavaScript error: {data['error']}")
-            
-            logger.error(f"[DEBUG] CDP query failed: {result.get('error', 'Unknown error')}")
-            logger.info(f"[DEBUG] CDP evaluation failed, falling back to BeautifulSoup")
-            
-        except Exception as e:
-            logger.error(f"[DEBUG] CDP evaluation error: {str(e)}")
-            logger.info(f"[DEBUG] Falling back to BeautifulSoup")
+        tab_id = active_tab.get('url')
         
-        # Fallback to BeautifulSoup if CDP fails
-        from bs4 import BeautifulSoup
-        soup = BeautifulSoup(html_content, 'html.parser')
+        # Check cache first
+        cached_result, found = evaluation_cache.get(expression, tab_id)
+        if found:
+            return cached_result
         
-        # Log a sample of the HTML content for debugging
-        logger.info(f"[DEBUG] HTML content sample (first 500 chars): {html_content[:500]}")
+        # If not in cache, make the API call
+        response = requests.post('http://localhost:8080/evaluate', 
+                               json={'expression': expression},
+                               timeout=10)
         
-        # Try different selector strategies
-        elements = []
+        if response.status_code != 200:
+            error_msg = f"Failed to evaluate JavaScript: {response.text}"
+            logger.error(error_msg)
+            return {
+                'success': False,
+                'error': error_msg
+            }
         
-        # Strategy 1: Try the full selector
-        elements = soup.select(selector)
-        logger.info(f"[DEBUG] Strategy 1 (full selector) found {len(elements)} elements")
+        result = response.json()
         
-        # Strategy 2: Try breaking down the selector
-        if not elements:
-            # Try using just the last part of the selector
-            last_part = selector.split('>')[-1].strip()
-            logger.info(f"[DEBUG] Trying last part of selector: {last_part}")
-            elements = soup.select(last_part)
-            logger.info(f"[DEBUG] Strategy 2 (last part) found {len(elements)} elements")
+        # Cache successful results
+        if result.get('success'):
+            evaluation_cache.set(expression, tab_id, result)
         
-        # Strategy 3: Try using class names
-        if not elements:
-            # Extract class names from the selector
-            class_names = re.findall(r'\.([a-zA-Z0-9_-]+)', selector)
-            if class_names:
-                class_selector = '.' + '.'.join(class_names)
-                logger.info(f"[DEBUG] Trying class selector: {class_selector}")
-                elements = soup.select(class_selector)
-                logger.info(f"[DEBUG] Strategy 3 (class names) found {len(elements)} elements")
-        
-        # Strategy 4: Try finding by aria-label (case-insensitive)
-        if not elements and 'aria-label' in selector:
-            aria_label = re.search(r'aria-label=[\'"]([^\'"]+)[\'"]', selector)
-            if aria_label:
-                label_value = aria_label.group(1).lower()
-                elements = soup.find_all(attrs={'aria-label': lambda x: x and x.lower() == label_value})
-                logger.info(f"[DEBUG] Strategy 4 (aria-label exact) found {len(elements)} elements")
-                
-                if not elements:
-                    # Try partial match
-                    elements = soup.find_all(attrs={'aria-label': lambda x: x and label_value in x.lower()})
-                    logger.info(f"[DEBUG] Strategy 4 (aria-label partial) found {len(elements)} elements")
-
-        # Strategy 5: Try finding all inputs and filter by attributes
-        if not elements:
-            all_inputs = soup.find_all('input')
-            logger.info(f"[DEBUG] Found {len(all_inputs)} total input elements")
-            for input_elem in all_inputs:
-                logger.info(f"[DEBUG] Input element attributes: {input_elem.attrs}")
-        
-        if not elements:
-            logger.info(f"[DEBUG] No elements found for selector: {selector}")
-            return []
-            
-        # Extract data from each element
-        data_values = []
-        for i, element in enumerate(elements):
-            if attr_type == 'text':
-                # Get text content
-                text = element.get_text(strip=True)
-                logger.info(f"[DEBUG] Element {i} text content: {text}")
-                if text:
-                    data_values.append(text)
-            else:
-                # Get attribute value
-                attr_value = element.get(attr_type, '')
-                logger.info(f"[DEBUG] Element {i} {attr_type} attribute: {attr_value}")
-                if attr_value:
-                    data_values.append(attr_value)
-        
-        logger.info(f"[DEBUG] Extracted data values: {data_values}")
-        return data_values
+        return result
         
     except Exception as e:
-        logger.error(f"[DEBUG] Error extracting dynamic data: {str(e)}", exc_info=True)
-        return []
+        error_msg = f"Error evaluating JavaScript: {str(e)}"
+        logger.error(error_msg)
+        return {
+            'success': False,
+            'error': error_msg
+        }
+
+def get_completion(prompt: str, model: str = "gpt-4-turbo-preview") -> str:
+    """
+    Get a completion from the OpenAI API.
+    
+    Args:
+        prompt (str): The prompt to send to the model
+        model (str): The model to use for completion
+        
+    Returns:
+        str: The model's response
+    """
+    try:
+        response = call_openai_api(prompt, {}, model)
+        return response
+    except Exception as e:
+        logger.error(f"Error getting completion: {str(e)}")
+        raise
 
 def process_dynamic_data_key(key: str, html_content: str) -> str:
     """
@@ -2098,6 +2063,73 @@ def process_dynamic_data_key(key: str, html_content: str) -> str:
     except Exception as e:
         logger.error(f"[DEBUG] Error processing dynamic data key: {str(e)}", exc_info=True)
         return None
+
+def extract_dynamic_data(selector: str, html_content: str, attr_type: str = 'text') -> List[str]:
+    try:
+        js_code = f"""
+        (function() {{
+            try {{
+                // Try the original selector
+                const element = document.querySelector(`{selector}`);
+                if (element) {{
+                    if (element.tagName.toLowerCase() === 'input') {{
+                        const value = element.value;
+                        return {{ value: value }};
+                    }}
+                    // For text content, get it from the element itself or its first child
+                    if ('{attr_type}' === 'text') {{
+                        const text = element.textContent || (element.firstElementChild ? element.firstElementChild.textContent : '');
+                        return {{ value: text }};
+                    }}
+                    return {{ value: element.{attr_type if attr_type == 'text' else f'getAttribute("{attr_type}")'} }};
+                }}
+                
+                // If not found, try finding by aria-label
+                const ariaLabel = '{selector.split("'")[1] if "'" in selector else ""}';
+                const elements = document.querySelectorAll('input[aria-label]');
+                const foundElement = Array.from(elements).find(el => 
+                    el.getAttribute('aria-label') === ariaLabel
+                );
+                
+                if (foundElement) {{
+                    if (foundElement.tagName.toLowerCase() === 'input') {{
+                        const value = foundElement.value;
+                        return {{ value: value }};
+                    }}
+                    // For text content, get it from the element itself or its first child
+                    if ('{attr_type}' === 'text') {{
+                        const text = foundElement.textContent || (foundElement.firstElementChild ? foundElement.firstElementChild.textContent : '');
+                        return {{ value: text }};
+                    }}
+                    return {{ value: foundElement.{attr_type if attr_type == 'text' else f'getAttribute("{attr_type}")'} }};
+                }}
+                
+                return {{ value: null }};
+            }} catch (e) {{
+                return {{ error: e.toString(), value: null }};
+            }}
+        }})()
+        """
+        
+        result = evaluate_javascript(js_code)
+        
+        if result.get('success') and result.get('result') is not None:
+            data = result['result']
+            if data.get('value') is not None:
+                logger.info(f"[DEBUG] CDP extracted value: {data['value']}")
+                return [data['value']] if data['value'] else []
+            
+            if 'error' in data:
+                logger.error(f"[DEBUG] JavaScript error: {data['error']}")
+        
+        logger.error(f"[DEBUG] CDP query failed: {result.get('error', 'Unknown error')}")
+        logger.info(f"[DEBUG] CDP evaluation failed, falling back to BeautifulSoup")
+        
+    except Exception as e:
+        logger.error(f"[DEBUG] CDP evaluation error: {str(e)}")
+        logger.info(f"[DEBUG] Falling back to BeautifulSoup")
+    
+    return []
 
 def handle_from_config(minimal_html: Dict[str, str]) -> bool:
     """

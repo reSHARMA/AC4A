@@ -111,7 +111,8 @@
       "span:contains('Filter')",
       "span:contains('Share')",
       "span:contains('Print')",
-      "div.ZlutZ"
+      "div.ZlutZ",
+      "button[aria-label*='select to change the month']"
     ],
     "write": [
       "span:contains('New event')",
@@ -125,7 +126,7 @@
       "Calendar:Year($data{input[aria-label='Start date']}{split_slash}[2]@value)::Calendar:Month($data{input[aria-label='Start date']}{split_slash}[0](number_to_month)@value)::Calendar:Day($data{input[aria-label='Start date']}{split_slash}[1]@value)": [
         "span:contains('Save')"
       ],
-      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])": [
+      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(?)": [
         "button[aria-label*='select to change the month']"
       ],
       "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(1)": [

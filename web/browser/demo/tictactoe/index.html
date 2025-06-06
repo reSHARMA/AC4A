@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Tic Tac Toe</h1>
+            <button id="newGameBtn">New Game</button>
+        </header>
+
+        <main>
+            <div class="game-container">
+                <div class="game-board">
+                    <div class="cell" data-index="0"></div>
+                    <div class="cell" data-index="1"></div>
+                    <div class="cell" data-index="2"></div>
+                    <div class="cell" data-index="3"></div>
+                    <div class="cell" data-index="4"></div>
+                    <div class="cell" data-index="5"></div>
+                    <div class="cell" data-index="6"></div>
+                    <div class="cell" data-index="7"></div>
+                    <div class="cell" data-index="8"></div>
+                </div>
+
+                <div class="scoreboard">
+                    <h2>Scoreboard</h2>
+                    <div class="score-item">
+                        <span>Total Games:</span>
+                        <span id="totalGames">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span>Wins:</span>
+                        <span id="wins">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span>Losses:</span>
+                        <span id="losses">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span>Ties:</span>
+                        <span id="ties">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="game-history">
+                <h2>Game History</h2>
+                <div id="historyList"></div>
+            </div>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 

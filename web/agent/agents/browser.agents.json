@@ -245,5 +245,20 @@
         "span:contains('New event')"
       ]
     }
+  },
+  "http://127.0.0.1:5000/": {
+    "verified": true,
+    "read": [
+      "#historyList"
+    ],
+    "write": [
+      "button:contains('Delete')"
+    ],
+    "data": {
+      "Game:GameId(*)": [
+        "button:contains('Delete')", 
+        "#historyList"
+      ]
+    }
   }
 }

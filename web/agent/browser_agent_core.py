@@ -830,37 +830,44 @@ def infer_data_from_html_structure(screenshot_data: bytes, minimal_html: Dict[st
 
 def analyze_html_structure(screenshot_data: bytes, minimal_html: Dict[str, str]) -> Dict[str, Any]:
     """
-    Analyze HTML structure and extract read/write selectors.
-    Uses caching to improve performance for repeated analysis of the same URL.
+    Analyze the HTML structure using screenshot and HTML source
+    
+    Args:
+        screenshot_data (bytes): Raw PNG image data of the current page
+        minimal_html (Dict[str, str]): Pre-filtered HTML elements and their selectors
+    Returns:
+        dict: Contains 'read' and 'write' lists with valid CSS selectors/paths
     """
     try:
-        # Get current URL
-        url_result = get_active_tab_url()
-        if not url_result.get('success'):
-            logger.error("Failed to get active tab URL")
-            return {'success': False, 'error': 'Failed to get active tab URL'}
+        # Convert screenshot to base64 for API call
+        screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
         
-        current_url = url_result.get('url')
+        # Create system prompt for HTML analysis
+        # Create input text for analysis
+        analysis_text = f"""Please analyze this webpage and classify the elements into read and write elements.
+List of HTML elements and their CSS selectors:
+{str(minimal_html)}"""
+
+        # Create input content with HTML and screenshot
+        input_content = {
+            "text": analysis_text,
+            "image": f"data:image/png;base64,{screenshot_base64}"
+        }
         
-        # Try to get from cache first
-        cached_result, found = selector_cache.get(current_url, 'html_structure')
-        if found:
-            logger.info(f"Using cached HTML structure for {current_url}")
-            return cached_result
+        # Call OpenAI API for analysis
+        response = call_openai_api(BROWSER_CLASSIFY_DATA, input_content, "computer-use")
         
-        # If not in cache, proceed with analysis
-        logger.info("Analyzing HTML structure")
+        logger.info(f"[browser_agent_core.py] Classification response: {response}")
         
-        # Convert minimal_html to string for analysis
-        minimal_html_str = json.dumps(minimal_html)
-        
-        # Get the analysis from the model
-        response = get_completion(
-            BROWSER_CLASSIFY_DATA.format(
-                minimal_html=minimal_html_str
-            ),
-            model="gpt-4-turbo-preview"
-        )
+        # response can have comments starting with // remove them till the end of the line
+        response = re.sub(r'//.*', '', response)
+        if not response:
+            logger.error("No response from OpenAI API for HTML analysis")
+            return {
+                'read': [],
+                'write': [],
+                'error': 'No response from analysis model'
+            }
         
         # Try to parse the JSON response
         try:
@@ -908,35 +915,38 @@ def analyze_html_structure(screenshot_data: bytes, minimal_html: Dict[str, str])
                 if isinstance(selector, str) and selector.strip():
                     valid_write_selectors.append(selector.strip())
             
-            result = {
-                'success': True,
+            logger.info(f"HTML analysis found {len(valid_read_selectors)} read elements and {len(valid_write_selectors)} write elements")
+            logger.info(f"Valid read selectors: {valid_read_selectors}")
+            logger.info(f"Valid write selectors: {valid_write_selectors}")
+            
+            return {
                 'read': valid_read_selectors,
-                'write': valid_write_selectors
+                'write': valid_write_selectors,
+                'success': True
             }
-            
-            # Cache the result
-            selector_cache.set(current_url, 'html_structure', result)
-            
-            return result
             
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON response: {str(e)}")
+            logger.error(f"Failed to parse JSON response from analysis: {str(e)}")
+            logger.debug(f"Raw response: {response}")
             return {
-                'success': False,
-                'error': f'Failed to parse JSON response: {str(e)}'
+                'read': [],
+                'write': [],
+                'error': f'Failed to parse analysis response: {str(e)}'
             }
         except Exception as e:
-            logger.error(f"Error analyzing HTML structure: {str(e)}")
+            logger.error(f"Error processing analysis response: {str(e)}")
             return {
-                'success': False,
-                'error': str(e)
+                'read': [],
+                'write': [],
+                'error': f'Error processing response: {str(e)}'
             }
             
     except Exception as e:
-        logger.error(f"Error in analyze_html_structure: {str(e)}")
+        logger.error(f"Error in HTML structure analysis: {str(e)}", exc_info=True)
         return {
-            'success': False,
-            'error': str(e)
+            'read': [],
+            'write': [],
+            'error': f'Analysis failed: {str(e)}'
         }
 
 def highlight_analyzed_elements(html_structure: Dict[str, Any] | list, highlight_type: str = "both") -> Dict[str, Any]:
@@ -1950,13 +1960,22 @@ def get_completion(prompt: str, model: str = "gpt-4-turbo-preview") -> str:
     
     Args:
         prompt (str): The prompt to send to the model
-        model (str): The model to use for completion
+        model (str): The model to use for completion (ignored, using default model)
         
     Returns:
         str: The model's response
     """
     try:
-        response = call_openai_api(prompt, {}, model)
+        # Split the prompt into system and user parts if it contains HTML ELEMENTS
+        if "<HTML ELEMENTS>" in prompt:
+            system_part = prompt.split("<HTML ELEMENTS>")[0]
+            user_part = "<HTML ELEMENTS>" + prompt.split("<HTML ELEMENTS>")[1]
+        else:
+            system_part = ""
+            user_part = prompt
+            
+        # Use "computer-use" mode since this is for browser automation
+        response = call_openai_api(system_part, user_part, "computer-use")
         return response
     except Exception as e:
         logger.error(f"Error getting completion: {str(e)}")

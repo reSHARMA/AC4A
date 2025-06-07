@@ -6,59 +6,60 @@
     "data": {}
   },
   "https://www.expedia.com/": {
-    "verified": false,
+    "verified": true,
     "read": [
-      ".uitk-tab-text",
-      "#search_button",
-      ".uitk-fake-input.uitk-form-field-trigger.uitk-field-fake-input.uitk-field-fake-input-hasicon",
-      ".uitk-menu-trigger.open-room-picker-observer-root.uitk-fake-input.uitk-form-field-trigger.uitk-field-fake-input.uitk-field-fake-input-hasicon",
-      ".uitk-checkbox-label-content",
-      ".uitk-heading.uitk-heading-7",
-      ".uitk-step-input-label",
-      ".uitk-button.uitk-button-large.uitk-button-as-link.uitk-button-primary.uitk-button-has-text",
-      ".is-visually-hidden",
-      "#property-type-carousel",
-      ".RecentSearches",
-      "text(See all flights)",
-      "#primary-navigation"
+      "span:contains('Stays')",
+      "span:contains('Flights')",
+      "span:contains('Cars')",
+      "span:contains('Packages')",
+      "span:contains('Things to do')",
+      "span:contains('Cruises')",
+      "#search_form_product_selector_activities",
+      "#search_form_product_selector_lodging",
+      "#search_form_product_selector_packages",
+      "#search_form_product_selector_cars",
+      "#search_form_product_selector_flights",
+      "#search_form_product_selector_cruises",
+      "div.lazyload-wrapper:nth-child(13)",
+      "div.lazyload-wrapper:nth-child(14)",
+      "div.uitk-spacing:nth-child(16)",
+      "div.lazyload-wrapper:nth-child(18)",
+      "div.lazyload-wrapper:nth-child(19)",
+      "div.lazyload-wrapper:nth-child(22)",
+      "div.lazyload-wrapper:nth-child(25)"
     ],
-    "write": [
-      "#traveler_selector_add_room",
-      "#traveler_selector_done_button"
-    ],
+    "write": [],
     "data": {
-      "Expedia:Experience(*)": [
-        "#property-type-carousel",
-        ".uitk-tab-text",
-        ".uitk-checkbox-label-content"
-      ],
-      "Expedia:Destination(*)": [
-        ".uitk-tab-text",
-        "#search_button",
-        ".RecentSearches",
-        "#primary-navigation"
+      "Expedia:Hotel(*)": [
+        "span:contains('Stays')",
+        "#search_form_product_selector_lodging",
+        "div.lazyload-wrapper:nth-child(18)",
+        "div.uitk-spacing:nth-child(16)",
+        "div.lazyload-wrapper:nth-child(22)"
       ],
       "Expedia:Flight(*)": [
-        ".uitk-tab-text",
-        "text(See all flights)"
+        "span:contains('Flights')",
+        "#search_form_product_selector_flights",
+        "div.lazyload-wrapper:nth-child(13)"
       ],
       "Expedia:CarRental(*)": [
-        ".uitk-tab-text"
+        "span:contains('Cars')",
+        "#search_form_product_selector_cars"
+      ],
+      "Expedia:Destination(*)": [
+        "div.lazyload-wrapper:nth-child(25)"
+      ],
+      "Expedia:Experience(*)": [
+        "span:contains('Things to do')",
+        "span:contains('Packages')",
+        "#search_form_product_selector_activities",
+        "#search_form_product_selector_packages",
+        "div.lazyload-wrapper:nth-child(14)",
+        "div.lazyload-wrapper:nth-child(19)"
       ],
       "Expedia:Cruise(*)": [
-        ".uitk-tab-text"
-      ],
-      "Expedia:Hotel(*)": [
-        ".uitk-tab-text",
-        "div#tabo1-gdfhdd3-0",
-        ".uitk-fake-input.uitk-form-field-trigger.uitk-field-fake-input.uitk-field-fake-input-hasicon",
-        ".uitk-menu-trigger.open-room-picker-observer-root.uitk-fake-input.uitk-form-field-trigger.uitk-field-fake-input.uitk-field-fake-input-hasicon",
-        ".uitk-heading.uitk-heading-7",
-        ".uitk-step-input-label",
-        "#traveler_selector_add_room",
-        "#traveler_selector_done_button",
-        "#search_button",
-        ".uitk-button.uitk-button-large.uitk-button-as-link.uitk-button-primary.uitk-button-has-text"
+        "span:contains('Cruises')",
+        "#search_form_product_selector_cruises"
       ]
     }
   },
@@ -256,7 +257,7 @@
     ],
     "data": {
       "Game:GameId(*)": [
-        "button:contains('Delete')", 
+        "button:contains('Delete')",
         "#historyList"
       ]
     }

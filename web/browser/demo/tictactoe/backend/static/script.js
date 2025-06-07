@@ -111,6 +111,15 @@ class TicTacToe {
             winner: winner,
             date: new Date().toISOString()
         };
+        
+        // Display War Games quote on tie
+        const gameMessage = document.getElementById('gameMessage');
+        if (winner === 'tie') {
+            gameMessage.textContent = 'A STRANGE GAME. THE ONLY WINNING MOVE IS NOT TO PLAY.';
+        } else {
+            gameMessage.textContent = '';
+        }
+        
         await this.saveGameToBackend(gameResult);
         await this.fetchGameHistory();
     }
@@ -123,6 +132,7 @@ class TicTacToe {
         this.cells.forEach(cell => {
             cell.classList.remove('x', 'o');
         });
+        document.getElementById('gameMessage').textContent = '';
         console.log('New game started');
     }
 

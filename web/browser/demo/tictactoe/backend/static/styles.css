@@ -270,4 +270,13 @@ body {
     margin-bottom: 2.2rem;
     text-shadow: 0 4px 24px rgba(78, 204, 163, 0.25), 0 2px 8px rgba(30,40,90,0.18);
     filter: brightness(1.1);
+}
+
+.game-message {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 1.2em;
+    color: #666;
+    font-style: italic;
+    min-height: 2em;
 } 

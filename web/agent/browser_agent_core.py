@@ -2156,6 +2156,25 @@ def extract_dynamic_data(selector: str, html_content: str, attr_type: str = 'tex
     
     return []
 
+def strip_query_params(url: str) -> str:
+    """
+    Strip query parameters from a URL
+    
+    Args:
+        url (str): Full URL with query parameters
+        
+    Returns:
+        str: URL without query parameters
+    """
+    try:
+        from urllib.parse import urlparse, urlunparse
+        parsed = urlparse(url)
+        # Reconstruct URL without query parameters
+        return urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, '', parsed.fragment))
+    except Exception as e:
+        logger.error(f"Error stripping query parameters from URL {url}: {str(e)}")
+        return url
+
 def handle_from_config(minimal_html: Dict[str, str]) -> bool:
     """
     Handle permissions based on the config file
@@ -2176,7 +2195,10 @@ def handle_from_config(minimal_html: Dict[str, str]) -> bool:
         active_url = active_tab.get('url', 'unknown')
         logger.info(f"[DEBUG] Active URL: {active_url}")
         
-        # Only match the full URL, not the base URL
+        # Strip query parameters from active URL for matching
+        active_url_no_query = strip_query_params(active_url)
+        logger.info(f"[DEBUG] Active URL without query params: {active_url_no_query}")
+        
         config_file = os.path.join(os.path.dirname(__file__), 'agents', 'browser.agents.json')
         if not os.path.exists(config_file):
             logger.info("Config file not found")
@@ -2185,16 +2207,17 @@ def handle_from_config(minimal_html: Dict[str, str]) -> bool:
         with open(config_file, 'r') as f:
             config = json.load(f)
             
-        if active_url not in config:
-            logger.info(f"No config entry found for URL: {active_url}")
+        # Since config URLs never have query params, we can directly check if the stripped active URL exists
+        if active_url_no_query not in config:
+            logger.info(f"No config entry found for URL: {active_url_no_query}")
             return False
             
-        url_config = config[active_url]
+        url_config = config[active_url_no_query]
         # If not verified, we need to do a fresh analysis
         if not url_config.get('verified', False):
-            logger.info(f"URL {active_url} not verified, will do fresh analysis")
+            logger.info(f"URL {active_url_no_query} not verified, will do fresh analysis")
             return False
-            
+
         # Get HTML content for dynamic data extraction
         html_result = get_html_source()
         if not html_result.get('success', False) or not html_result.get('html'):

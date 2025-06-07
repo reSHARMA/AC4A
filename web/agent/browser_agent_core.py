@@ -1729,6 +1729,10 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
 """
         if not css_rules:
             logger.warning("[DEBUG] No valid selectors found to handle")
+            # Clear any existing CSS since we have no new rules to inject
+            clear_result = clear_custom_css()
+            if not clear_result.get('success'):
+                logger.error(f"[DEBUG] Failed to clear CSS: {clear_result.get('error')}")
             return {
                 'success': False,
                 'error': 'No valid selectors found to handle'

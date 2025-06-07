@@ -214,3 +214,5 @@ log
 web/log
 
 .gitignore
+
+web/browser/demo/tictactoe/backend/games.json

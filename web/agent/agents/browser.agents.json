@@ -5,9 +5,49 @@
     "write": [],
     "data": {}
   },
+  "https://www.expedia.com/Flight-Information": {
+    "verified": true,
+    "read": [
+      "div.uitk-view",
+      "div:contains('Shop travel')"
+    ],
+    "write": [
+      "span:contains('Check out')"
+    ],
+    "data": {
+      "Expedia:Flight(*)": [
+        "div.uitk-view",
+        "span:contains('Check out')"
+      ], 
+      "Expedia:Destination(*)": [
+        "div:contains('Shop travel')"
+      ]
+    }
+  },
+  "https://www.expedia.com/Flights-Search": {
+    "verified": true,
+    "read": [
+      "div.uitk-view",
+      "a[aria-label='Explore packages. undefined']",
+      "div:contains('Shop travel')"
+    ],
+    "write": [],
+    "data": {
+      "Expedia:Flight(*)": [
+        "div.uitk-view"
+      ], 
+      "Expedia:Hotel(*)": [
+        "a[aria-label='Explore packages. undefined']"
+      ],
+      "Expedia:Destination(*)": [
+        "div:contains('Shop travel')"
+      ]
+    }
+  },
   "https://www.expedia.com/": {
     "verified": true,
     "read": [
+      "div:contains('Shop travel')",
       "span:contains('Stays')",
       "span:contains('Flights')",
       "span:contains('Cars')",
@@ -47,7 +87,8 @@
         "#search_form_product_selector_cars"
       ],
       "Expedia:Destination(*)": [
-        "div.lazyload-wrapper:nth-child(25)"
+        "div.lazyload-wrapper:nth-child(25)",
+        "div:contains('Shop travel')"
       ],
       "Expedia:Experience(*)": [
         "span:contains('Things to do')",

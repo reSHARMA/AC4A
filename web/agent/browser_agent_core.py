@@ -1640,6 +1640,7 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
 {sel}::before {{
     content: '🚫';
     font-size: 22px !important;
+    color: #fff !important;
     position: absolute !important;
     top: 50%;
     left: 50%;
@@ -1695,6 +1696,7 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
 {selector}::before {{
     content: '🚫';
     font-size: 22px !important;
+    color: #fff !important;
     position: absolute !important;
     top: 50%;
     left: 50%;
@@ -2274,6 +2276,11 @@ def handle_from_config(minimal_html: Dict[str, str]) -> bool:
         # Handle not allowed elements
         allowed_elements, not_allowed_elements = get_allowed_and_not_allowed_elements_from_config(data_required, html_structure)
         handle_not_allowed_elements(not_allowed_elements)
+
+        # clear selector and evaluation cache
+        selector_cache.clear()
+        evaluation_cache.clear()
+
         return True
     except Exception as e:
         logger.error(f"Error handling from config: {str(e)}", exc_info=True)

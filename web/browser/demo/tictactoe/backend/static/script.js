@@ -18,6 +18,7 @@ class TicTacToe {
         this.initializeElements();
         this.fetchGameHistory();
         this.setupEventListeners();
+        this.updateNewGameButtonVisibility();
         console.log('Game initialized successfully');
     }
 
@@ -82,6 +83,7 @@ class TicTacToe {
         console.log(`Making move: ${player} at index ${index}`);
         this.board[index] = player;
         this.cells[index].classList.add(player.toLowerCase());
+        this.updateNewGameButtonVisibility();
     }
 
     checkWinner() {
@@ -133,6 +135,7 @@ class TicTacToe {
             cell.classList.remove('x', 'o');
         });
         document.getElementById('gameMessage').textContent = '';
+        this.updateNewGameButtonVisibility();
         console.log('New game started');
     }
 
@@ -294,6 +297,14 @@ class TicTacToe {
         }
         if (!board.includes('')) return 'tie';
         return null;
+    }
+
+    isGameInInitialState() {
+        return this.board.every(cell => cell === '') && this.gameActive;
+    }
+
+    updateNewGameButtonVisibility() {
+        this.newGameBtn.style.display = this.isGameInInitialState() ? 'none' : 'block';
     }
 }
 

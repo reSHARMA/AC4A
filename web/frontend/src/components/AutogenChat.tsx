@@ -246,9 +246,19 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
         <FormControl display="flex" alignItems="center" width="auto">
           <HStack spacing={2}>
-            <FormLabel htmlFor="video-toggle" mb="0" fontSize="sm" color={useColorModeValue('gray.600', 'gray.300')}>
-              {isVideoMode ? 'Browser Mode' : 'Chat Mode'}
-            </FormLabel>
+            <span
+              style={{
+                fontWeight: !isVideoMode ? 'bold' : 'normal',
+                color: !isVideoMode ? '#2563eb' : useColorModeValue('gray.600', 'gray.300'),
+                padding: '2px 8px',
+                borderRadius: '4px',
+                background: !isVideoMode ? 'rgba(37,99,235,0.08)' : 'transparent',
+                transition: 'all 0.2s',
+                fontSize: 'smaller',
+              }}
+            >
+              Chat Mode
+            </span>
             <Switch
               id="video-toggle"
               isChecked={isVideoMode}
@@ -264,6 +274,19 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
               colorScheme="blue"
               size="md"
             />
+            <span
+              style={{
+                fontWeight: isVideoMode ? 'bold' : 'normal',
+                color: isVideoMode ? '#2563eb' : useColorModeValue('gray.600', 'gray.300'),
+                padding: '2px 8px',
+                borderRadius: '4px',
+                background: isVideoMode ? 'rgba(37,99,235,0.08)' : 'transparent',
+                transition: 'all 0.2s',
+                fontSize: 'smaller',
+              }}
+            >
+              Browser Mode
+            </span>
           </HStack>
         </FormControl>
       </div>

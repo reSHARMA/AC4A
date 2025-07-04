@@ -49,7 +49,7 @@ Example tasks for these applications can be found in `tasks.md`, which contains 
 1. **Clone the repository**
    ```bash
    git clone https://github.com/reSHARMA/AC4A.git
-   cd data-policy-lang
+   cd AC4A
    ```
 
 2. **Install Redis**
@@ -77,18 +77,44 @@ Example tasks for these applications can be found in `tasks.md`, which contains 
 ## Running the Project
 
 ### Quick Start
-Use the setup script to start all services:
+Use the comprehensive startup script to launch all services:
 ```bash
-./web/browser/setup.sh
+./start_services.sh
 ```
 
-This will:
-- Start Redis server in daemon mode
-- Start the backend server
-- Start the frontend development server
-- Show service status and endpoints
+This will automatically:
+- Check and install required dependencies (Python3, pip, Node.js, Redis, unzip)
+- Create and activate a Python virtual environment
+- Install Python dependencies from `web/requirements.txt`
+- Install frontend dependencies from `web/frontend/package.json`
+- Start Redis server (system service or user process)
+- Start the backend server on port 5002
+- Start the frontend development server on port 5173
+- Start TicTacToe game demo on port 5000 (if available)
+- Start browser services with VNC and screenshot capabilities
+- Monitor all services and display status
+- Provide individual log files for each service
 
-### Manual Start
+### Service Endpoints
+After running `start_services.sh`, the following services will be available:
+- **Frontend**: `http://localhost:5173`
+- **Backend API**: `http://localhost:5002`
+- **TicTacToe Demo**: `http://localhost:5000`
+- **Browser VNC**: `http://localhost:6080/vnc.html`
+- **Browser Debug**: `http://localhost:9222`
+- **Screenshot API**: `http://localhost:8080`
+- **Redis**: `localhost:6379`
+
+### Log Files
+Individual log files are created in the `logs/` directory:
+- `logs/backend.log` - Backend server logs
+- `logs/frontend.log` - Frontend server logs
+- `logs/game_demo.log` - TicTacToe demo logs
+- `logs/browser.log` - Browser services logs
+- `logs/redis.log` - Redis server logs
+
+### Manual Start (Alternative)
+If you prefer to start services manually:
 
 1. **Start Redis Server**
    ```bash
@@ -103,14 +129,9 @@ This will:
 
 3. **Start the Frontend Development Server**
    ```bash
-   cd frontend
+   cd web/frontend
    npm run dev
    ```
-
-The application will be available at:
-- Frontend: `http://localhost:5173`
-- Backend API: `http://localhost:5000`
-- Redis: `localhost:6379`
 
 ## Features
 
@@ -138,9 +159,17 @@ The codespace will automatically:
 - Install all frontend dependencies in `web/frontend`
 - Configure VS Code with recommended extensions
 
-The development environment will be ready to use with:
+The development environment will be ready to use. Simply run:
+```bash
+./start_services.sh
+```
+
+This will start all services with:
 - Frontend running on port 5173
-- Backend running on port 5000
+- Backend running on port 5002
+- TicTacToe demo on port 5000
+- Browser VNC on port 6080
+- Screenshot API on port 8080
 - Redis running on port 6379
 
 ### Testing

@@ -13,6 +13,7 @@ from .agents.web_browser_agent import WebBrowserAgent
 from .agents.planner_agent import PlannerAgent
 from .agents.user_agent import UserAgent
 from .agents.game_agent import GameAgent
+from .agents.trello_agent import TrelloAgent
 from .model_client import setup_model_client
 
 # Set up logging
@@ -64,6 +65,7 @@ class AgentManager:
         self.agents['password_manager'] = PasswordManagerAgent(self.model_client, self.policy_system).create_agent()
         # self.agents['web_browser'] = WebBrowserAgent(self.model_client, self.policy_system).create_agent()
         self.agents['game'] = GameAgent(self.model_client, self.policy_system).create_agent()
+        self.agents['trello'] = TrelloAgent(self.model_client, self.policy_system).create_agent()
         # Update attribute trees
         self._update_attribute_trees()
         

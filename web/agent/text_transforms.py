@@ -40,7 +40,8 @@ class TextTransformer:
             'remove_punctuation': self.remove_punctuation,
             'replace_punctuation': self.replace_punctuation,
             'split_space': self.split_space,
-            'split_slash': self.split_slash
+            'split_slash': self.split_slash,
+            'none': self._none_transform
         }
         
         # Dictionary mapping month names to numbers
@@ -232,6 +233,12 @@ class TextTransformer:
             ```
         """
         return text.split('/')
+    
+    def _none_transform(self, text: str) -> str:
+        """
+        Return the text as is.
+        """
+        return text
     
     def register_transform(self, name: str, transform_func: Callable[[str], str]) -> None:
         """

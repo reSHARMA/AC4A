@@ -18,7 +18,7 @@
       "Expedia:Flight(*)": [
         "div.uitk-view",
         "span:contains('Check out')"
-      ], 
+      ],
       "Expedia:Destination(*)": [
         "div:contains('Shop travel')"
       ]
@@ -35,7 +35,7 @@
     "data": {
       "Expedia:Flight(*)": [
         "div.uitk-view"
-      ], 
+      ],
       "Expedia:Hotel(*)": [
         "a[aria-label='Explore packages. undefined']"
       ],
@@ -302,5 +302,71 @@
         "#historyList"
       ]
     }
+  },
+  "https://trello.com/u/*/boards": {
+    "verified": true,
+    "read": [
+        "button:contains('View all closed boards')",
+        "span:contains('Boards')",
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:first-of-type",
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:first-of-type > nav > div:nth-of-type(3)",
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1)",
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > div:first-of-type",
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > div:nth-of-type(2)",
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > div:nth-of-type(3)",
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2)",
+        "html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1)",
+        "html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2)",
+        "html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(3)"
+    ],
+    "write": [
+        "button[aria-label='Create board or Workspace']",
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > button",
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > button"
+    ],
+    "data": {
+      "Trello:Workspace(*)": [
+        "button[aria-label='Create board or Workspace']",
+        "button:contains('View all closed boards')",
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:first-of-type",
+        "span:contains('Boards')",
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:first-of-type > nav > div:nth-of-type(3)"
+      ],
+
+
+      "Trello:Workspace($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > h3}{none}[:])::Trello:Board(?)": [
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1)",
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > button"
+      ],
+
+      "Trello:Workspace($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > h3}{none}[:])::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > div:first-of-type > a > div > div:nth-of-type(2) > span}{none}[:])": [
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > div:first-of-type"
+      ],
+      "Trello:Workspace($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > h3}{none}[:])::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > div:nth-of-type(2) > a > div > div:nth-of-type(2) > span}{none}[:])": [
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > div:nth-of-type(2)"
+      ],
+      "Trello:Workspace($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > h3}{none}[:])::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > div:nth-of-type(3) > a > div > div:nth-of-type(2) > span}{none}[:])": [
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > div:nth-of-type(3)"
+      ],
+
+
+      "Trello:Workspace($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > h3}{none}[:])::Trello:Board(?)": [
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2)",
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > button"
+      ],
+
+      "Trello:Workspace($data{html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > h3}{none}[:])::Trello:Board($data{html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > a > div > div:nth-of-type(2) > span}{none}[:])": [
+        "html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1)"
+
+      ], 
+      "Trello:Workspace($data{html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > h3}{none}[:])::Trello:Board($data{html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > a > div > div:nth-of-type(2) > span}{none}[:])": [
+        "html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2)"
+      ],
+      "Trello:Workspace($data{html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > h3}{none}[:])::Trello:Board($data{html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(3) > a > div > div:nth-of-type(2) > span}{none}[:])": [
+        "html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(3)"
+      ]
+
+    }
   }
 }
+        

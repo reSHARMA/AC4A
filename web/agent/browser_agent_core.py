@@ -2211,10 +2211,22 @@ def handle_from_config(minimal_html: Dict[str, str]) -> bool:
             
         # Since config URLs never have query params, we can directly check if the stripped active URL exists
         if active_url_no_query not in config:
-            logger.info(f"No config entry found for URL: {active_url_no_query}")
-            return False
-            
-        url_config = config[active_url_no_query]
+            # Try wildcard matching for config keys
+            for config_key in config:
+                if '*' in config_key:
+                    # Convert wildcard to regex
+                    import re
+                    pattern = re.escape(config_key).replace('\\*', '[^/]+')
+                    if re.fullmatch(pattern, active_url_no_query):
+                        logger.info(f"Wildcard config entry matched: {config_key} for URL: {active_url_no_query}")
+                        url_config = config[config_key]
+                        break
+            else:
+                logger.info(f"No config entry found for URL: {active_url_no_query}")
+                return False
+        else:
+            url_config = config[active_url_no_query]
+
         # If not verified, we need to do a fresh analysis
         if not url_config.get('verified', False):
             logger.info(f"URL {active_url_no_query} not verified, will do fresh analysis")

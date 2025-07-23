@@ -277,7 +277,7 @@ def delete_policy():
         success = agent_manager.policy_system.remove_policy(policy_data)
         if not success:
             logger.warning(f"Failed to remove policy: {policy_data}")
-            return jsonify({"error": "Policy not found"}), 404
+            return jsonify({"error": "Policy not found"}), 200
         
         logger.info(f"Successfully removed policy: {policy_data}")
         

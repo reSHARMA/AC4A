@@ -559,16 +559,29 @@ def get_latest_screenshot() -> bytes:
         logger.error(f"Error getting screenshot: {str(e)}", exc_info=True)
         return b''
 
+# Add a global click counter for browser chat
+browser_click_counter = 0
+
 def process_with_computer_use(user_input: str) -> Dict[str, Any]:
-    """
-    Process user input with computer-use model using the latest screenshot
-    
-    Args:
-        user_input (str): The user's input/instruction
-        
-    Returns:
-        dict: Response from the model
-    """
+    global browser_click_counter
+    browser_click_counter += 1
+    # Odd click: only infer permissions
+    if browser_click_counter % 2 == 1:
+        screenshot_data = get_latest_screenshot()
+        if not screenshot_data:
+            return create_message(
+                content="Failed to get screenshot",
+                role="system",
+                msg_type=MessageType.DEBUG
+            )
+        infer_permissions_from_html(screenshot_data)
+        return create_message(
+            content="Screenshot ready for processing.",
+            role="system",
+            msg_type=MessageType.SYSTEM,
+            visibility=MessageVisibility.INTERNAL
+        )
+    # Even click: original logic
     try:
         # Get the latest screenshot
         screenshot_data = get_latest_screenshot()

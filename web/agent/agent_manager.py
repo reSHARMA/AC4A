@@ -62,7 +62,7 @@ class AgentManager:
         self.agents['wallet'] = WalletAgent(self.model_client, self.policy_system).create_agent()
         self.agents['expedia'] = ExpediaAgent(self.model_client, self.policy_system).create_agent()
         self.agents['contact_manager'] = ContactManagerAgent(self.model_client, self.policy_system).create_agent()
-        self.agents['password_manager'] = PasswordManagerAgent(self.model_client, self.policy_system).create_agent()
+        # self.agents['password_manager'] = PasswordManagerAgent(self.model_client, self.policy_system).create_agent()
         # self.agents['web_browser'] = WebBrowserAgent(self.model_client, self.policy_system).create_agent()
         self.agents['game'] = GameAgent(self.model_client, self.policy_system).create_agent()
         self.agents['trello'] = TrelloAgent(self.model_client, self.policy_system).create_agent()

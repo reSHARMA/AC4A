@@ -15,7 +15,7 @@ from .queues import (
 logger = logging.getLogger(__name__)
 
 def get_user_input(message: Annotated[str, "The message that will be sent to the user"]) -> str:
-    """Function to send a message to the user for input. This message can be a question or approval request. It can also be empty in the cases when the message is not known for example at the start of the conversation.
+    """Function to send a message to the user for input. This message can be a question or approval request. It can also be empty in the cases when the message is not known for example at the start of the conversation. Never ask for credentials, if needed ask for permissions to access the data.
     """
     global last_input_request, input_request_queue, input_response_queue, agent_initialized
     

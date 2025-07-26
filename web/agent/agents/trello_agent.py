@@ -183,7 +183,16 @@ class TrelloAPIAnnotation(APIAnnotationBase):
         card = kwargs.get('card_name', '*')
         if wildcard:
             workspace = board = list_ = card = '*'
-        granular_data = f"Trello:Workspace({workspace})::Trello:Board({board})::Trello:List({list_})::Trello:Card({card})"
+        if endpoint_name in ['list_workspaces', 'create_board', 'list_boards']:
+            granular_data = f"Trello:Workspace({workspace})"
+        elif endpoint_name in ['delete_board', 'list_lists', 'create_list']:
+            granular_data = f"Trello:Workspace(?)::Trello:Board({board})"
+        elif endpoint_name in ['list_cards', 'archive_list']:
+            granular_data = f"Trello:Workspace(?)::Trello:Board({board})::Trello:List({list_})"
+        elif endpoint_name in ['add_card', 'archive_card', 'mark_card_as_complete']:
+            granular_data = f"Trello:Workspace(?)::Trello:Board({board})::Trello:List({list_})::Trello:Card({card})"
+        else:
+            granular_data = f"Trello:Workspace({workspace})::Trello:Board({board})::Trello:List({list_})::Trello:Card({card})"
         data_access = 'Write' if endpoint_name.startswith('create') or endpoint_name.startswith('add') or endpoint_name.startswith('archive') or endpoint_name.startswith('delete') or endpoint_name.startswith('mark') else 'Read'
         position = 'Current'
         return {
@@ -276,7 +285,12 @@ class TrelloAPI:
 class TrelloAgent(BaseAgent):
     def __init__(self, model_client, policy_system):
         system_message = """
-        You are a Trello agent.\nOutput 'done' when the task given to you is completed. Do not suggest any other actions to the user.\nIf you are given a task which is not related to Trello, also return 'done'.
+        You are a Trello agent.
+        Output 'done' when the task given to you is completed. Do not suggest any other actions to the user.
+        In Trello, a workspace is a collection of boards. A board is a collection of lists. A list is a collection of cards.
+        If you are given a task which is not related to Trello, also return 'done'.
+        You already have API access to Trello. If you are not able to access the API it will be always be because of the lack of permissions and never because of lack of credentials.
+        You can only access the API if you have the correct permissions.
         """
         policy_system.register_api(TrelloAPI)
         self.trello_api = TrelloAPI(policy_system)

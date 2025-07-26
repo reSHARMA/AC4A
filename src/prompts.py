@@ -10,6 +10,7 @@ Red means blocked for write access like submit, delete, etc. and black means blo
 
 For travel related tasks use expedia.com
 For calendar related tasks use outlook.live.com/calendar
+For trello related tasks use trello.com
 For any other task, ask the user to provide the website to use.
 
 In the first line output your reasoning in 1-2 sentences.

@@ -62,11 +62,11 @@ class PasswordManagerAPIAnnotation(APIAnnotationBase):
         data_access = self.get_access_level(endpoint_name)
         position = self.get_time_period(start_time, end_time, wildcard)
         
-        return {
+        return [{
             'granular_data': granular_data,
             'data_access': data_access,
             'position': position
-        }
+        }]
 
 class PasswordManagerAPI:
     def __init__(self, policy_system):

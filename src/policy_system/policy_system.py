@@ -207,7 +207,7 @@ class PolicySystem:
                             logger.error(error_msg)
                             raise ValueError(error_msg)
 
-        if self.is_action_allowed(policy_rule, False):
+        if self.is_action_allowed([policy_rule], False):
             logger.info("Policy rule already subsumed by existing policies. Skipping addition.")
             send_custom_log("Permission Subsumed", f"{policy_rule}")
             return
@@ -308,13 +308,30 @@ class PolicySystem:
             logger.warning("Policy system is DISABLED - allowing action by default")
             return True
 
-        # Force policy logs at the INFO level to make them more visible
-        logger.info(f"POLICY CHECK - Attributes: {attributes}")
+        # Handle list of attribute objects with OR logic
+        if not isinstance(attributes, list):
+            logger.error(f"POLICY ERROR - Expected list of attributes, got: {type(attributes)}")
+            return False
+            
+        logger.info(f"POLICY CHECK - Multiple Attributes: {attributes}")
+        
+        # Check each attribute and return True if any match (OR logic)
+        for attr in attributes:
+            if self._check_single_attribute(attr, print_policy):
+                logger.info(f"✅ POLICY ALLOWED - Action is allowed by attribute: {attr}")
+                return True
+                
+        logger.error(f"❌ POLICY DENIED - Action not allowed for any attribute in: {attributes}")
+        return False
+
+    def _check_single_attribute(self, attributes, print_policy=True):
+        """Check a single attribute object against policy rules"""
+        logger.info(f"POLICY CHECK - Single Attribute: {attributes}")
         
         if attributes['position'].lower() != 'current':
             expanded_attributes = self.expand_attributes(attributes)
             for attr in expanded_attributes:
-                if not self.is_action_allowed(attr, True):
+                if not self._check_single_attribute(attr, True):
                     return False
             return True
 

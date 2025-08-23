@@ -150,11 +150,11 @@ class ExpediaAPIAnnotation(APIAnnotationBase):
         position = "Current"
         
         logger.error(f"[expedia_agent.py] Generated attributes: {granular_data}, {data_access}, {position}")
-        return {
+        return [{
             'granular_data': granular_data,
             'data_access': data_access,
             'position': position
-        }
+        }]
 
 class ExpediaAPI:
     def __init__(self, policy_system):

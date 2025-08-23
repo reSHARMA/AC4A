@@ -48,11 +48,11 @@ class PhotoAPIAnnotation(APIAnnotationBase):
     def generate_attributes(self, kwargs, endpoint_name):
         start_time = kwargs['start_time']
         duration = kwargs['duration']
-        return {
+        return [{
             'granular_data': self.get_hierarchy(start_time, duration),
             'data_access': self.get_access_level(endpoint_name),
             'time': self.get_time_period(start_time, duration),
-        }
+        }]
 
 class PhotoAPI:
     def __init__(self, policy_system):

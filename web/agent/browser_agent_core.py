@@ -1407,7 +1407,7 @@ def get_allowed_and_not_allowed_elements_from_text(data_required: Dict[str, Any]
 
                 permission_allowed = True
                 for policy in temp_policy_system.get_all_policy_rules():
-                    permission_allowed = agent_manager.policy_system.is_action_allowed(policy)
+                    permission_allowed = agent_manager.policy_system.is_action_allowed([policy])
                     if not permission_allowed:
                         break
                 permission_result[selector_type] = permission_allowed
@@ -1461,7 +1461,7 @@ def get_allowed_and_not_allowed_elements_from_config(data_required: Dict[str, An
                 permission_allowed = True
                 for policy in temp_policy_system.get_all_policy_rules():
                     logger.info(f"[DEBUG] Checking policy: {policy}")
-                    permission_allowed = agent_manager.policy_system.is_action_allowed(policy)
+                    permission_allowed = agent_manager.policy_system.is_action_allowed([policy])
                     logger.info(f"[DEBUG] Policy allowed: {permission_allowed}")
                     if not permission_allowed:
                         break

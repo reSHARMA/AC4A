@@ -195,11 +195,14 @@ class TrelloAPIAnnotation(APIAnnotationBase):
             granular_data = f"Trello:Workspace({workspace})::Trello:Board({board})::Trello:List({list_})::Trello:Card({card})"
         data_access = 'Write' if endpoint_name.startswith('create') or endpoint_name.startswith('add') or endpoint_name.startswith('archive') or endpoint_name.startswith('delete') or endpoint_name.startswith('mark') else 'Read'
         position = 'Current'
-        return {
+        
+        # Return a list containing the single attribute object for now
+        # This maintains backward compatibility while allowing for future expansion
+        return [{
             'granular_data': granular_data,
             'data_access': data_access,
             'position': position
-        }
+        }]
 
 # --- TrelloAPI Class ---
 class TrelloAPI:

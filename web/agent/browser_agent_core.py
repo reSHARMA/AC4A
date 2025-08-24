@@ -1401,7 +1401,7 @@ def get_allowed_and_not_allowed_elements_from_text(data_required: Dict[str, Any]
                     for granular_data_type in granular_data[data_type]:
                         temp_policy_system.add_policy({
                             "granular_data": f"{granular_data_type}",
-                            "data_access": "Read" if selector_type == 'read' else "Write",
+                            "data_access": "Read" if selector_type == 'read' else "Write" if selector_type == 'write' else "Create",
                             "position": "Current"
                         })
 
@@ -1455,7 +1455,7 @@ def get_allowed_and_not_allowed_elements_from_config(data_required: Dict[str, An
                 logger.info(f"[DEBUG] Checking permission: {permission_text}")
                 temp_policy_system.add_policy({
                     "granular_data": f"{data_type}",
-                    "data_access": "Read" if selector_type == 'read' else "Write",
+                    "data_access": "Read" if selector_type == 'read' else "Write" if selector_type == 'write' else "Create",
                     "position": "Current"
                 })
                 permission_allowed = True

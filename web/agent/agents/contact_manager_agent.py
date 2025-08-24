@@ -56,7 +56,8 @@ class ContactManagerAPIAnnotation(APIAnnotationBase):
             ],
             'data_access': [
                 AttributeTree('Read'),
-                AttributeTree('Write')
+                AttributeTree('Write'),
+                AttributeTree('Create')
             ],
             'position': [
                 AttributeTree('Previous', [AttributeTree('Current')]),
@@ -79,7 +80,12 @@ class ContactManagerAPIAnnotation(APIAnnotationBase):
             return f"{self.namespace}:{label}({detail})"
 
     def get_access_level(self, endpoint_name):
-        return 'Write' if 'add' in endpoint_name or 'remove' in endpoint_name or 'update' in endpoint_name else 'Read'
+        if 'add' in endpoint_name:
+            return 'Create'
+        elif 'remove' in endpoint_name or 'update' in endpoint_name:
+            return 'Write'
+        else:
+            return 'Read'
 
     def get_time_period(self, start_time, end_time, use_wildcard):
         return "Current"

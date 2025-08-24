@@ -14,7 +14,7 @@ class PhotoAPIAnnotation(APIAnnotationBase):
                     ])
                 ])
             ])],
-            'data_access': ['Read', 'Write'],
+            'data_access': ['Read', 'Write', 'Create'],
             'time': ['Past', 'Present', 'Future']
         })
 
@@ -33,7 +33,13 @@ class PhotoAPIAnnotation(APIAnnotationBase):
 
     def get_access_level(self, endpoint_name):
         read_actions = ['view', 'share']
-        return 'r' if any(action in endpoint_name for action in read_actions) else 'w'
+        create_actions = ['upload', 'add']
+        if any(action in endpoint_name for action in read_actions):
+            return 'Read'
+        elif any(action in endpoint_name for action in create_actions):
+            return 'Create'
+        else:
+            return 'Write'
 
     def get_time_period(self, start_time, duration):
         current_time = datetime.now()

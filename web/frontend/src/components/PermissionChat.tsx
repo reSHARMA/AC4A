@@ -246,6 +246,7 @@ const TreeView: React.FC<TreeViewProps> = ({
               >
                 <option value="Read">Read</option>
                 <option value="Write">Write</option>
+                <option value="Create">Create</option>
               </Select>
             </Tooltip>
           ) : (

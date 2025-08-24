@@ -17,7 +17,8 @@ class CalendarAPIAnnotation(APIAnnotationBase):
             ])],
             'data_access': [
                 AttributeTree('Read'),
-                AttributeTree('Write')
+                AttributeTree('Write'),
+                AttributeTree('Create')
             ],
             'position': [
                 AttributeTree('Previous'),
@@ -49,7 +50,12 @@ class CalendarAPIAnnotation(APIAnnotationBase):
         return composite_data
 
     def get_access_level(self, endpoint_name):
-        return 'Write' if 'reserve' in endpoint_name else 'Read'
+        if 'reserve' in endpoint_name or 'create' in endpoint_name or 'add' in endpoint_name:
+            return 'Create'
+        elif 'update' in endpoint_name or 'edit' in endpoint_name or 'modify' in endpoint_name:
+            return 'Write'
+        else:
+            return 'Read'
 
     def get_time_period(self, start_time, duration, use_wildcard):
         current_time = datetime.now()

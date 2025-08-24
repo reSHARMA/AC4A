@@ -167,7 +167,8 @@ class TrelloAPIAnnotation(APIAnnotationBase):
             ])],
             'data_access': [
                 AttributeTree('Read'),
-                AttributeTree('Write')
+                AttributeTree('Write'),
+                AttributeTree('Create')
             ],
             'position': [
                 AttributeTree('Previous', [AttributeTree('Current')]),
@@ -193,7 +194,12 @@ class TrelloAPIAnnotation(APIAnnotationBase):
             granular_data = f"Trello:Workspace(?)::Trello:Board({board})::Trello:List({list_})::Trello:Card({card})"
         else:
             granular_data = f"Trello:Workspace({workspace})::Trello:Board({board})::Trello:List({list_})::Trello:Card({card})"
-        data_access = 'Write' if endpoint_name.startswith('create') or endpoint_name.startswith('add') or endpoint_name.startswith('archive') or endpoint_name.startswith('delete') or endpoint_name.startswith('mark') else 'Read'
+        if endpoint_name.startswith('create') or endpoint_name.startswith('add'):
+            data_access = 'Create'
+        elif endpoint_name.startswith('archive') or endpoint_name.startswith('delete') or endpoint_name.startswith('mark'):
+            data_access = 'Write'
+        else:
+            data_access = 'Read'
         position = 'Current'
         
         # Return a list containing the single attribute object for now

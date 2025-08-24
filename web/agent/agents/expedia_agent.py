@@ -57,7 +57,8 @@ class ExpediaAPIAnnotation(APIAnnotationBase):
             ],
             'data_access': [
                 AttributeTree('Read'),
-                AttributeTree('Write')
+                AttributeTree('Write'),
+                AttributeTree('Create')
             ],
             'position': [
                 AttributeTree('Previous', [AttributeTree('Current')]),
@@ -97,7 +98,12 @@ class ExpediaAPIAnnotation(APIAnnotationBase):
     def get_access_level(self, endpoint_name):
         if endpoint_name == 'pay_for_itenary':
             return 'Write'
-        return 'Read' if 'search' in endpoint_name or 'get' in endpoint_name else 'Write'
+        elif 'book' in endpoint_name or 'create' in endpoint_name or 'add' in endpoint_name:
+            return 'Create'
+        elif 'search' in endpoint_name or 'get' in endpoint_name:
+            return 'Read'
+        else:
+            return 'Write'
 
     def generate_attributes(self, kwargs, endpoint_name, wildcard):
         if 'search_flights' in endpoint_name or 'book_flight' in endpoint_name:

@@ -188,7 +188,7 @@ Your role is to translate a user's request for data access into well-defined emb
    - Each policy is represented as a Python dictionary with three mandatory keys:
      - **`granular_data`**: Identifies the specific data type and any corresponding value or temporal range and must only be from <ALL DATA>
      -- The labels must always be from <ALL DATA> and must never be made up no matter how much data is provided.
-     - **`data_access`**: Specifies the level of access: either `Read` or `Write`.
+     - **`data_access`**: Specifies the level of access: either `Read`, `Write`, or `Create`.
      - **`position`**: Specifies the temporal position (e.g., `Previous`, `Current`, or `Next`), or defaults to `Current` if no range is specified.
 
 4. **Data Type and Value:**
@@ -332,8 +332,16 @@ The policy will be generated in an embedded DSL in Python.
 
 ### Core Instructions
 - Start by analyzing the user request to determine the specific data types required for the task.
-- Then think about the data access level (Read/Write) required for the data. 
-- Finally, determine if the data requires a range of values or a specific value for the access. 
+- Then think about the data access level (Read/Write/Create) required for the data. 
+- Finally, determine if the data requires a range of values or a specific value for the access.
+
+### Data Access Level Guidelines:
+- **Read**: Use when the request involves viewing, checking, searching, or retrieving existing data
+  - Examples: "check availability", "search flights", "view calendar", "get contact info", "see credit cards"
+- **Write**: Use when the request involves modifying, updating, editing, or changing existing data
+  - Examples: "update contact", "edit booking", "modify calendar event", "change credit card info"
+- **Create**: Use when the request involves adding new data, creating new resources, or inserting new entries
+  - Examples: "add new contact", "create booking", "add calendar event", "add credit card", "create new account" 
 
 Repeat the process for each data type required in the request.
 Today's date is 2025-1-25 PST.
@@ -357,14 +365,14 @@ The position is Current as the Cruise data does not have a range.
 
 Request => Calendar: Add the "Glacier Explorer" cruise trip to the calendar from July 10 to July 20, 2025, as a confirmed booking.
 Since the request is coming from the Calendar API, the data required is related to the calendar, specifically the calendar week data because the requested data range is greater than a day but less than a month.
-The access level required is Write as the request is to add a confirmed booking and will require write access to the calendar data.
+The access level required is Create as the request is to add a new booking entry to the calendar.
 The position will be Next as given today's date, the request wants access to the future weeks calendar data.
 
 ### Format of Policy
 Policies must be added to the policy_system using the `add_policy` method. This method accepts a dictionary input consisting of only three keys: `granular_data`, `data_access`, and `position`.
 
 granular_data: The specific data type required for the task.
-data_access: The level of access required for the data (Read/Write).
+data_access: The level of access required for the data (Read/Write/Create).
 position: The position of the data relative to the current date (Previous/Current/Next), only if the data requires a range.
 
 Request => Calendar: Check availability in mid-July on the calendar to identify available dates for the cruise to Alaska.
@@ -402,7 +410,7 @@ Example Policy Format:
 ```python
 policy_system.add_policy({
     "granular_data": "Calendar:Week",
-    "data_access": "Write",
+    "data_access": "Create",
     "position": "Next"
 })
 ```
@@ -460,16 +468,22 @@ You are a data access policy generator agent. You are expected to generate polic
 
 ### Instructions
 - **Verify Data Requirements for Complete Transactions:**
-  - Ensure write access for operations that complete a transaction, such as booking (access to `Expedia` data types) and payment processing (`Wallet:CreditCard`).
+  - Ensure appropriate access level for operations that complete a transaction:
+    - Use **Create** for operations that add new resources (e.g., creating new bookings, adding new contacts)
+    - Use **Write** for operations that modify existing data (e.g., updating booking status, editing contact details)
+    - Use **Read** for operations that retrieve information (e.g., searching flights, checking availability)
 
 - **Highlight and Separate Data Access by Function:**
-  - Differentiate between access required for preliminary actions (e.g., searching or viewing options) from those needed for finalizing and documenting tasks like payment or calendar scheduling.
+  - Differentiate between access required for:
+    - **Preliminary actions** (e.g., searching, viewing, checking) → Use **Read**
+    - **Creating new resources** (e.g., adding new bookings, contacts, cards) → Use **Create**  
+    - **Modifying existing data** (e.g., updating, editing, changing) → Use **Write**
 
 - **Reinforce All Data Positions and Sequences:**
   - Encourage thorough assessment of temporal or categorical positions related to each action, ensuring all temporal or context-based data elements are properly flagged within the generated policy.
 
 - **Utilize a Multistep Evaluation Process:**
-  - Implement a structured approach to assess all necessary data interactions, beginning with the initial user action and extending through supporting operations (e.g., read, then write).
+  - Implement a structured approach to assess all necessary data interactions, beginning with the initial user action and extending through supporting operations (e.g., read, then create/write).
 
 Each policy is made up of three components: `granular_data`, `data_access`, and `position`.
 
@@ -501,8 +515,13 @@ Each policy is made up of three components: `granular_data`, `data_access`, and 
   - **Wallet:CreditCardPin**
 
 ### Data Access
-- The `data_access` component indicates if granular_data can be read or written (allowed values: `Read` / `Write`).
-  - Determine this by assessing whether the data should be accessed for reading existing information or writing new information.
+- The `data_access` component indicates if granular_data can be read, written, or created (allowed values: `Read` / `Write` / `Create`).
+  - **Read**: Use for viewing, checking, searching, or retrieving existing data
+    - Examples: "check availability", "search flights", "view calendar", "get contact info"
+  - **Write**: Use for modifying, updating, editing, or changing existing data  
+    - Examples: "update contact", "edit booking", "modify calendar event", "change credit card info"
+  - **Create**: Use for adding new data, creating new resources, or inserting new entries
+    - Examples: "add new contact", "create booking", "add calendar event", "add credit card"
 
 ### Position
 - The `position` attribute represents the data's position within its sequence (allowed values: `Previous` / `Current` / `Next`) with respect to the temporal context.
@@ -573,7 +592,10 @@ You are a data access policy generator agent. You are expected to generate polic
 - For requests involving non-sequential data categories, always use a wildcard (*) in place of values unless specifically instructed otherwise by the user request.
 
 - **Verify Data Requirements for Complete Transactions:**
-  - Ensure write access for operations that complete a transaction, such as booking (access to `Expedia` data types) and payment processing (`Wallet:CreditCard`) and read access for operations for searching and finding.
+  - Ensure appropriate access level for operations that complete a transaction:
+    - Use **Create** for operations that add new resources (e.g., creating new bookings, adding new contacts, adding new credit cards)
+    - Use **Write** for operations that modify existing data (e.g., updating booking status, editing contact details, updating payment information)
+    - Use **Read** for operations that retrieve information (e.g., searching flights, checking availability, viewing contact details)
 
 **Generate Policies Only on Required Data:**
 - Limit policy access to the explicitly inferred data, without introducing unnecessary or assumed values.
@@ -643,8 +665,13 @@ subData can only be part of same data hierarchy.
   - **User:SSN(987349807)**
 
 ### Data Access
-- The `data_access` component indicates if granular_data can be read or written (allowed values: `Read` / `Write`).
-  - Determine this by assessing whether the data should be accessed for reading existing information or writing new information.
+- The `data_access` component indicates if granular_data can be read, written, or created (allowed values: `Read` / `Write` / `Create`).
+  - **Read**: Use for viewing, checking, searching, or retrieving existing data
+    - Examples: "check availability", "search flights", "view calendar", "get contact info"
+  - **Write**: Use for modifying, updating, editing, or changing existing data  
+    - Examples: "update contact", "edit booking", "modify calendar event", "change credit card info"
+  - **Create**: Use for adding new data, creating new resources, or inserting new entries
+    - Examples: "add new contact", "create booking", "add calendar event", "add credit card"
 
 ### Position
 - The `position` attribute represents the data's position within its sequence (allowed values: `Previous` / `Current` / `Next`) with respect to the value in the `granular_data` or temporal context if `granular_data` does not have a value and uses a wildcard.
@@ -734,10 +761,14 @@ For every task, follow these steps to determine access needs:
 1. **Identify Specific Data Required**: From the set of all available data `<ALL DATA>`, determine the precise type of data required to complete the task. When direct linkage between task details and a specific data node is unclear, infer the highest-level relevant data type that encompasses the task details. Use `<ALL DATA SCHEMA>` to understand the values which can be used in the data. The values must always be grounded in the task given to you and must be valid values based on the <ALL DATA SCHEMA>.
   - if you are asked to search for a class of data then you must grant permission to search for all the data in that class to find the exact data, this is also applicable for tasks which require access to all the data like searching, checking or filtering etc.
 
-2. **Determine Type of Access**: Decide whether the task requires "Read" or "Write" access to the identified data. For instance:
+2. **Determine Type of Access**: Decide whether the task requires "Read", "Write", or "Create" access to the identified data. For instance:
    - If a task involves checking or retrieving data, it requires **Read-Only Access**.
-   - If a task involves modification or creation of data, it requires **Write Access**.
-   -- example, if the task is to book a flight, it requires write access to the flight data.
+     - Examples: "check availability", "search flights", "view calendar", "get contact info"
+   - If a task involves modification of existing data, it requires **Write Access**.
+     - Examples: "update contact", "edit booking", "modify calendar event", "change credit card info"
+   - If a task involves creating new resources or data, it requires **Create Access**.
+     - Examples: "add new contact", "create booking", "add calendar event", "add credit card"
+   -- example, if the task is to book a flight, it requires create access to the flight data (creating a new booking).
 
 3. **Define the Data Range**: When determining the access scope:
    - If a task lacks precise data or if the identified data does not allow for filtering at finer granularity, grant access to the broader data type or category instead.
@@ -763,7 +794,7 @@ Input: "Calendar: Check the user's availability in December to plan a vacation t
 Output: "Grant read-only access to Calendar Month data for December only."
 
 Input: "Expedia: Proceed to book a Northern Marvels cruise departing from Seward, Alaska, on July 10, 2025, with a Suite cabin."
-Output: "Grant write access to Expedia Cruise data for Northern Marvels cruise."
+Output: "Grant create access to Expedia Cruise data for Northern Marvels cruise."
 
 Input: "Expedia: Search for flights departing from Salt Lake City (SLC) to Seattle (SEA) on January 14."
 Output: "Grant read-only access to all Expedia Flight data."

@@ -25,7 +25,8 @@ class GameAPIAnnotation(APIAnnotationBase):
             ],
             'data_access': [
                 AttributeTree('Read'),
-                AttributeTree('Write')
+                AttributeTree('Write'),
+                AttributeTree('Create')
             ],
             'position': [
                 AttributeTree('Previous', [AttributeTree('Current')]),
@@ -46,7 +47,12 @@ class GameAPIAnnotation(APIAnnotationBase):
             return f"{self.namespace}:{label}({detail})"
 
     def get_access_level(self, endpoint_name):
-        return 'Write' if 'delete' in endpoint_name else 'Read'
+        if 'delete' in endpoint_name:
+            return 'Write'
+        elif 'create' in endpoint_name or 'add' in endpoint_name:
+            return 'Create'
+        else:
+            return 'Read'
 
     def generate_attributes(self, kwargs, endpoint_name, wildcard):
         granular_data = self.get_hierarchy(endpoint_name, kwargs, wildcard)

@@ -849,7 +849,7 @@ def analyze_html_structure(screenshot_data: bytes, minimal_html: Dict[str, str])
         screenshot_data (bytes): Raw PNG image data of the current page
         minimal_html (Dict[str, str]): Pre-filtered HTML elements and their selectors
     Returns:
-        dict: Contains 'read' and 'write' lists with valid CSS selectors/paths
+        dict: Contains 'read', 'write', and 'create' lists with valid CSS selectors/paths
     """
     try:
         # Convert screenshot to base64 for API call
@@ -857,7 +857,7 @@ def analyze_html_structure(screenshot_data: bytes, minimal_html: Dict[str, str])
         
         # Create system prompt for HTML analysis
         # Create input text for analysis
-        analysis_text = f"""Please analyze this webpage and classify the elements into read and write elements.
+        analysis_text = f"""Please analyze this webpage and classify the elements into read, write, and create elements.
 List of HTML elements and their CSS selectors:
 {str(minimal_html)}"""
 
@@ -879,6 +879,7 @@ List of HTML elements and their CSS selectors:
             return {
                 'read': [],
                 'write': [],
+                'create': [],
                 'error': 'No response from analysis model'
             }
         
@@ -909,16 +910,20 @@ List of HTML elements and their CSS selectors:
 
             read_selectors = analysis_result.get('read', [])
             write_selectors = analysis_result.get('write', [])
+            create_selectors = analysis_result.get('create', [])
             
             # Ensure they are lists
             if not isinstance(read_selectors, list):
                 read_selectors = []
             if not isinstance(write_selectors, list):
                 write_selectors = []
+            if not isinstance(create_selectors, list):
+                create_selectors = []
             
             # Filter out any non-string values and validate CSS selectors
             valid_read_selectors = []
             valid_write_selectors = []
+            valid_create_selectors = []
             
             for selector in read_selectors:
                 if isinstance(selector, str) and selector.strip():
@@ -928,13 +933,19 @@ List of HTML elements and their CSS selectors:
                 if isinstance(selector, str) and selector.strip():
                     valid_write_selectors.append(selector.strip())
             
-            logger.info(f"HTML analysis found {len(valid_read_selectors)} read elements and {len(valid_write_selectors)} write elements")
+            for selector in create_selectors:
+                if isinstance(selector, str) and selector.strip():
+                    valid_create_selectors.append(selector.strip())
+            
+            logger.info(f"HTML analysis found {len(valid_read_selectors)} read elements, {len(valid_write_selectors)} write elements, and {len(valid_create_selectors)} create elements")
             logger.info(f"Valid read selectors: {valid_read_selectors}")
             logger.info(f"Valid write selectors: {valid_write_selectors}")
+            logger.info(f"Valid create selectors: {valid_create_selectors}")
             
             return {
                 'read': valid_read_selectors,
                 'write': valid_write_selectors,
+                'create': valid_create_selectors,
                 'success': True
             }
             
@@ -944,6 +955,7 @@ List of HTML elements and their CSS selectors:
             return {
                 'read': [],
                 'write': [],
+                'create': [],
                 'error': f'Failed to parse analysis response: {str(e)}'
             }
         except Exception as e:
@@ -951,6 +963,7 @@ List of HTML elements and their CSS selectors:
             return {
                 'read': [],
                 'write': [],
+                'create': [],
                 'error': f'Error processing response: {str(e)}'
             }
             
@@ -959,6 +972,7 @@ List of HTML elements and their CSS selectors:
         return {
             'read': [],
             'write': [],
+            'create': [],
             'error': f'Analysis failed: {str(e)}'
         }
 
@@ -1045,6 +1059,8 @@ def highlight_analyzed_elements(html_structure: Dict[str, Any] | list, highlight
                     if highlight_type == "read" and data_type not in html_structure.get('read', []):
                         continue
                     if highlight_type == "write" and data_type not in html_structure.get('write', []):
+                        continue
+                    if highlight_type == "create" and data_type not in html_structure.get('create', []):
                         continue
                 
                 # Get colors for this data type
@@ -1375,15 +1391,15 @@ def get_allowed_and_not_allowed_elements_from_text(data_required: Dict[str, Any]
         Tuple[Dict[str, List[str]], Dict[str, List[str]]]: Allowed and not allowed elements
     """
     
-    allowed_elements = {'read': [], 'write': []}
-    not_allowed_elements = {'read': [], 'write': []}
+    allowed_elements = {'read': [], 'write': [], 'create': []}
+    not_allowed_elements = {'read': [], 'write': [], 'create': []}
     granular_data = {}
 
     for data_type, selectors in data_required['data'].items():
-        permission_result = {'read': None, 'write': None}
+        permission_result = {'read': None, 'write': None, 'create': None}
         
         for selector in selectors:
-            selector_type = 'read' if selector in html_structure['read'] else 'write' if selector in html_structure['write'] else None
+            selector_type = 'read' if selector in html_structure['read'] else 'write' if selector in html_structure['write'] else 'create' if selector in html_structure['create'] else None
             if not selector_type:
                 logger.warning(f"Selector {selector} not found in HTML structure")
                 continue
@@ -1401,7 +1417,7 @@ def get_allowed_and_not_allowed_elements_from_text(data_required: Dict[str, Any]
                     for granular_data_type in granular_data[data_type]:
                                         temp_policy_system.add_policy({
                     "granular_data": f"{granular_data_type}",
-                    "data_access": "Read" if selector_type == 'read' else "Write" if selector_type == 'write' else "Create"
+                    "data_access": "Read" if selector_type == 'read' else "Write" if selector_type == 'write' else "Create" if selector_type == 'create' else "Create"
                 })
 
                 permission_allowed = True
@@ -1425,13 +1441,13 @@ def get_allowed_and_not_allowed_elements_from_config(data_required: Dict[str, An
     
     Args:
         data_required (Dict[str, Any]): Data requirements with data type as key and list of CSS selectors as value
-        html_structure (Dict[str, Any]): HTML structure with read and write elements
+        html_structure (Dict[str, Any]): HTML structure with read, write, and create elements
     Returns:
         Tuple[Dict[str, List[str]], Dict[str, List[str]]]: Allowed and not allowed elements
     """
     
-    allowed_elements = {'read': [], 'write': []}
-    not_allowed_elements = {'read': [], 'write': []}
+    allowed_elements = {'read': [], 'write': [], 'create': []}
+    not_allowed_elements = {'read': [], 'write': [], 'create': []}
 
     logger.info(f"[DEBUG] Processing data required: {data_required}")
     logger.info(f"[DEBUG] HTML structure: {html_structure}")
@@ -1439,11 +1455,11 @@ def get_allowed_and_not_allowed_elements_from_config(data_required: Dict[str, An
     for data_type, selectors in data_required['data'].items():
         logger.info(f"[DEBUG] Processing data type: {data_type}")
         logger.info(f"[DEBUG] Selectors for this type: {selectors}")
-        permission_result = {'read': None, 'write': None}
+        permission_result = {'read': None, 'write': None, 'create': None}
         
         for selector in selectors:
             logger.info(f"[DEBUG] Processing selector: {selector}")
-            selector_type = 'read' if selector in html_structure['read'] else 'write' if selector in html_structure['write'] else None
+            selector_type = 'read' if selector in html_structure['read'] else 'write' if selector in html_structure['write'] else 'create' if selector in html_structure['create'] else None
             if not selector_type:
                 logger.warning(f"Selector {selector} not found in HTML structure")
                 continue
@@ -1507,12 +1523,14 @@ def infer_permissions_from_html(screenshot_data: bytes) -> Dict[str, Any]:
             msg_type=MessageType.ERROR
         )
 
-    # Filter the minimal HTML to only include elements that are in the read and write lists to create a single dict from conetnt to css selector
+    # Filter the minimal HTML to only include elements that are in the read, write, and create lists to create a single dict from content to css selector
     filtered_minimal_html = {}
     for element, selector in minimal_html.items():
         if selector in html_structure.get('read', []):
             filtered_minimal_html[element] = selector
         if selector in html_structure.get('write', []):
+            filtered_minimal_html[element] = selector
+        if selector in html_structure.get('create', []):
             filtered_minimal_html[element] = selector
 
     # Now infer data from the filtered HTML structure for all elements
@@ -1542,7 +1560,7 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
     For write elements: Disable interaction and show a message
     
     Args:
-        not_allowed_elements (Dict[str, List[str]]): Dictionary with 'read' and 'write' lists of CSS selectors
+        not_allowed_elements (Dict[str, List[str]]): Dictionary with 'read', 'write', and 'create' lists of CSS selectors
         
     Returns:
         dict: Result of the CSS injection operation
@@ -1571,9 +1589,11 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
         # Convert all selectors to valid CSS
         converted_read = [convert_text_selector(sel) for sel in not_allowed_elements.get('read', [])]
         converted_write = [convert_text_selector(sel) for sel in not_allowed_elements.get('write', [])]
+        converted_create = [convert_text_selector(sel) for sel in not_allowed_elements.get('create', [])]
         
         logger.info(f"[DEBUG] Converted read selectors: {converted_read}")
         logger.info(f"[DEBUG] Converted write selectors: {converted_write}")
+        logger.info(f"[DEBUG] Converted create selectors: {converted_create}")
         
         # Add JavaScript to set data attributes for text matching
         js_code = """
@@ -1584,6 +1604,9 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
                 %s
                 
                 // Handle write elements
+                %s
+                
+                // Handle create elements
                 %s
             }
             setTextAttributes();
@@ -1611,7 +1634,15 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
                         el.setAttribute('data-axiom-text', '{text}');
                     }}
                 }});
-            """ for sel, text in [(sel, re.search(r'data-axiom-text=\'([^\']+)\'', sel).group(1)) for sel in converted_write if 'data-axiom-text' in sel])
+            """ for sel, text in [(sel, re.search(r'data-axiom-text=\'([^\']+)\'', sel).group(1)) for sel in converted_write if 'data-axiom-text' in sel]),
+            '\n'.join(f"""
+                document.querySelectorAll('{sel.split('[')[0]}').forEach(el => {{
+                    if (el.textContent.trim() === '{text}') {{
+                        console.log('Setting attribute for exact match element:', el);
+                        el.setAttribute('data-axiom-text', '{text}');
+                    }}
+                }});
+            """ for sel, text in [(sel, re.search(r'data-axiom-text=\'([^\']+)\'', sel).group(1)) for sel in converted_create if 'data-axiom-text' in sel])
         )
 
         logger.info(f"[DEBUG] Generated JavaScript code: {js_code}")
@@ -1724,6 +1755,62 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
     top: 100%;
     transform: translateX(-50%);
     background: #ff4d4f;
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    margin-top: 4px;
+    z-index: 10000000;
+}}
+{selector} * {{
+    visibility: hidden !important;
+    color: transparent !important;
+    pointer-events: none !important;
+}}
+"""
+        # Handle create elements - disable interaction and hide data
+        for selector in converted_create:
+            if not isinstance(selector, str) or not selector.strip():
+                continue
+            logger.info(f"[DEBUG] Adding CSS rules for create selector: {selector}")
+            css_rules += f"""
+{selector} {{
+    background: #ffd700 !important;
+    border-radius: 8px !important;
+    border: 2px solid #ffcc00 !important;
+    color: transparent !important; /* Hide direct text */
+    text-shadow: none !important;   /* Remove any text shadow */
+    position: relative !important;
+    pointer-events: none !important;
+    cursor: not-allowed !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
+    overflow: hidden !important;
+}}
+{selector}::before {{
+    content: '🚫';
+    font-size: 22px !important;
+    color: #fff !important;
+    position: absolute !important;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.8;
+}}
+{selector}:hover::after {{
+    opacity: 1 !important;
+}}
+{selector}::after {{
+    content: 'No permission to interact';
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    background: #ffd700;
     color: #fff;
     padding: 4px 10px;
     border-radius: 4px;
@@ -1854,12 +1941,14 @@ def add_to_config(html_structure: Dict[str, Any], data_required: Dict[str, Any])
             'verified': False,
             'read': [],
             'write': [],
+            'create': [],
             'data': {}
         }
     
-    # Update read and write selectors
+    # Update read, write, and create selectors
     config[active_url]['read'] = html_structure.get('read', [])
     config[active_url]['write'] = html_structure.get('write', [])
+    config[active_url]['create'] = html_structure.get('create', [])
     
     # Update data requirements
     if 'data' in data_required:
@@ -2255,11 +2344,13 @@ def handle_from_config(minimal_html: Dict[str, str]) -> bool:
         # Convert text-based selectors to CSS selectors while preserving direct CSS selectors
         converted_read = [convert_text_to_selector(sel, minimal_html) for sel in url_config.get('read', [])]
         converted_write = [convert_text_to_selector(sel, minimal_html) for sel in url_config.get('write', [])]
+        converted_create = [convert_text_to_selector(sel, minimal_html) for sel in url_config.get('create', [])]
         
         # Create HTML structure from config with converted selectors
         html_structure = {
             'read': converted_read,
             'write': converted_write,
+            'create': converted_create,
             'success': True
         }
         

@@ -216,3 +216,5 @@ web/log
 .gitignore
 
 web/browser/demo/tictactoe/backend/games.json
+web/dump.rdb
+.gitignore

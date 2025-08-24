@@ -136,16 +136,14 @@ def get_attribute_trees():
         def process_tree(tree):
             if not isinstance(tree, AttributeTree):
                 logger.warning(f"Found non-AttributeTree object: {type(tree)}")
-                return {"label": str(tree), "value": str(tree), "children": [], "access": "", "position": "", "positionValue": 0}
+                return {"label": str(tree), "value": str(tree), "children": [], "access": ""}
             
             key, value = list(tree.value.items())[0]
             node = {
                 "label": key, 
                 "value": value, 
                 "children": [],
-                "access": getattr(tree, 'access', ''),
-                "position": getattr(tree, 'position', ''),
-                "positionValue": getattr(tree, 'positionValue', 0)
+                "access": getattr(tree, 'access', '')
             }
             
             for child in tree.children:
@@ -206,7 +204,7 @@ def add_policy():
         logger.info(f"Added policy: {policy_data}")
         
         # Construct policy key for highlighting
-        policy_key = f"{policy_data['granular_data']}-{policy_data['data_access']}-{policy_data['position']}"
+        policy_key = f"{policy_data['granular_data']}-{policy_data['data_access']}"
         logger.info(f"Emitting highlight for policy: {policy_key}")
         socketio.emit('highlight_policy', policy_key)
         
@@ -282,7 +280,7 @@ def delete_policy():
         logger.info(f"Successfully removed policy: {policy_data}")
         
         # Construct policy key for highlighting
-        policy_key = f"{policy_data['granular_data']}-{policy_data['data_access']}-{policy_data['position']}"
+        policy_key = f"{policy_data['granular_data']}-{policy_data['data_access']}"
         logger.info(f"Emitting highlight for policy: {policy_key}")
         socketio.emit('highlight_policy', policy_key)
         
@@ -500,7 +498,7 @@ def convert_to_text():
     try:
         data = request.get_json()
         # Create a unique key for the policy
-        cache_key = f"{data['granular_data']}-{data['data_access']}-{data['position']}"
+        cache_key = f"{data['granular_data']}-{data['data_access']}"
         
         # Check if we have a cached result
         if cache_key in text_cache:
@@ -509,8 +507,7 @@ def convert_to_text():
             
         policy = {
             'granular_data': data['granular_data'],
-            'data_access': data['data_access'],
-            'position': data['position']
+            'data_access': data['data_access']
         }
         text = agent_manager.policy_system.text(policy=policy, mode="decl")
         

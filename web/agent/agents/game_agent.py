@@ -57,11 +57,9 @@ class GameAPIAnnotation(APIAnnotationBase):
     def generate_attributes(self, kwargs, endpoint_name, wildcard):
         granular_data = self.get_hierarchy(endpoint_name, kwargs, wildcard)
         data_access = self.get_access_level(endpoint_name)
-        position = "Current"
         return [{
             'granular_data': granular_data,
-            'data_access': data_access,
-            'position': position
+            'data_access': data_access
         }]
 
 class GameAPI:

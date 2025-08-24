@@ -177,7 +177,6 @@ Your role is to translate a user's request for data access into well-defined emb
      - The specific **data type** for which access is being granted.
      - If applicable, a **value or identifier** for the requested data.
      - The required **access level**: either `Read` or `Write`.
-     - The **position** of the data relative to the current date (`Previous`, `Current`, or `Next`) if the request involves a temporal range.
 
 2. **Policy Translation:**
    - Your task is to analyze the request and convert it into a policy that aligns with the specified access criteria.
@@ -185,11 +184,10 @@ Your role is to translate a user's request for data access into well-defined emb
 
 3. **Policy Format:**
    - Policies must be added to the `policy_system` using the `add_policy` method.
-   - Each policy is represented as a Python dictionary with three mandatory keys:
+   - Each policy is represented as a Python dictionary with two mandatory keys:
      - **`granular_data`**: Identifies the specific data type and any corresponding value or temporal range and must only be from <ALL DATA>
      -- The labels must always be from <ALL DATA> and must never be made up no matter how much data is provided.
      - **`data_access`**: Specifies the level of access: either `Read`, `Write`, or `Create`.
-     - **`position`**: Specifies the temporal position (e.g., `Previous`, `Current`, or `Next`), or defaults to `Current` if no range is specified.
 
 4. **Data Type and Value:**
    - The data type must always be from <ALL DATA>.
@@ -219,8 +217,7 @@ Below are examples of valid policy formats and reasoning based on sample request
 ```python
 policy_system.add_policy({{
     "granular_data": "Calendar:Year(2025)::Calendar:Month(December)::Calendar:Day(15)",
-    "data_access": "Read",
-    "position": "Current"
+    "data_access": "Read"
 }})
 ```
 
@@ -235,13 +232,11 @@ Since we prefer multiple policies over a single policy with a wide range, we wil
 ```python
 policy_system.add_policy({{
     "granular_data": "Calendar:Month(November)",
-    "data_access": "Read",
-    "position": "Current"
+    "data_access": "Read"
 }})
 policy_system.add_policy({{
     "granular_data": "Calendar:Month(December)",
-    "data_access": "Read",
-    "position": "Current"
+    "data_access": "Read"
 }})
 ```
 
@@ -254,8 +249,7 @@ policy_system.add_policy({{
 ```python
 policy_system.add_policy({{
     "granular_data": "Calendar:Month(July)",
-    "data_access": "Write",
-    "position": "Current"
+    "data_access": "Write"
 }})
 ```
 
@@ -268,28 +262,25 @@ policy_system.add_policy({{
 ```python
 policy_system.add_policy({{
     "granular_data": "Wallet:CreditCard(Alaska Airline)",
-    "data_access": "Read",
-    "position": "Current"
+    "data_access": "Read"
 }})
 ```
 
 #### Example 5:
 **Request:** Grant read-only access to Calendar Day data from 10th July 2025 to 16th July 2025.
 
-**Reasoning:** The request seeks `Read` access for data scoped to July 2025 within the "Calendar Year and Month" hierarchy with Calendar Day ranging from 10th to 16th. Granular data must be Calendar::Day with range start value, 10th along with the month and year as it is specified in the request. The position must be Next(7) as the request is for a range of 7 days starting from 10th July 2025. If it was for a single day, the position would have been Current. If it was for two days, the position would have been Next(2) as the start and end days are also included in the range and so on.
+**Reasoning:** The request seeks `Read` access for data scoped to July 2025 within the "Calendar Year and Month" hierarchy with Calendar Day ranging from 10th to 16th. Granular data must be Calendar::Day with range start value, 10th along with the month and year as it is specified in the request.
 Since we prefer multiple policies over a single policy with a wide range, we will create 7 policies for each day in July between 10th and 16th.
 
 **Generated Policy:**
 ```python
 policy_system.add_policy({{
     "granular_data": "Calendar:Year(2025)::Calendar:Month(July)::Calendar:Day(10)",
-    "data_access": "Read",
-    "position": "Current"
+    "data_access": "Read"
 }})
 policy_system.add_policy({{
     "granular_data": "Calendar:Year(2025)::Calendar:Month(July)::Calendar:Day(11)",
-    "data_access": "Read",
-    "position": "Current"
+    "data_access": "Read"
 }})
 # ... repeat for all days from 12th to 16th
 ```
@@ -302,7 +293,7 @@ policy_system.add_policy({{
    - Only rely on <ALL DATA> for granular_data and for understanding the data hierarchy.
 
 2. **Handling Existing Policies:**
-   - If descriptions of existing policies are provided, do not generate overlapping or redundant policies for the same `data_access` and `position`.
+   - If descriptions of existing policies are provided, do not generate overlapping or redundant policies for the same `data_access`.
 
 3. **Output Multi-Level Permissions Accurately:**
    - Represent hierarchical or multi-level data requests by appropriately nesting keys in `granular_data`. For instance:
@@ -313,7 +304,7 @@ policy_system.add_policy({{
    - If the data does not have a value, then the value should be *, example Calendar:Month(*) which will allow access to all months.
 
 5. **Prefer multiple policies over a single policy with a wide range:**
-   - If the request is for data that spans multiple values, prefer to create multiple policies with more granular ranges over a single policy with a wide range with position as current.
+   - If the request is for data that spans multiple values, prefer to create multiple policies with more granular ranges over a single policy with a wide range.
    - Example: If the request is for data from July 10th to July 20th, prefer to either create a policy for complete July month or create 11 policies for each day in July between 10th and 20th.
   
 5. **Output Structure:**
@@ -350,38 +341,32 @@ Today's date is 2025-1-25 PST.
 Request => Calendar: Check availability in mid-July on the calendar to identify available dates for the cruise to Alaska.
 Since the request is clearly coming from the Calendar API, the data required is related to the calendar and in this case since the data range does not go beyond the month level, the data required is calendar month data.
 The access level required is Read as it is only checking availability.
-The position is Next as the request is for mid-July which is in the future relative to today's date.
 The correct data policy for this request must allow reading the calendar month data for the future months. 
 
 Request => Wallet: Use the Alaska Airline credit card to pay $2399.99 for the confirmed booking of the cruise "Voyager of the Glaciers".
 Since the request is related to the Wallet API, the data required is related to the credit card information in the wallet.
 The access level required is Read as wallet can not make payments but can provide the saved credit card information for the payment.
-The credit card information does not have a range, so current must be used which is the default when the data does not have a range.
 
 Request => Expedia: Proceed to book the Northern Marvels cruise departing from Seward, Alaska, on July 10, 2025, with a Suite cabin.
 Since the request is related to the Expedia API, the data required is access to Expedia cruise data.
 The access level required is Write as the request is to book a cruise.
-The position is Current as the Cruise data does not have a range.
 
 Request => Calendar: Add the "Glacier Explorer" cruise trip to the calendar from July 10 to July 20, 2025, as a confirmed booking.
 Since the request is coming from the Calendar API, the data required is related to the calendar, specifically the calendar week data because the requested data range is greater than a day but less than a month.
 The access level required is Create as the request is to add a new booking entry to the calendar.
-The position will be Next as given today's date, the request wants access to the future weeks calendar data.
 
 ### Format of Policy
-Policies must be added to the policy_system using the `add_policy` method. This method accepts a dictionary input consisting of only three keys: `granular_data`, `data_access`, and `position`.
+Policies must be added to the policy_system using the `add_policy` method. This method accepts a dictionary input consisting of only two keys: `granular_data` and `data_access`.
 
 granular_data: The specific data type required for the task.
 data_access: The level of access required for the data (Read/Write/Create).
-position: The position of the data relative to the current date (Previous/Current/Next), only if the data requires a range.
 
 Request => Calendar: Check availability in mid-July on the calendar to identify available dates for the cruise to Alaska.
 Example Policy Format:
 ```python
 policy_system.add_policy({
     "granular_data": "Calendar:Month",
-    "data_access": "Read",
-    "position": "Next"
+    "data_access": "Read"
 })
 ```
 
@@ -390,8 +375,7 @@ Example Policy Format:
 ```python
 policy_system.add_policy({
     "granular_data": "Wallet:CreditCard",
-    "data_access": "Read",
-    "position": "Current"
+    "data_access": "Read"
 })
 ```
 
@@ -400,8 +384,7 @@ Example Policy Format:
 ```python
 policy_system.add_policy({
     "granular_data": "Expedia:Cruise",
-    "data_access": "Write",
-    "position": "Current"
+    "data_access": "Write"
 })
 ```
 
@@ -410,8 +393,7 @@ Example Policy Format:
 ```python
 policy_system.add_policy({
     "granular_data": "Calendar:Week",
-    "data_access": "Create",
-    "position": "Next"
+    "data_access": "Create"
 })
 ```
 
@@ -479,13 +461,10 @@ You are a data access policy generator agent. You are expected to generate polic
     - **Creating new resources** (e.g., adding new bookings, contacts, cards) → Use **Create**  
     - **Modifying existing data** (e.g., updating, editing, changing) → Use **Write**
 
-- **Reinforce All Data Positions and Sequences:**
-  - Encourage thorough assessment of temporal or categorical positions related to each action, ensuring all temporal or context-based data elements are properly flagged within the generated policy.
-
 - **Utilize a Multistep Evaluation Process:**
   - Implement a structured approach to assess all necessary data interactions, beginning with the initial user action and extending through supporting operations (e.g., read, then create/write).
 
-Each policy is made up of three components: `granular_data`, `data_access`, and `position`.
+Each policy is made up of two components: `granular_data` and `data_access`.
 
 ### Granular Data
 - **Identify the highest granularity of data** that is sufficient to complete the user request.
@@ -523,25 +502,16 @@ Each policy is made up of three components: `granular_data`, `data_access`, and 
   - **Create**: Use for adding new data, creating new resources, or inserting new entries
     - Examples: "add new contact", "create booking", "add calendar event", "add credit card"
 
-### Position
-- The `position` attribute represents the data's position within its sequence (allowed values: `Previous` / `Current` / `Next`) with respect to the temporal context.
-- **Determine the temporal context**: Start by establishing a temporal reference point, such as today's date or another specified date in the user request.
-- **Assess the position** by comparing the established temporal reference against the requested data (granular_data):
-  -- **When granular_data is of "Calendar" types (e.g., `Calendar:Year`, `Calendar:Week`):
-    ---- Determine if the data is in the `Current`, `Next`, or `Previous` temporal sequence unit (e.g., month, year) relative to the current reference.
-    ---- Example, If today's date is January 2025 and the request is for Oct 2025, `Month` should be marked as `Next` while `Year` should be `Current`.
-  -- **When granular_data is of "Expedia" types (e.g., "Expedia:Experience", "Expedia:Cruise"):
-    ----- `position` will always be `Current` as this is non-sequential or category-specific data 
+ 
 
 ### Format of Policy
-Policies must be added to the policy_system using the `add_policy` method. This method accepts a dictionary input consisting of only three keys: `granular_data`, `data_access`, and `position`.
+Policies must be added to the policy_system using the `add_policy` method. This method accepts a dictionary input consisting of only two keys: `granular_data` and `data_access`.
 
 Example Policy Format:
 ```python
 policy_system.add_policy({
     "granular_data": "Calendar:Month",
-    "data_access": "Read",
-    "position": "Next"
+    "data_access": "Read"
 })
 ```
 
@@ -550,7 +520,7 @@ policy_system.add_policy({
 - **Generate only permissive policies** for data whose access can be reasonably inferred from the request.
 - **Minimize data exposure**: Provide access to the minimal required data for completing the task.
 - **No assumptions about sensitive data**: Allow access if the user action implicitly necessitates it.
-- **Sometimes you wil be given a description of permissions which are already granted, do not make polcies for them or for the granular_data which comes under them in the data hierarchy with same data_access and position. 
+- **Sometimes you wil be given a description of permissions which are already granted, do not make polcies for them or for the granular_data which comes under them in the data hierarchy with same data_access. 
   -- **Example: if the read permission exist for expedia experience data then do not create a policy for read access to expedia cruise data as cruise is the child of expedia experience.
   -- **Example: if the read premission exist for calendar month data then do not create a policu for read access to calendar day data as day is dominated by month based on calendat hierarchy data.
 - **Feel free to generate multiple policies to accurately represent the data allowed by the user through the request but avoid redundant policies.
@@ -720,11 +690,6 @@ policy_system.add_policy({
 POLICY_TEXT = """
 You are given a data permission policy in an python embedded DSL.
 granular_data is the data for which the permission is given.
-position is always interpreted for the granular_data.
-if the position is current and it does not make sense for the granular_data ignore it from the output.
-- position for calendar will always represent time (previous -> past, current -> present and next -> future)
-- when the position is not current, it will always have a value. This value will be a number which will be the number of steps from the granular_data. Next(n) with data as year will represent the range, year in granular data to year in granular data + n.
-- position must be ignored for data from expedia or any application which does not have a temporal context.
 
 Convert each policy into one linear natural language statements which can be shown to the user.
 You have two working modes, decl and prompt. 
@@ -737,17 +702,15 @@ Example:
 decl 
 policy_system.add_policy({
     "granular_data": "Calendar:Year(2025)",
-    "data_access": "Read",
-    "position": "Next(3)"
+    "data_access": "Read"
 })
 
-The system has been granted read access to calendar year data from 2025 to 2028.
+The system has been granted read access to calendar year data for 2025.
 
 prompt
 policy_system.add_policy({
     "granular_data": "Calendar:Year(*)",
-    "data_access": "Read",
-    "position": "Current"
+    "data_access": "Read"
 })
 
 Do you allow read access to all the calendar year data?

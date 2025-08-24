@@ -13,16 +13,12 @@ interface TreeNode {
   label: string;
   value: string;
   access: string;
-  position: string;
-  positionValue?: number;
   children: TreeNode[];
 }
 
 interface Policy {
   granular_data: string;
   data_access: string;
-  position: string;
-  positionValue?: number;
 }
 
 interface TreeViewProps {
@@ -30,7 +26,6 @@ interface TreeViewProps {
   isRoot: boolean;
   viewMode: ViewMode;
   onAccessChange?: (node: TreeNode, newAccess: string) => void;
-  onPositionChange?: (node: TreeNode, newPosition: string, newPositionValue?: number) => void;
   onValueChange?: (node: TreeNode, newValue: string) => void;
   onDelete?: (node: TreeNode) => void;
   highlightedPolicy?: string | null;
@@ -49,7 +44,6 @@ const TreeView: React.FC<TreeViewProps> = ({
   isRoot = false,
   viewMode,
   onAccessChange, 
-  onPositionChange, 
   onValueChange,
   onDelete,
   highlightedPolicy = null
@@ -57,19 +51,16 @@ const TreeView: React.FC<TreeViewProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isEditingValue, setIsEditingValue] = useState(false);
   const [editedValue, setEditedValue] = useState(data.value);
-  const [isEditingPositionValue, setIsEditingPositionValue] = useState(false);
-  const [editedPositionValue, setEditedPositionValue] = useState(data.positionValue || 1);
   const hasChildren = data.children && data.children.length > 0;
 
   // Check if this node should be highlighted
   const isHighlighted = useMemo(() => {
-    if (!data.access || !data.position) return false;
-    const policyKey = `${data.label}(${data.value || ''})-${data.access}-${data.position}${data.position !== "Current" && !data.position.includes('(') ? `::${data.positionValue || 1}` : ''}`;
+    if (!data.access) return false;
+    const policyKey = `${data.label}(${data.value || ''})-${data.access}`;
     console.log('Checking highlight for node:', {
       nodeLabel: data.label,
       nodeValue: data.value,
       nodeAccess: data.access,
-      nodePosition: data.position,
       constructedKey: policyKey,
       highlightedPolicy,
       isMatch: highlightedPolicy === policyKey
@@ -80,40 +71,6 @@ const TreeView: React.FC<TreeViewProps> = ({
   const handleAccessChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (onAccessChange) {
       onAccessChange(data, e.target.value);
-    }
-  };
-
-  const handlePositionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    if (onPositionChange) {
-      const newPosition = e.target.value;
-      if (newPosition === "Current") {
-        onPositionChange(data, newPosition, 0);
-      } else {
-        onPositionChange(data, newPosition, data.positionValue || 1);
-      }
-    }
-  };
-
-  const handlePositionValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
-    if (!isNaN(value) && value >= 0) {
-      setEditedPositionValue(value);
-    }
-  };
-
-  const handlePositionValueSubmit = () => {
-    if (onPositionChange && data.position !== "Current") {
-      onPositionChange(data, data.position, editedPositionValue);
-    }
-    setIsEditingPositionValue(false);
-  };
-
-  const handlePositionValueKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handlePositionValueSubmit();
-    } else if (e.key === 'Escape') {
-      setIsEditingPositionValue(false);
-      setEditedPositionValue(data.positionValue || 1);
     }
   };
 
@@ -255,59 +212,6 @@ const TreeView: React.FC<TreeViewProps> = ({
             </Badge>
           )}
               
-          {/* Position badge/select and value input */}
-          {onPositionChange ? (
-            <Tooltip label="Select the range of the data starting from the value given for this data." placement="top">
-              <HStack spacing={1}>
-                <Select 
-                  size="xs" 
-                  width="90px" 
-                  value={data.position || ""} 
-                  onChange={handlePositionChange}
-                  onClick={(e) => e.stopPropagation()}
-                  placeholder="Position"
-                >
-                  <option value="Previous">Previous</option>
-                  <option value="Current">Current</option>
-                  <option value="Next">Next</option>
-                </Select>
-                {data.position && data.position !== "Current" && !data.position.includes('(') && (
-                  isEditingPositionValue ? (
-                    <Tooltip label="Position value (order in hierarchy)" placement="top">
-                      <Input
-                        size="xs"
-                        width="50px"
-                        type="number"
-                        min="0"
-                        value={editedPositionValue}
-                        onChange={handlePositionValueChange}
-                        onKeyDown={handlePositionValueKeyPress}
-                        onBlur={handlePositionValueSubmit}
-                        autoFocus
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </Tooltip>
-                  ) : (
-                    <Badge 
-                      colorScheme="purple" 
-                      cursor="pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsEditingPositionValue(true);
-                      }}
-                    >
-                      {data.positionValue || 1}
-                    </Badge>
-                  )
-                )}
-              </HStack>
-            </Tooltip>
-          ) : (
-            <Badge colorScheme="purple">
-              {data.position ? `${data.position !== "Current" ? data.position : ""}${data.position !== "Current" && !data.position.includes('(') && (data.positionValue || data.positionValue === 0) ? `::${data.positionValue}` : ''}` : "Position"}
-            </Badge>
-          )}
-
           {/* Delete button - only show in all permission view */}
           {isRoot && onDelete && viewMode === 'permitted' && (
             <Tooltip label="Revoke this permission" placement="top">
@@ -338,7 +242,6 @@ const TreeView: React.FC<TreeViewProps> = ({
                 isRoot={false}
                 viewMode={viewMode}
                 onAccessChange={onAccessChange}
-                onPositionChange={onPositionChange}
                 onValueChange={onValueChange}
                 onDelete={onDelete}
                 highlightedPolicy={highlightedPolicy}
@@ -375,7 +278,6 @@ const PermissionChat: React.FC = (): JSX.Element => {
       ...tree,
       value: '',
       access: '',
-      position: '',
       children: tree.children ? resetEditViewTrees(tree.children) : []
     }));
   };
@@ -476,11 +378,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
       const newNodeMap = new Map<string, TreeNode>();
       
       const addNodesToMap = (node: TreeNode) => {
-        const nodeKey = createNodeKey(node.label, node.access || '', node.position || '', node.positionValue || 1);
+        const nodeKey = createNodeKey(node.label, node.access || '');
         console.log('Adding node to map:', {
           nodeLabel: node.label,
           nodeAccess: node.access,
-          nodePosition: node.position,
           nodeKey
         });
         
@@ -489,8 +390,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
           ...node,
           label: node.label, // Use the base label without the value
           value: node.value || '', // Preserve existing value or use parsed value
-          access: node.access || '', // Ensure access is preserved
-          position: node.position || '' // Ensure position is preserved
+          access: node.access || '' // Ensure access is preserved
         });
         
         // Process children
@@ -517,25 +417,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
   }, [attributeTrees]);
 
   // Function to create a composite key for node lookup
-  const createNodeKey = (granular_data: string, data_access: string, position: string, positionValue?: number): string => {
-    console.log('Creating node key with:', {
-      granular_data,
-      data_access,
-      position,
-      positionValue
-    });
-    
-    // If granular_data already contains the value in parentheses, use it as is
-    if (granular_data.includes('(')) {
-      const key = `${granular_data}-${data_access}-${position}${positionValue ? `::${positionValue}` : ''}`;
-      console.log('Created node key (existing format):', key);
-      return key;
-    }
-    
-    // Otherwise, construct the key in the backend format
-    const key = `${granular_data}(*)-${data_access}-${position}${positionValue ? `::${positionValue}` : ''}`;
-    console.log('Created node key (constructed format):', key);
-    return key;
+  const createNodeKey = (granular_data: string, data_access: string): string => {
+    return `${granular_data}-${data_access}`;
   };
 
   // Function to parse a node label and extract its value
@@ -567,11 +450,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
   };
 
   // Function to create a hierarchical tree from a chained label
-  const createTreeFromChainedLabel = (granular_data: string, access: string, position: string): TreeNode => {
+  const createTreeFromChainedLabel = (granular_data: string, access: string): TreeNode => {
     console.log('createTreeFromChainedLabel called with:');
     console.log('granular_data:', granular_data);
     console.log('access:', access);
-    console.log('position:', position);
     
     const parts = parseLabel(granular_data);
     console.log('Parsed parts:', parts);
@@ -614,7 +496,6 @@ const PermissionChat: React.FC = (): JSX.Element => {
       label: parts[0].baseLabel,
       value: parts[0].value,
       access: access,
-      position: position,
       children: []
     };
 
@@ -627,7 +508,6 @@ const PermissionChat: React.FC = (): JSX.Element => {
         label: originalChild.label,
         value: '',
         access: access,
-        position: position,
         children: []
       };
 
@@ -695,11 +575,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
     const existingNodesMap = new Map<string, TreeNode>();
     
     const addNodesToMap = (node: TreeNode) => {
-      const nodeKey = createNodeKey(node.label, node.access || '', node.position || '', node.positionValue || 1);
+      const nodeKey = createNodeKey(node.label, node.access || '');
       console.log('Adding node to map:', {
         nodeLabel: node.label,
         nodeAccess: node.access,
-        nodePosition: node.position,
         nodeKey
       });
       
@@ -707,9 +586,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
       existingNodesMap.set(nodeKey, {
         ...node,
         value: node.value || '', // Ensure value is preserved
-        access: node.access || '', // Ensure access is preserved
-        position: node.position || '', // Ensure position is preserved
-        positionValue: node.positionValue || 1 // Ensure positionValue is preserved
+        access: node.access || '' // Ensure access is preserved
       });
       
       // Process children
@@ -735,7 +612,6 @@ const PermissionChat: React.FC = (): JSX.Element => {
       console.log('Policy key:', policyKey);
       console.log('Policy granular_data:', policy.granular_data);
       console.log('Policy data_access:', policy.data_access);
-      console.log('Policy position:', policy.position);
       
       // Skip if we've already processed this policy
       if (processedPolicies.has(policyKey)) {
@@ -747,7 +623,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
       console.log('Applying policy:', policy);
       
       // Create composite key for node lookup
-      const nodeKey = createNodeKey(policy.granular_data, policy.data_access, policy.position, policy.positionValue);
+      const nodeKey = createNodeKey(policy.granular_data, policy.data_access);
       
       console.log('Looking for node with key:', nodeKey);
       console.log('Node exists in map:', existingNodesMap.has(nodeKey));
@@ -813,8 +689,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
           // Create the new node tree from the chained label
           const newNodeTree = createTreeFromChainedLabel(
             policy.granular_data,
-            policy.data_access.toLowerCase(),
-            policy.position.toLowerCase()
+            policy.data_access.toLowerCase()
           );
           
           // Add the new node tree to the parent in the updated trees
@@ -841,8 +716,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
                 
                 // Check if the parent already has a child with the same composite key
                 const existingChildIndex = updatedParentNode.children.findIndex(child => {
-                const childKey = createNodeKey(child.label, child.access, child.position, child.positionValue || 1);
-                const newKey = createNodeKey(newNodeTree.label, newNodeTree.access, newNodeTree.position, newNodeTree.positionValue || 1);
+                const childKey = createNodeKey(child.label, child.access);
+                const newKey = createNodeKey(newNodeTree.label, newNodeTree.access);
                   return childKey === newKey;
                 });
                 
@@ -857,7 +732,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
                 
               // Add all nodes in the tree to our map
                 const addNodesToNodeMap = (node: TreeNode) => {
-                const nodeKey = createNodeKey(node.label, node.access, node.position, node.positionValue || 1);
+                const nodeKey = createNodeKey(node.label, node.access);
                   updatedNodeMap.set(nodeKey, node);
                   
                   if (node.children && node.children.length > 0) {
@@ -885,14 +760,13 @@ const PermissionChat: React.FC = (): JSX.Element => {
           // Create a new root node tree from the chained label
           const newRootNodeTree = createTreeFromChainedLabel(
             policy.granular_data,
-            policy.data_access.toLowerCase(),
-            policy.position.toLowerCase()
+            policy.data_access.toLowerCase()
           );
             
             // Check if a root node with the same composite key already exists
             const existingRootIndex = updatedTrees.findIndex((tree: TreeNode) => {
-            const treeKey = createNodeKey(tree.label, tree.access, tree.position, tree.positionValue || 1);
-            const newKey = createNodeKey(newRootNodeTree.label, newRootNodeTree.access, newRootNodeTree.position, newRootNodeTree.positionValue || 1);
+            const treeKey = createNodeKey(tree.label, tree.access);
+            const newKey = createNodeKey(newRootNodeTree.label, newRootNodeTree.access);
               return treeKey === newKey;
             });
             
@@ -907,7 +781,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
             
           // Add all nodes in the tree to our map
             const addNodesToNodeMap = (node: TreeNode) => {
-            const nodeKey = createNodeKey(node.label, node.access, node.position, node.positionValue || 1);
+            const nodeKey = createNodeKey(node.label, node.access);
               updatedNodeMap.set(nodeKey, node);
               
               if (node.children && node.children.length > 0) {
@@ -1078,44 +952,6 @@ const PermissionChat: React.FC = (): JSX.Element => {
     console.log('Access updated:', node.label, value);
   };
   
-  const handlePositionChange = (node: TreeNode, value: string, positionValue?: number) => {
-    // Create a deep copy of the appropriate trees based on view mode
-    const treesToUpdate = viewMode === 'edit' ? editViewTrees : attributeTrees;
-    const updatedTrees = JSON.parse(JSON.stringify(treesToUpdate));
-    
-    // Function to update the node in the tree
-    const updateNode = (trees: TreeNode[]): boolean => {
-      for (let i = 0; i < trees.length; i++) {
-        if (trees[i].label === node.label) {
-          trees[i] = {
-            ...trees[i],
-            position: value,
-            positionValue: positionValue || 1
-          };
-          return true;
-        }
-        
-        if (trees[i].children && trees[i].children.length > 0) {
-          if (updateNode(trees[i].children)) {
-            return true;
-          }
-        }
-      }
-      return false;
-    };
-    
-    updateNode(updatedTrees);
-    
-    // Update the appropriate state based on view mode
-    if (viewMode === 'edit') {
-      setEditViewTrees(updatedTrees);
-    } else {
-    setAttributeTrees(updatedTrees);
-    }
-    
-    console.log('Position updated:', node.label, value, positionValue);
-  };
-
   const handleValueChange = (node: TreeNode, value: string) => {
     // Create a deep copy of the appropriate trees based on view mode
     const treesToUpdate = viewMode === 'edit' ? editViewTrees : attributeTrees;
@@ -1309,7 +1145,6 @@ const PermissionChat: React.FC = (): JSX.Element => {
         isRoot={true}
         viewMode={viewMode}
         onAccessChange={viewMode === 'edit' ? handleAccessChange : undefined}
-        onPositionChange={viewMode === 'edit' ? handlePositionChange : undefined}
         onValueChange={viewMode === 'edit' ? handleValueChange : undefined}
         onDelete={handleDeletePolicy}
         highlightedPolicy={highlightedPolicy}
@@ -1469,7 +1304,6 @@ const PermissionChat: React.FC = (): JSX.Element => {
         label: node.label,
         value: node.value,
         access: node.access,
-        position: node.position,
         children: []
       };
 
@@ -1592,7 +1426,6 @@ const PermissionChat: React.FC = (): JSX.Element => {
         value: parts[0].value,
         access: policy.data_access,
         position: policy.position.split('::')[0],
-        positionValue: policy.position.includes('::') ? parseInt(policy.position.split('::')[1]) : 1,
         children: []
       };
 
@@ -1615,7 +1448,6 @@ const PermissionChat: React.FC = (): JSX.Element => {
             value: pathNode === nextNode ? parts[i].value : '',
             access: policy.data_access,
             position: policy.position.split('::')[0],
-            positionValue: policy.position.includes('::') ? parseInt(policy.position.split('::')[1]) : 1,
             children: []
           };
 
@@ -1644,7 +1476,6 @@ const PermissionChat: React.FC = (): JSX.Element => {
             value: '*',
             access: policy.data_access,
             position: policy.position.split('::')[0],
-            positionValue: policy.position.includes('::') ? parseInt(policy.position.split('::')[1]) : 1,
             children: []
           });
         });

@@ -95,12 +95,10 @@ class ContactManagerAPIAnnotation(APIAnnotationBase):
         end_time = start_time  # For contact operations, the time period is typically immediate
         granular_data = self.get_hierarchy(endpoint_name, kwargs, wildcard)
         data_access = self.get_access_level(endpoint_name)
-        position = self.get_time_period(start_time, end_time, wildcard)
         
         return [{
             'granular_data': granular_data,
-            'data_access': data_access,
-            'position': position
+            'data_access': data_access
         }]
 
 class ContactManagerAPI:
@@ -175,6 +173,25 @@ class ContactManagerAgent(BaseAgent):
             self.contact_get_names_by_relation,
             get_user_input
         ]
+        
+        self.attributes = {
+            'granular_data': [
+                AttributeTree(f'ContactManager:Contact', [
+                    AttributeTree(f'ContactManager:ContactName'),
+                    AttributeTree(f'ContactManager:ContactPhone'),
+                    AttributeTree(f'ContactManager:ContactAddress'),
+                    AttributeTree(f'ContactManager:ContactEmail'),
+                    AttributeTree(f'ContactManager:ContactRelation'),
+                    AttributeTree(f'ContactManager:ContactBirthday'),
+                    AttributeTree(f'ContactManager:ContactNotes')
+                ])
+            ],
+            'data_access': [
+                AttributeTree('Read'),
+                AttributeTree('Write'),
+                AttributeTree('Create')
+            ]
+        }
         
         super().__init__("ContactManager", system_message, tools, model_client)
         

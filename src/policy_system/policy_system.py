@@ -76,7 +76,7 @@ class PolicySystem:
         logger.info(f"📦 Created API instance: {api_instance}")
         
         # Define the list of allowed attributes
-        allowed_attributes = ['granular_data', 'data_access', 'position']
+        allowed_attributes = ['granular_data', 'data_access']
         logger.info(f"📋 Allowed attributes: {allowed_attributes}")
 
         # Extract attribute definitions from the API instance
@@ -235,10 +235,10 @@ class PolicySystem:
             logger.info(f"Updated granular data to: {policy_rule['granular_data']}")
 
         # Check for duplicate policy using the same key matching logic as remove_policy
-        target_key = f"{policy_rule['granular_data'].lower()}-{policy_rule['data_access'].lower()}-{policy_rule['position'].lower()}"
+        target_key = f"{policy_rule['granular_data'].lower()}-{policy_rule['data_access'].lower()}"
         
         for rule in self.policy_rules:
-            rule_key = f"{rule['granular_data'].lower()}-{rule['data_access'].lower()}-{rule['position'].lower()}"
+            rule_key = f"{rule['granular_data'].lower()}-{rule['data_access'].lower()}"
             if rule_key == target_key:
                 logger.info(f"Duplicate policy found with key: {target_key}, skipping addition")
                 return
@@ -251,58 +251,6 @@ class PolicySystem:
         send_custom_log("Permission Added", f"{target_key}")
         logger.info(f"Added new policy with key: {target_key}")
 
-    def expand_attributes(self, attributes):
-        increment = attributes['position'].lower().startswith('next') 
-        logger.info(f"Increment: {increment}")
-        increment_value = 1
-        if '(' in attributes['position']:
-            increment_value = attributes['position'].split('(')[1].rstrip(')')
-        logger.info(f"Increment value: {increment_value}")
-        
-        # Convert increment_value to integer early
-        try:
-            increment_value = int(increment_value)
-        except ValueError:
-            logger.info("Invalid increment value, returning original attributes with position current")
-            attributes['position'] = 'Current'
-            return [attributes]
-
-        # get last non-wildcard value in granular_data
-        last_non_wildcard = None
-        for value in attributes['granular_data'].split('::'):
-            if '(*)' not in value:
-                last_non_wildcard = value
-        
-        logger.info(f"Last non-wildcard: {last_non_wildcard}")
-
-        if not last_non_wildcard:
-            logger.info("No non-wildcard value found, returning original attributes with position current")
-            attributes['position'] = 'Current'
-            return [attributes]
-        
-        last_non_wildcard_key = last_non_wildcard.split('(')[0]
-        last_non_wildcard_value = last_non_wildcard.split('(')[1].rstrip(')')
-        logger.info(f"Last non-wildcard value: {last_non_wildcard_value}")
-
-        if not last_non_wildcard_value.isdigit():
-            logger.info("Last non-wildcard value is not an integer, returning original attributes with position current")
-            attributes['position'] = 'Current'
-            return [attributes]
-            
-        last_non_wildcard_value = int(last_non_wildcard_value)
-        
-        expanded_attributes = []
-        for i in range(0, increment_value):
-            new_value = last_non_wildcard_value + i if increment else last_non_wildcard_value - i
-            new_key = last_non_wildcard_key + f"({new_value})"
-            new_attributes = attributes.copy()
-            new_attributes['granular_data'] = new_attributes['granular_data'].replace(last_non_wildcard, new_key)
-            new_attributes['position'] = "Current"
-            logger.info(f"Expanded attribute: {new_attributes}")
-            expanded_attributes.append(new_attributes)
-
-        return expanded_attributes
-            
     def is_action_allowed(self, attributes, print_policy=True):
         if not self.status:
             logger.warning("Policy system is DISABLED - allowing action by default")
@@ -327,13 +275,6 @@ class PolicySystem:
     def _check_single_attribute(self, attributes, print_policy=True):
         """Check a single attribute object against policy rules"""
         logger.info(f"POLICY CHECK - Single Attribute: {attributes}")
-        
-        if attributes['position'].lower() != 'current':
-            expanded_attributes = self.expand_attributes(attributes)
-            for attr in expanded_attributes:
-                if not self._check_single_attribute(attr, True):
-                    return False
-            return True
 
         for rule in self.policy_rules:
             if print_policy:
@@ -433,7 +374,8 @@ class PolicySystem:
                 return False
 
             if attr == 'granular_data' and valid > 0:
-                skip_attr.append('position')
+                # Skip position validation since position is removed
+                pass
 
         logger.info("Validation successful, returning True")
         return True
@@ -586,17 +528,18 @@ class PolicySystem:
         logger.info(f"Attempting to remove policy: {policy_rule}")
         
         # Create composite key for the policy to remove
-        target_key = f"{policy_rule['granular_data'].lower()}-{policy_rule['data_access'].lower()}-{policy_rule['position'].lower()}"
+        target_key = f"{policy_rule['granular_data'].lower()}-{policy_rule['data_access'].lower()}"
         send_custom_log("Permission Removed", f"{target_key}")
         
         # Find and remove the matching policy
         for i, rule in enumerate(self.policy_rules):
-            rule_key = f"{rule['granular_data'].lower()}-{rule['data_access'].lower()}-{rule['position'].lower()}"
+            rule_key = f"{rule['granular_data'].lower()}-{rule['data_access'].lower()}"
             if rule_key == target_key:
                 logger.info(f"Found matching policy at index {i}, removing it")
-                self.policy_rules.pop(i)
+                removed_policy = self.policy_rules.pop(i)
+                logger.info(f"Removed policy: {removed_policy}")
                 return True
-                
+        
         logger.warning(f"No matching policy found for key: {target_key}")
         return False
 

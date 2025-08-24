@@ -15,17 +15,12 @@ class ExpediaAPIAnnotation(APIAnnotationBase):
                 AttributeTree(f'Expedia:Experience', [
                     AttributeTree(f'Expedia:Cruise')
                 ]),
-                AttributeTree(f'Expedia:Payment'),
+                AttributeTree(f'Expedia:Payment')
             ],
             'data_access': [
                 AttributeTree('Read'),
                 AttributeTree('Write'),
                 AttributeTree('Create')
-            ],
-            'position': [
-                AttributeTree('Previous'),
-                AttributeTree('Current'),
-                AttributeTree('Next')
             ]
         })
 
@@ -74,28 +69,18 @@ class ExpediaAPIAnnotation(APIAnnotationBase):
             return 'Previous'
 
     def generate_attributes(self, kwargs, endpoint_name, use_wildcard):
-        if 'search_flights' in endpoint_name or 'book_flight' in endpoint_name:
-            start_time = kwargs.get('departure_date', datetime.now())
-            end_time = kwargs.get('return_date', start_time + timedelta(days=1))
-        elif 'search_hotels' in endpoint_name or 'book_hotel' in endpoint_name:
-            start_time = kwargs.get('check_in_date', datetime.now())
-            end_time = kwargs.get('check_out_date', start_time + timedelta(days=1))
-        elif 'rent_car' in endpoint_name:
-            start_time = kwargs.get('pickup_date', datetime.now())
-            end_time = kwargs.get('return_date', start_time + timedelta(days=1))
-        else:
-            start_time = datetime.now()
-            end_time = start_time + timedelta(days=1)
+        start_time = datetime.now()
+        end_time = datetime.now()
         
-        granular_data = self.get_hierarchy(endpoint_name, kwargs, use_wildcard)
-        data_access = self.get_access_level(endpoint_name)
-        position = self.get_time_period(start_time, end_time, use_wildcard)
+        if 'start_time' in kwargs:
+            start_time = kwargs['start_time']
+        if 'end_time' in kwargs:
+            end_time = kwargs['end_time']
         
-        return [{
-            'granular_data': granular_data,
-            'data_access': data_access,
-            'position': position
-        }]
+        return {
+            'granular_data': self.get_hierarchy(endpoint_name, kwargs, use_wildcard),
+            'data_access': self.get_access_level(endpoint_name)
+        }
 
 class ExpediaAPI:
     def __init__(self, policy_system):

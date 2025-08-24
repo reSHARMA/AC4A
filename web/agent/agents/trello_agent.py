@@ -200,14 +200,12 @@ class TrelloAPIAnnotation(APIAnnotationBase):
             data_access = 'Write'
         else:
             data_access = 'Read'
-        position = 'Current'
         
         # Return a list containing the single attribute object for now
         # This maintains backward compatibility while allowing for future expansion
         return [{
             'granular_data': granular_data,
-            'data_access': data_access,
-            'position': position
+            'data_access': data_access
         }]
 
 # --- TrelloAPI Class ---

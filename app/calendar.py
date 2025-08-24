@@ -6,24 +6,21 @@ from src.utils.dummy_data import generate_dummy_data
 class CalendarAPIAnnotation(APIAnnotationBase):
     def __init__(self):
         super().__init__("Calendar", {
-            'granular_data': [AttributeTree(f'Calendar:Year', [
-                AttributeTree(f'Calendar:Month', [
-                    AttributeTree(f'Calendar:Week', [
-                        AttributeTree(f'Calendar:Day', [
-                            AttributeTree(f'Calendar:Hour')
+            'granular_data': [
+                AttributeTree(f'Calendar:Year', [
+                    AttributeTree(f'Calendar:Month', [
+                        AttributeTree(f'Calendar:Week', [
+                            AttributeTree(f'Calendar:Day', [
+                                AttributeTree(f'Calendar:Hour')
+                            ])
                         ])
                     ])
                 ])
-            ])],
+            ],
             'data_access': [
                 AttributeTree('Read'),
                 AttributeTree('Write'),
                 AttributeTree('Create')
-            ],
-            'position': [
-                AttributeTree('Previous'),
-                AttributeTree('Current'),
-                AttributeTree('Next')
             ]
         })
 
@@ -92,14 +89,19 @@ class CalendarAPIAnnotation(APIAnnotationBase):
         result = composite_data if composite_data else "Current"
         return result
 
-    def generate_attributes(self, kwargs, endpoint_name, wildcard):
-        start_time = kwargs['start_time']
-        duration = kwargs['duration']
-        return [{
-            'granular_data': self.get_hierarchy(start_time, duration, wildcard),
-            'data_access': self.get_access_level(endpoint_name),
-            'position': self.get_time_period(start_time, duration, wildcard)
-        }]
+    def generate_attributes(self, kwargs, endpoint_name, use_wildcard):
+        start_time = datetime.now()
+        duration = timedelta(hours=1)
+        
+        if 'start_time' in kwargs:
+            start_time = kwargs['start_time']
+        if 'duration' in kwargs:
+            duration = kwargs['duration']
+        
+        return {
+            'granular_data': self.get_hierarchy(endpoint_name, kwargs, use_wildcard),
+            'data_access': self.get_access_level(endpoint_name)
+        }
 
 class CalendarAPI:
     def __init__(self, policy_system):

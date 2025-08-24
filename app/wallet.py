@@ -18,11 +18,6 @@ class WalletAPIAnnotation(APIAnnotationBase):
                 AttributeTree('Read'),
                 AttributeTree('Write'),
                 AttributeTree('Create')
-            ],
-            'position': [
-                AttributeTree('Previous'),
-                AttributeTree('Current'),
-                AttributeTree('Next')
             ]
         })
 
@@ -52,16 +47,17 @@ class WalletAPIAnnotation(APIAnnotationBase):
 
     def generate_attributes(self, kwargs, endpoint_name, use_wildcard):
         start_time = datetime.now()
-        end_time = start_time  # For wallet operations, the time period is typically immediate
-        granular_data = self.get_hierarchy(endpoint_name, kwargs, use_wildcard)
-        data_access = self.get_access_level(endpoint_name)
-        position = self.get_time_period(start_time, end_time, use_wildcard)
+        end_time = datetime.now()
         
-        return [{
-            'granular_data': granular_data,
-            'data_access': data_access,
-            'position': position
-        }]
+        if 'start_time' in kwargs:
+            start_time = kwargs['start_time']
+        if 'end_time' in kwargs:
+            end_time = kwargs['end_time']
+        
+        return {
+            'granular_data': self.get_hierarchy(endpoint_name, kwargs, use_wildcard),
+            'data_access': self.get_access_level(endpoint_name)
+        }
 
 class WalletAPI:
     def __init__(self, policy_system):

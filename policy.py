@@ -17,7 +17,6 @@ def RandomTest1():
     policy_system.add_policy({
         "granular_data": "Calendar:Year(1995)::Calendar:Month(1)",
         "data_access": "Read",
-        "position": "Next",  # Allow actions in the present time
         "expiry": TimeUtils.next_seconds(10)  # Policy expires in 10 seconds
     })
 
@@ -74,7 +73,6 @@ def SimplePolicyTest():
     policy_system.add_policy({
         "granular_data": "Calendar:Month",
         "data_access": "Read",
-        "position": "Next",  # Allow actions in the present time
     })
 
     calendar_api = CalendarAPI(policy_system)
@@ -102,7 +100,6 @@ def SimplePolicyStarTest():
     policy_system.add_policy({
         "granular_data": "Calendar:Month(*)",
         "data_access": "Read",
-        "position": "Next(*)",  # Allow actions in the present time
     })
 
     calendar_api = CalendarAPI(policy_system)
@@ -130,7 +127,6 @@ def PolicyValueTest1():
     policy_system.add_policy({
         "granular_data": "Calendar:Month(1)",
         "data_access": "Read",
-        "position": "Next(*)",  # Allow actions in the present time
     })
 
     calendar_api = CalendarAPI(policy_system)

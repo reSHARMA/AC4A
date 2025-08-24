@@ -151,8 +151,7 @@ class CalendarAPIAnnotation(APIAnnotationBase):
         duration = kwargs['duration']
         return [{
             'granular_data': self.get_hierarchy(start_time, duration, wildcard),
-            'data_access': self.get_access_level(endpoint_name),
-            'position': self.get_time_period(start_time, duration, wildcard)
+            'data_access': self.get_access_level(endpoint_name)
         }]
 
 class CalendarAPI:

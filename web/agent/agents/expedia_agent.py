@@ -107,59 +107,24 @@ class ExpediaAPIAnnotation(APIAnnotationBase):
 
     def generate_attributes(self, kwargs, endpoint_name, wildcard):
         if 'search_flights' in endpoint_name or 'book_flight' in endpoint_name:
-            departure_date = kwargs.get('departure_date')
-            return_date = kwargs.get('return_date')
-            
-            if not departure_date:
-                start_time = datetime.now()
-            else:
-                start_time = datetime.strptime(departure_date, '%Y-%m-%d')
-                
-            if not return_date:
-                end_time = start_time + timedelta(days=1)
-            else:
-                end_time = datetime.strptime(return_date, '%Y-%m-%d')
-                
+            start_time = kwargs.get('departure_date', datetime.now())
+            end_time = kwargs.get('return_date', start_time + timedelta(days=1))
         elif 'search_hotels' in endpoint_name or 'book_hotel' in endpoint_name:
-            check_in_date = kwargs.get('check_in_date')
-            check_out_date = kwargs.get('check_out_date')
-            
-            if not check_in_date:
-                start_time = datetime.now()
-            else:
-                start_time = datetime.strptime(check_in_date, '%Y-%m-%d')
-                
-            if not check_out_date:
-                end_time = start_time + timedelta(days=1)
-            else:
-                end_time = datetime.strptime(check_out_date, '%Y-%m-%d')
-                
-        elif 'search_rental_cars' in endpoint_name or 'book_rental_car' in endpoint_name:
-            pickup_date = kwargs.get('pickup_date')
-            return_date = kwargs.get('return_date')
-            
-            if not pickup_date:
-                start_time = datetime.now()
-            else:
-                start_time = datetime.strptime(pickup_date, '%Y-%m-%d')
-                
-            if not return_date:
-                end_time = start_time + timedelta(days=1)
-            else:
-                end_time = datetime.strptime(return_date, '%Y-%m-%d')
+            start_time = kwargs.get('check_in_date', datetime.now())
+            end_time = kwargs.get('check_out_date', start_time + timedelta(days=1))
+        elif 'rent_car' in endpoint_name:
+            start_time = kwargs.get('pickup_date', datetime.now())
+            end_time = kwargs.get('return_date', start_time + timedelta(days=1))
         else:
             start_time = datetime.now()
             end_time = start_time + timedelta(days=1)
         
         granular_data = self.get_hierarchy(endpoint_name, kwargs, wildcard)
         data_access = self.get_access_level(endpoint_name)
-        position = "Current"
         
-        logger.error(f"[expedia_agent.py] Generated attributes: {granular_data}, {data_access}, {position}")
         return [{
             'granular_data': granular_data,
-            'data_access': data_access,
-            'position': position
+            'data_access': data_access
         }]
 
 class ExpediaAPI:
@@ -361,6 +326,25 @@ class ExpediaAgent(BaseAgent):
             self.expedia_add_guest_info,
             get_user_input
         ]
+        
+        self.attributes = {
+            'granular_data': [
+                AttributeTree(f'Expedia:Destination', [
+                    AttributeTree(f'Expedia:Flight'),
+                    AttributeTree(f'Expedia:Hotel'),
+                    AttributeTree(f'Expedia:CarRental')
+                ]),
+                AttributeTree(f'Expedia:Experience', [
+                    AttributeTree(f'Expedia:Cruise')
+                ]),
+                AttributeTree(f'Expedia:Payment')
+            ],
+            'data_access': [
+                AttributeTree('Read'),
+                AttributeTree('Write'),
+                AttributeTree('Create')
+            ]
+        }
         
         super().__init__("Expedia", system_message, tools, model_client)
         

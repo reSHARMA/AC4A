@@ -577,14 +577,12 @@ async def main() -> None:
         
         policy_system.add_policy({
             "granular_data": "Expedia:Destination",
-            "data_access": "Read",
-            "position": "Current"
+            "data_access": "Read"
         })
         
         policy_system.add_policy({
             "granular_data": "Expedia:Experience",
-            "data_access": "Read",
-            "position": "Current"
+            "data_access": "Read"
         })
 
         granted = policy_system.text()

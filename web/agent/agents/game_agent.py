@@ -38,6 +38,7 @@ class GameAPIAnnotation(APIAnnotationBase):
         api_to_granular_data = {
             'get_games': ('Game', '*'),
             'get_game': ('Game', kwargs.get('game_id', '*')),
+            'create_game': ('Game', '*'),
             'delete_game': ('Game', kwargs.get('game_id', '*')),
         }
         label, detail = api_to_granular_data.get(endpoint_name, ('Game', '*'))
@@ -87,6 +88,12 @@ class GameAPI:
         return response.json()
 
     @GameAPIAnnotation.annotate
+    def create_game(self, *args, **kwargs):
+        game_data = kwargs.get('game_data', {})
+        response = requests.post('http://127.0.0.1:5000/games', json=game_data)
+        return response.json()
+
+    @GameAPIAnnotation.annotate
     def delete_game(self, *args, **kwargs):
         game_id = kwargs.get('game_id')
         response = requests.delete(f'http://127.0.0.1:5000/games/{game_id}')
@@ -113,6 +120,7 @@ class GameAgent(BaseAgent):
         tools = [
             self.game_get_games,
             self.game_get_game,
+            self.game_create_game,
             self.game_delete_game,
             get_user_input
         ]
@@ -130,6 +138,17 @@ class GameAgent(BaseAgent):
         logger.info(f"Calling GameAPI get_game with game_id={game_id}")
         result = self.game_api.get_game(game_id=game_id)
         return result
+        
+    async def game_create_game(self, game_data: Annotated[str, "The game data as JSON string, example '{\"name\": \"New Game\", \"player1\": \"Alice\", \"player2\": \"Bob\"}'"] = None) -> str:
+        """Create a new game with the given game data"""
+        logger.info(f"Calling GameAPI create_game with game_data={game_data}")
+        import json
+        try:
+            parsed_data = json.loads(game_data) if game_data else {}
+            result = self.game_api.create_game(game_data=parsed_data)
+            return result
+        except json.JSONDecodeError:
+            return "Error: Invalid JSON format for game_data"
         
     async def game_delete_game(self, game_id: Annotated[str, "The id of the game, example '1'"] = None) -> str:
         """Delete the game with the given game id"""

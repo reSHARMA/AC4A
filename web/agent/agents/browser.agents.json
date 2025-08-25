@@ -305,11 +305,13 @@
       "button:contains('Delete')"
     ],
     "create": [
+      "button:contains('New Game')"
     ],
     "data": {
       "Game:GameId(*)": [
         "button:contains('Delete')",
-        "#historyList"
+        "#historyList",
+        "button:contains('New Game')"
       ]
     }
   },

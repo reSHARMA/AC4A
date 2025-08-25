@@ -606,7 +606,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
     // Apply each policy to the attribute trees
     policies.forEach(policy => {
       // Create a unique key for the policy
-      const policyKey = `${policy.granular_data}-${policy.data_access}-${policy.position}-${policy.positionValue || 1}`;
+      const policyKey = `${policy.granular_data}-${policy.data_access}`;
       
       console.log('Processing policy:', policy);
       console.log('Policy key:', policyKey);
@@ -1026,7 +1026,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
       const findModifiedNodes = (node: TreeNode) => {
         console.log('EDIT VIEW: Checking node:', node);
         // If this node has non-default values, add it
-        if (node.value !== '' && node.value !== 'default' && (node.access || node.position)) {
+        if (node.value !== '' && node.value !== 'default' && node.access) {
           modifiedNodes.push(node);
         }
       };
@@ -1060,8 +1060,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
           // Create combined policies for each chainable child
           const policyData = {
             granular_data: allChildGranularData,
-            data_access: node.access,
-            position: node.position === "Current" ? "Current" : `${node.position}::${node.positionValue || 1}`
+            data_access: node.access
           };
           
           const apiUrl = import.meta.env.PROD 
@@ -1084,8 +1083,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
           // Create regular policy for non-chainable node
           const policyData = {
             granular_data: node.label.includes('(') ? node.label : `${node.label}(${node.value || ''})`,
-            data_access: node.access,
-            position: node.position === "Current" ? "Current" : `${node.position}::${node.positionValue || 1}`
+            data_access: node.access
           };
           
           const apiUrl = import.meta.env.PROD 
@@ -1307,8 +1305,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
         children: []
       };
 
-      // If this node has access and position, it's part of a permission chain
-      const isPartOfPermissionChain = node.access && node.position;
+      // If this node has access, it's part of a permission chain
+      const isPartOfPermissionChain = node.access;
 
       // If this node has a value or is part of a permission chain, process its children
       if (node.value !== '' || isPartOfPermissionChain) {
@@ -1425,7 +1423,6 @@ const PermissionChat: React.FC = (): JSX.Element => {
         label: firstNode.label,
         value: parts[0].value,
         access: policy.data_access,
-        position: policy.position.split('::')[0],
         children: []
       };
 
@@ -1447,7 +1444,6 @@ const PermissionChat: React.FC = (): JSX.Element => {
             label: pathNode.label,
             value: pathNode === nextNode ? parts[i].value : '',
             access: policy.data_access,
-            position: policy.position.split('::')[0],
             children: []
           };
 
@@ -1475,7 +1471,6 @@ const PermissionChat: React.FC = (): JSX.Element => {
             label: child.label,
             value: '*',
             access: policy.data_access,
-            position: policy.position.split('::')[0],
             children: []
           });
         });
@@ -1492,8 +1487,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
     console.log('Checking if nodes are chainable:', parent, child);
     return parent.value !== '' && 
            child.value !== '' && 
-           parent.access === child.access && 
-           parent.position === child.position;
+           parent.access === child.access;
   };
 
   // Helper function to create a combined label
@@ -1532,8 +1526,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
       const granularData = getCompleteLabel(node);
       const policyData = {
         granular_data: granularData.toLowerCase(),
-        data_access: node.access.toLowerCase(),
-        position: node.position.toLowerCase()
+        data_access: node.access.toLowerCase()
       };
 
       const port = import.meta.env.VITE_PORT || 5000;

@@ -36,10 +36,10 @@ class GameAPIAnnotation(APIAnnotationBase):
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
         api_to_granular_data = {
-            'get_games': ('Game', '*'),
-            'get_game': ('Game', kwargs.get('game_id', '*')),
-            'create_game': ('Game', '*'),
-            'delete_game': ('Game', kwargs.get('game_id', '*')),
+            'get_games': ('GameId', '*'),
+            'get_game': ('GameId', kwargs.get('game_id', '*')),
+            'create_game': ('GameId', '*'),
+            'delete_game': ('GameId', kwargs.get('game_id', '*')),
         }
         label, detail = api_to_granular_data.get(endpoint_name, ('Game', '*'))
         if use_wildcard:

@@ -24,6 +24,7 @@ class PlannerAgent(BaseAgent):
         Wallet: A wallet application with saved cards and with APIs for adding, removing, updating and getting credit card information.
         ContactManager: A contact manager application with APIs to add, remove, update and get contact information.
         Trello: A Trello application with APIs to create, read, update and delete workspaces, boards, lists and cards.
+        Game: A Tic Tac Toe game application with APIs to create, read, update and delete games.
         User: User proxy agent acting as a messenger to ask the user for input, comfirmation if there are choices to be made, etc.
 
         Think deeply and break the task into sub tasks for the applications. Explicity provide credentials, or any other information that is needed to complete the task after fetching them from the relevant application to the application that is invoking the task along the task description.

@@ -700,6 +700,74 @@ def get_browser_chat_history():
         logger.error(f"Error getting browser chat history: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
+@app.route('/eval', methods=['POST'])
+def eval_permission():
+    """Dynamic permission probe for any registered agent API"""
+    from importlib import import_module
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        agent_name = (data.get('agent') or '').lower()
+        endpoint = data.get('endpoint')
+        args = data.get('args', {}) or {}
+
+        if not agent_name or not endpoint:
+            return jsonify({"error": "agent and endpoint are required"}), 400
+
+        # Ensure model client & policy system initialized once
+        if not agent_manager.initialized:
+            agent_manager.initialize_agents()
+            agent_manager.enable_policy_system()
+
+        # Derive module path & class name dynamically from agent name pattern
+        # e.g. wallet -> web.agent.agents.wallet_agent.WalletAgent
+        #       contact_manager -> web.agent.agents.contact_manager_agent.ContactManagerAgent
+        import re
+        if not re.fullmatch(r"[a-z_]+", agent_name):
+            return jsonify({"allowed": False, "reason": "invalid agent name"}), 400
+
+        module_path = f"web.agent.agents.{agent_name}_agent"
+        class_name = ''.join(part.capitalize() for part in agent_name.split('_')) + 'Agent'
+        try:
+            mod = import_module(module_path)
+            wrapper_cls = getattr(mod, class_name)
+        except Exception as e:
+            logger.warning(f"Agent wrapper not found for {agent_name}: {e}")
+            return jsonify({"allowed": False, "reason": "unknown agent"}), 200
+
+        # Create ephemeral wrapper (registers API again; acceptable for probe)
+        try:
+            wrapper = wrapper_cls(agent_manager.model_client, agent_manager.policy_system)
+        except Exception as e:
+            logger.error(f"Wrapper init failed for {agent_name}: {e}", exc_info=True)
+            return jsonify({"allowed": False, "reason": "wrapper init failed"}), 500
+
+        # Locate API object containing the endpoint (attribute ending in _api with callable endpoint)
+        api_func = None
+        for attr, val in wrapper.__dict__.items():
+            if attr.endswith('_api') and hasattr(val, endpoint):
+                candidate = getattr(val, endpoint)
+                if callable(candidate):
+                    api_func = candidate
+                    break
+
+        if api_func is None:
+            return jsonify({"allowed": False, "reason": "unknown endpoint"}), 200
+
+        # Invoke to trigger policy check
+        try:
+            api_func(**args)
+            return jsonify({"allowed": True})
+        except PermissionError:
+            return jsonify({"allowed": False})
+        except TypeError as te:
+            return jsonify({"allowed": False, "reason": "bad arguments", "details": str(te)})
+        except Exception as e:
+            logger.error("Unexpected error during eval call", exc_info=True)
+            return jsonify({"allowed": False, "reason": "internal error", "details": str(e)})
+    except Exception as outer:
+        logger.error("/eval top-level failure", exc_info=True)
+        return jsonify({"allowed": False, "reason": "internal error", "details": str(outer)}), 500
+
 if __name__ == '__main__':
     # Don't initialize the agent session when the application starts
     # socketio.run(app, debug=True, port=5000, use_reloader=False)

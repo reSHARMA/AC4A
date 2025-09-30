@@ -68,7 +68,9 @@ class APIAnnotationBase:
 def policy_interceptor(api_func):
     def wrapper(self, attributes, *args, **kwargs):
         send_custom_log("Calling", f"{self.__class__.__name__}.{api_func.__name__} with {args} and {kwargs}")
-        if self.policy_system.is_action_allowed(attributes):
+        # Allow apps to optionally provide a resource_difference(needs, have) hook on the API instance
+        resource_difference = getattr(self, 'resource_difference', None)
+        if self.policy_system.is_action_allowed(attributes, resource_difference=resource_difference):
             return api_func(self, *args, **kwargs)
         else:
             raise PermissionError(f"Action not authorized for given resources.")

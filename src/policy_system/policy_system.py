@@ -251,7 +251,7 @@ class PolicySystem:
         send_custom_log("Permission Added", f"{target_key}")
         logger.info(f"Added new policy with key: {target_key}")
 
-    def is_action_allowed(self, attributes, print_policy=True):
+    def is_action_allowed(self, attributes, print_policy=True, resource_difference=None):
         if not self.status:
             logger.warning("Policy system is DISABLED - allowing action by default")
             return True
@@ -265,21 +265,21 @@ class PolicySystem:
         
         # Check each attribute and return True if any match (OR logic)
         for attr in attributes:
-            if self._check_single_attribute(attr, print_policy):
+            if self._check_single_attribute(attr, print_policy, resource_difference):
                 logger.info(f"✅ POLICY ALLOWED - Action is allowed by attribute: {attr}")
                 return True
                 
         logger.error(f"❌ POLICY DENIED - Action not allowed for any attribute in: {attributes}")
         return False
 
-    def _check_single_attribute(self, attributes, print_policy=True):
+    def _check_single_attribute(self, attributes, print_policy=True, resource_difference=None):
         """Check a single attribute object against policy rules"""
         logger.info(f"POLICY CHECK - Single Attribute: {attributes}")
 
         for rule in self.policy_rules:
             if print_policy:
                 logger.info(f"POLICY RULE CHECK - Rule: {rule}")
-            if self.check_subsumption(rule, attributes):
+            if self.check_subsumption(rule, attributes, resource_difference):
                 if print_policy:
                     logger.info(f"✅ POLICY ALLOWED - Action is allowed by rule: {rule}")
                     send_custom_log("✅ Access Granted by", f"{rule}")
@@ -289,9 +289,35 @@ class PolicySystem:
             send_custom_log("❌ Access Denied for", f"{attributes}")
         return False
 
-    def check_subsumption(self, rule, attributes):
+    def check_subsumption(self, rule, attributes, resource_difference=None):
         logger.info(f"Checking rule: {rule}")
         logger.info(f"For attributes: {attributes}")
+
+        # If an app-specific resource_difference(needs, have) is provided, use it
+        if callable(resource_difference):
+            try:
+                diff = resource_difference(rule, attributes)
+            except Exception as e:
+                logger.error(f"resource_difference hook raised an exception: {e}")
+                return False
+
+            # Consider subsumed if diff is empty/falsey by common conventions
+            is_empty = False
+            if diff is None:
+                is_empty = True
+            elif isinstance(diff, (list, tuple, set, dict, str)):
+                is_empty = len(diff) == 0
+            elif hasattr(diff, "__len__"):
+                try:
+                    is_empty = len(diff) == 0
+                except Exception:
+                    is_empty = False
+            else:
+                # For other types, interpret False as empty, True as non-empty
+                is_empty = bool(diff) is False
+
+            logger.info(f"resource_difference result considered empty={is_empty}, diff={diff}")
+            return is_empty
 
         skip_attr = ['expiry']
         for attr in rule:

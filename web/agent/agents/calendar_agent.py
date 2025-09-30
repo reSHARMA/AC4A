@@ -14,43 +14,22 @@ logger = logging.getLogger(__name__)
 
 class CalendarAPIAnnotation(APIAnnotationBase):
     def __init__(self):
-        attributes_schema = {
-            'Calendar:Year': {
-                'description': 'The year of the calendar',
-                'examples': ['2025', '2026', '2027']
-            },
-            'Calendar:Month': {
-                'description': 'The month of the calendar',
-                'examples': ['January', 'February', 'December']
-            },
-            'Calendar:Day': {
-                'description': 'The day of the calendar must be a number between 1 and 31',
-                'examples': ['1', '2', '31']
-            },
-            'Calendar:Hour': {
-                'description': 'The hour of the calendar must be a number between 0 and 23',
-                'examples': ['0', '1', '23']
-            }
-        }
+        # Define resources with metadata and edges: Calendar:Year -> Calendar:Month -> Calendar:Day -> Calendar:Hour
+        calendar_year = AttributeTree.create_resource('Calendar:Year', description='The year of the calendar', examples=['2025', '2026', '2027'])
+        calendar_month = AttributeTree.create_resource('Calendar:Month', description='The month of the calendar', examples=['January', 'February', 'December'])
+        calendar_day = AttributeTree.create_resource('Calendar:Day', description='The day of the calendar must be a number between 1 and 31', examples=['1', '2', '31'])
+        calendar_hour = AttributeTree.create_resource('Calendar:Hour', description='The hour of the calendar must be a number between 0 and 23', examples=['0', '1', '23'])
 
-        super().__init__("Calendar", {
-            'granular_data': [AttributeTree(f'Calendar:Year', [
-                AttributeTree(f'Calendar:Month', [
-                        AttributeTree(f'Calendar:Day', [
-                            AttributeTree(f'Calendar:Hour')
-                        ])
-                ])
-            ])],
-            'data_access': [
-                AttributeTree('Read'),
-                AttributeTree('Write'),
-                AttributeTree('Create')
-            ],
-            'position': [
-                AttributeTree('Previous', [AttributeTree('Current')]),
-                AttributeTree('Next', [AttributeTree('Current')])
-            ]
-        }, attributes_schema)
+        AttributeTree.add_edge(calendar_year, calendar_month)
+        AttributeTree.add_edge(calendar_month, calendar_day)
+        AttributeTree.add_edge(calendar_day, calendar_hour)
+
+        # New three-argument init: [granular_data], [data_access], omit position (default applies)
+        super().__init__(
+            "Calendar",
+            [calendar_year],
+            [AttributeTree('Read'), AttributeTree('Write'), AttributeTree('Create')]
+        )
 
     def get_hierarchy(self, start_time, duration, use_wildcard):
         end_time = start_time + duration

@@ -12,39 +12,21 @@ from typing import Annotated
 logger = logging.getLogger(__name__)
 
 class WalletAPIAnnotation(APIAnnotationBase):
-    attributes_schema = {
-        'Wallet:CreditCard': {
-            'description': 'The name of the credit card',
-            'examples': ['Venture X', 'Amex Gold', 'Chase Sapphire']
-        }, 
-        'Wallet:CreditCardType': {
-            'description': 'The type of the credit card, payment network',
-            'examples': ['Visa', 'Mastercard', 'Amex']
-        },
-        'Wallet:CreditCardNumber': {
-            'description': 'The number of the credit card, must be 16 digits',
-            'examples': ['1234567890123456', '1234567890123456']
-        },
-        'Wallet:CreditCardPin': {
-            'description': 'The pin of the credit card, must be 3 for visa and mastercard or 4 for amex',
-            'examples': ['123', '456', '1234']
-        },
-    }
     def __init__(self):
-        super().__init__("Wallet", {
-            'granular_data': [
-                AttributeTree(f'Wallet:CreditCard', [
-                    AttributeTree(f'Wallet:CreditCardType'),
-                    AttributeTree(f'Wallet:CreditCardNumber'),
-                    AttributeTree(f'Wallet:CreditCardPin')
-                ])
-            ],
-            'data_access': [
-                AttributeTree('Read'),
-                AttributeTree('Write'),
-                AttributeTree('Create')
-            ]
-        }, self.attributes_schema)
+        credit_card = AttributeTree.create_resource('Wallet:CreditCard', description='The name of the credit card', examples=['Venture X', 'Amex Gold', 'Chase Sapphire'])
+        credit_card_type = AttributeTree.create_resource('Wallet:CreditCardType', description='The type of the credit card, payment network', examples=['Visa', 'Mastercard', 'Amex'])
+        credit_card_number = AttributeTree.create_resource('Wallet:CreditCardNumber', description='The number of the credit card, must be 16 digits', examples=['1234567890123456'])
+        credit_card_pin = AttributeTree.create_resource('Wallet:CreditCardPin', description='The pin of the credit card, must be 3 for visa and mastercard or 4 for amex', examples=['123', '456', '1234'])
+
+        AttributeTree.add_edge(credit_card, credit_card_type)
+        AttributeTree.add_edge(credit_card, credit_card_number)
+        AttributeTree.add_edge(credit_card, credit_card_pin)
+
+        super().__init__(
+            "Wallet",
+            [credit_card],
+            [AttributeTree('Read'), AttributeTree('Write'), AttributeTree('Create')]
+        )
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
         api_to_granular_data = {

@@ -139,42 +139,20 @@ class TrelloWrapper:
 # --- TrelloAPIAnnotation (already present, unchanged except for generate_attributes) ---
 class TrelloAPIAnnotation(APIAnnotationBase):
     def __init__(self):
-        attributes_schema = {
-            'Trello:Workspace': {
-                'description': 'The workspace of the trello',
-                'examples': ['Acme Corporation', 'Marketing Team', 'Q4 Product Launch', 'Personal Life']
-            },
-            'Trello:Board': {
-                'description': 'The board of the trello',
-                'examples': ['Project Management', 'Company Overview', 'Backlog', 'Marketing Overview', 'Vacation Planning']
-            },
-            'Trello:List': {
-                'description': 'The list of the trello',
-                'examples': ['To Do', 'In Progress', 'Done', 'Code Review','Ideas']
-            },
-            'Trello:Card': {
-                'description': 'The card of the trello',
-                'examples': ['Implement new feature', 'Fix bug', 'Write documentation', 'Create new project', 'Search flight tickets', 'Book hotel']
-            }
-        }
-        super().__init__("Trello", {
-            'granular_data': [AttributeTree(f'Trello:Workspace', [
-                AttributeTree(f'Trello:Board', [
-                        AttributeTree(f'Trello:List', [
-                            AttributeTree(f'Trello:Card')
-                        ])
-                ])
-            ])],
-            'data_access': [
-                AttributeTree('Read'),
-                AttributeTree('Write'),
-                AttributeTree('Create')
-            ],
-            'position': [
-                AttributeTree('Previous', [AttributeTree('Current')]),
-                AttributeTree('Next', [AttributeTree('Current')])
-            ]
-        }, attributes_schema)
+        workspace = AttributeTree.create_resource('Trello:Workspace', description='The workspace of the trello', examples=['Acme Corporation', 'Marketing Team', 'Q4 Product Launch', 'Personal Life'])
+        board = AttributeTree.create_resource('Trello:Board', description='The board of the trello', examples=['Project Management', 'Company Overview', 'Backlog', 'Marketing Overview', 'Vacation Planning'])
+        list_node = AttributeTree.create_resource('Trello:List', description='The list of the trello', examples=['To Do', 'In Progress', 'Done', 'Code Review','Ideas'])
+        card = AttributeTree.create_resource('Trello:Card', description='The card of the trello', examples=['Implement new feature', 'Fix bug', 'Write documentation', 'Create new project', 'Search flight tickets', 'Book hotel'])
+
+        AttributeTree.add_edge(workspace, board)
+        AttributeTree.add_edge(board, list_node)
+        AttributeTree.add_edge(list_node, card)
+
+        super().__init__(
+            "Trello",
+            [workspace],
+            [AttributeTree('Read'), AttributeTree('Write'), AttributeTree('Create')]
+        )
 
     def generate_attributes(self, kwargs, endpoint_name, wildcard):
         # Simple mapping for demonstration; can be made more granular

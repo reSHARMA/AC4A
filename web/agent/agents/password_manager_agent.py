@@ -12,31 +12,15 @@ from typing import Annotated
 logger = logging.getLogger(__name__)
 
 class PasswordManagerAPIAnnotation(APIAnnotationBase):
-    attributes_schema = {
-        'PasswordManager:ServiceName': {
-            'description': 'The identifier for the given website or service',
-            'examples': ['gmail', 'facebook', 'twitter']
-        },
-        'PasswordManager:UserName': {
-            'description': 'The identifier for the given user name',
-            'examples': ['xyz@gmail.com', 'user123', '@Ron']
-        } 
-    }
     def __init__(self):
-        super().__init__("PasswordManager", {
-            'granular_data': [
-                AttributeTree('PasswordManager:ServiceName', [AttributeTree('PasswordManager:UserName')])
-            ],
-            'data_access': [
-                AttributeTree('Read'),
-                AttributeTree('Write'),
-                AttributeTree('Create')
-            ],
-            'position': [
-                AttributeTree('Previous', [AttributeTree('Current')]),
-                AttributeTree('Next', [AttributeTree('Current')])
-            ]
-        }, self.attributes_schema)
+        service = AttributeTree.create_resource('PasswordManager:ServiceName', description='The identifier for the given website or service', examples=['gmail', 'facebook', 'twitter'])
+        user = AttributeTree.create_resource('PasswordManager:UserName', description='The identifier for the given user name', examples=['xyz@gmail.com', 'user123', '@Ron'])
+        AttributeTree.add_edge(service, user)
+        super().__init__(
+            "PasswordManager",
+            [service],
+            [AttributeTree('Read'), AttributeTree('Write'), AttributeTree('Create')]
+        )
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
         api_to_granular_data = {

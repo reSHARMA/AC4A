@@ -13,58 +13,24 @@ logger = logging.getLogger(__name__)
 
 class ExpediaAPIAnnotation(APIAnnotationBase):
     def __init__(self):
-        attributes_schema = {
-            'Expedia:Destination': {
-                'description': 'The destination of the travel, must be a valid destination, can be a city, state, country etc',
-                'examples': ['New York', 'Los Angeles', 'San Francisco']
-            }, 
-            'Expedia:Flight': {
-                'description': 'The flight number of the flight, must be a valid flight number',
-                'examples': ['AA123', 'UA456', 'DL789']
-            },
-            'Expedia:Hotel': {
-                'description': 'The name of the hotel, must be a valid hotel name',
-                'examples': ['Courtyard by Marriott', 'Hilton Garden Inn', 'Hyatt Regency', 'Collegetown Suites', 'Holiday Inn Express']
-            },
-            'Expedia:CarRental': {
-                'description': 'The name of the car to rent, must be a valid car name',
-                'examples': ['Toyota Camry', 'Honda Accord', 'Ford Fiesta']
-            },
-            'Expedia:Experience': {
-                'description': 'The name of the experience, must be a valid experience name',
-                'examples': ['Theater', 'Cruise', 'Museum', 'Zoo', 'Amusement Park', 'Spas', 'Restaurants', 'Shopping']
-            },
-            'Expedia:Cruise': {
-                'description': 'The name of the cruise',
-                'examples': ['Carnival', 'Royal Caribbean', 'Norwegian Cruise Line']
-            },
-            'Expedia:Payment': {
-                'description': 'Represents the ability to pay for the booking, must always be *',
-                'examples': ['*']
-            }
-        }
-        super().__init__("Expedia", {
-            'granular_data': [
-                AttributeTree(f'Expedia:Destination', [
-                    AttributeTree(f'Expedia:Flight'),
-                    AttributeTree(f'Expedia:Hotel'),
-                    AttributeTree(f'Expedia:CarRental')
-                ]),
-                AttributeTree(f'Expedia:Experience', [
-                    AttributeTree(f'Expedia:Cruise')
-                ]),
-                AttributeTree(f'Expedia:Payment'),
-            ],
-            'data_access': [
-                AttributeTree('Read'),
-                AttributeTree('Write'),
-                AttributeTree('Create')
-            ],
-            'position': [
-                AttributeTree('Previous', [AttributeTree('Current')]),
-                AttributeTree('Next', [AttributeTree('Current')])
-            ]
-        }, attributes_schema)
+        destination = AttributeTree.create_resource('Expedia:Destination', description='The destination of the travel, must be a valid destination, can be a city, state, country etc', examples=['New York', 'Los Angeles', 'San Francisco'])
+        flight = AttributeTree.create_resource('Expedia:Flight', description='The flight number of the flight, must be a valid flight number', examples=['AA123', 'UA456', 'DL789'])
+        hotel = AttributeTree.create_resource('Expedia:Hotel', description='The name of the hotel, must be a valid hotel name', examples=['Courtyard by Marriott', 'Hilton Garden Inn', 'Hyatt Regency'])
+        car = AttributeTree.create_resource('Expedia:CarRental', description='The name of the car to rent, must be a valid car name', examples=['Toyota Camry', 'Honda Accord', 'Ford Fiesta'])
+        experience = AttributeTree.create_resource('Expedia:Experience', description='The name of the experience, must be a valid experience name', examples=['Theater', 'Cruise', 'Museum'])
+        cruise = AttributeTree.create_resource('Expedia:Cruise', description='The name of the cruise', examples=['Carnival', 'Royal Caribbean', 'Norwegian Cruise Line'])
+        payment = AttributeTree.create_resource('Expedia:Payment', description='Represents the ability to pay for the booking, must always be *', examples=['*'])
+
+        AttributeTree.add_edge(destination, flight)
+        AttributeTree.add_edge(destination, hotel)
+        AttributeTree.add_edge(destination, car)
+        AttributeTree.add_edge(experience, cruise)
+
+        super().__init__(
+            "Expedia",
+            [destination, experience, payment],
+            [AttributeTree('Read'), AttributeTree('Write'), AttributeTree('Create')]
+        )
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
         api_to_granular_data = {

@@ -12,59 +12,26 @@ from typing import Annotated
 logger = logging.getLogger(__name__)
 
 class WebBrowserAPIAnnotation(APIAnnotationBase):
-    attributes_schema = {
-        'WebBrowser:ParentDomain': {
-            'description': 'The main domain of the website',
-            'examples': ['google.com', 'amazon.com', 'facebook.com']
-        }, 
-        'WebBrowser:ChildDomain': {
-            'description': 'The subdomain of the website',
-            'examples': ['mail.google.com', 'images.google.com', 'maps.google.com']
-        },
-        'WebBrowser:Path': {
-            'description': 'The path of the website',
-            'examples': ['/mail', '/images', '/maps']
-        },
-        'WebBrowser:QueryParams': {
-            'description': 'The query parameters of the website',
-            'examples': ['?q=python', '?q=java', '?q=javascript']
-        },
-        'WebBrowser:URL': {
-            'description': 'The full URL of the website',
-            'examples': ['https://www.google.com/mail?q=read_email', 'https://www.amazon.com/search?q=books', 'https://www.facebook.com/profile?id=1234567890']
-        },
-        'WebBrowser:Cookies': {
-            'description': 'The cookies of the website',
-            'examples': ['JSESSIONID=1234567890', 'PHPSESSID=1234567890', 'csrftoken=1234567890']
-        },
-        'WebBrowser:CookieName': {
-            'description': 'The name of the cookie',
-            'examples': ['JSESSIONID', 'PHPSESSID', 'csrftoken']
-        }
-    }
     def __init__(self):
-        super().__init__("WebBrowser", {
-            'granular_data': [
-                AttributeTree(f'WebBrowser:URL', [
-                    AttributeTree(f'WebBrowser:ParentDomain'),
-                    AttributeTree(f'WebBrowser:ChildDomain'),
-                    AttributeTree(f'WebBrowser:Path'),
-                    AttributeTree(f'WebBrowser:QueryParams')
-                ]),
-                AttributeTree(f'WebBrowser:Cookies', [
-                    AttributeTree(f'WebBrowser:CookieName')
-                ])
-            ],
-            'data_access': [
-                AttributeTree('Read'),
-                AttributeTree('Write'),
-                AttributeTree('Create')
-            ],
-            'position': [
-                AttributeTree('Previous', [AttributeTree('Current')]),
-                AttributeTree('Next', [AttributeTree('Current')])
-            ]
-        }, self.attributes_schema)
+        url = AttributeTree.create_resource('WebBrowser:URL', description='The full URL of the website', examples=['https://www.google.com/mail?q=read_email'])
+        parent = AttributeTree.create_resource('WebBrowser:ParentDomain', description='The main domain of the website', examples=['google.com', 'amazon.com'])
+        child = AttributeTree.create_resource('WebBrowser:ChildDomain', description='The subdomain of the website', examples=['mail.google.com', 'images.google.com'])
+        path = AttributeTree.create_resource('WebBrowser:Path', description='The path of the website', examples=['/mail', '/images'])
+        query = AttributeTree.create_resource('WebBrowser:QueryParams', description='The query parameters of the website', examples=['?q=python'])
+        cookies = AttributeTree.create_resource('WebBrowser:Cookies', description='The cookies of the website', examples=['JSESSIONID=1234567890'])
+        cookie_name = AttributeTree.create_resource('WebBrowser:CookieName', description='The name of the cookie', examples=['JSESSIONID'])
+
+        AttributeTree.add_edge(url, parent)
+        AttributeTree.add_edge(url, child)
+        AttributeTree.add_edge(url, path)
+        AttributeTree.add_edge(url, query)
+        AttributeTree.add_edge(cookies, cookie_name)
+
+        super().__init__(
+            "WebBrowser",
+            [url, cookies],
+            [AttributeTree('Read'), AttributeTree('Write'), AttributeTree('Create')]
+        )
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
         api_to_granular_data = {
             'get_attributes': f'{self.namespace}:URL(*)',

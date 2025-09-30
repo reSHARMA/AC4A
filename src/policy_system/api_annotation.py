@@ -4,10 +4,34 @@ from config import WILDCARD
 from web.utils.custom_logger import send_custom_log
 
 class APIAnnotationBase:
-    def __init__(self, namespace, attributes, attributes_schema):
+    def __init__(self, namespace, granular_data_trees, data_access_trees, position_trees=None, attributes_schema=None):
         self.namespace = namespace
-        self.attributes = attributes
-        self.attributes_schema = attributes_schema
+        # New three-list API
+        self.attributes = {
+            'granular_data': granular_data_trees or [],
+            'data_access': data_access_trees or []
+        }
+        # Default position: Previous->Current, Next->Current
+        if position_trees is None:
+            from src.utils.attribute_tree import AttributeTree
+            self.attributes['position'] = [
+                AttributeTree('Previous', [AttributeTree('Current')]),
+                AttributeTree('Next', [AttributeTree('Current')])
+            ]
+        else:
+            self.attributes['position'] = position_trees
+
+        # Build or accept schema
+        if attributes_schema is not None:
+            self.attributes_schema = attributes_schema
+        else:
+            # Derive schema from resource trees if metadata present
+            derived = {}
+            for tree_list_key in ['granular_data']:
+                for tree in self.attributes.get(tree_list_key, []):
+                    if hasattr(tree, 'collect_schema'):
+                        derived.update(tree.collect_schema())
+            self.attributes_schema = derived
 
     def export_attributes(self):
         return self.attributes

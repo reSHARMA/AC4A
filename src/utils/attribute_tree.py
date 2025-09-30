@@ -7,10 +7,24 @@ logger = get_logger('__name__')
 # AttributeTree class to represent hierarchical attribute definitions
 
 class AttributeTree:
-    def __init__(self, value, children=None, data='', access=''):
+    def __init__(self, value, children=None, data='', access='', description: str = '', examples: list = None):
         self.value = {value : data}
         self.children = children if children else []
         self.access = access  # 'read' or 'write' or empty
+        # Optional metadata for UI/tooltips
+        self.description = description or ''
+        self.examples = examples or []
+
+    @staticmethod
+    def create_resource(name: str, description: str = '', examples: list = None):
+        """Create a resource node with metadata. Data value left empty by default."""
+        return AttributeTree(name, children=None, data='', access='', description=description, examples=examples or [])
+
+    @staticmethod
+    def add_edge(parent: 'AttributeTree', child: 'AttributeTree') -> 'AttributeTree':
+        """Connect parent -> child and return parent to allow chaining."""
+        parent.children.append(child)
+        return parent
 
     def print_tree(self, level=0):
         indent = "  " * level
@@ -117,3 +131,18 @@ class AttributeTree:
         
         _build_tree_string(self)
         return "\n".join(lines)
+
+    def collect_schema(self) -> dict:
+        """Collect a flat schema mapping from node name to its metadata."""
+        schema = {}
+        def _dfs(node: 'AttributeTree'):
+            key = list(node.value.keys())[0]
+            if node.description or node.examples:
+                schema[key] = {
+                    'description': node.description,
+                    'examples': node.examples
+                }
+            for child in node.children:
+                _dfs(child)
+        _dfs(self)
+        return schema

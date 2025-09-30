@@ -12,27 +12,13 @@ import requests
 logger = logging.getLogger(__name__)
 
 class GameAPIAnnotation(APIAnnotationBase):
-    attributes_schema = {
-        'Game:GameId': {
-            'description': 'The id of the game',
-            'examples': ['1', '2', '3']
-        },
-    }
     def __init__(self):
-        super().__init__("Game", {
-            'granular_data': [
-                AttributeTree(f'Game:GameId')
-            ],
-            'data_access': [
-                AttributeTree('Read'),
-                AttributeTree('Write'),
-                AttributeTree('Create')
-            ],
-            'position': [
-                AttributeTree('Previous', [AttributeTree('Current')]),
-                AttributeTree('Next', [AttributeTree('Current')])
-            ]
-        }, self.attributes_schema)
+        game_id = AttributeTree.create_resource('Game:GameId', description='The id of the game', examples=['1', '2', '3'])
+        super().__init__(
+            "Game",
+            [game_id],
+            [AttributeTree('Read'), AttributeTree('Write'), AttributeTree('Create')]
+        )
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
         api_to_granular_data = {

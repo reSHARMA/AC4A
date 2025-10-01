@@ -2,6 +2,7 @@ from datetime import datetime
 from src.utils.attribute_tree import AttributeTree
 from src.utils.logger import get_logger
 from src.utils.dummy_data import call_openai_api
+from src.utils.rule_parser import parse_rule_value
 from src.prompts import POLICY_TEXT, POLICY_TRANSLATION
 from web.utils.custom_logger import send_custom_log
 from flask import Flask, request, jsonify
@@ -336,57 +337,6 @@ class PolicySystem:
 
             if rule_value == '*':
                 continue
-
-            def parse_rule_value(rule_value):
-                parsed_values = []
-                if "::" in rule_value:
-                    parts = rule_value.split("::")
-                    logger.info(f"Split rule value into parts: {parts}")
-                    for part in parts:
-                        if "(" in part and ")" in part:
-                            key, value = part.split("(")
-                            value = value.rstrip(")")
-                            # Handle empty value as default
-                            if value == "":
-                                parsed_values.append({key: "default"})
-                                logger.info(f"Parsed empty value as default for key: {key}")
-                            # Handle * as all values
-                            elif value == "*":
-                                parsed_values.append({key: "*"})
-                                logger.info(f"Parsed wildcard value for key: {key}")
-                            # Handle specific value
-                            else:
-                                parsed_values.append({key: value})
-                                logger.info(f"Parsed specific value '{value}' for key: {key}")
-                            logger.info(f"Parsed part with key-value: {key} - {value}")
-                        else:
-                            # No parentheses means default value
-                            parsed_values.append({part: "default"})
-                            logger.info(f"Parsed part with default value: {part} - default")
-                else:
-                    if "(" in rule_value and ")" in rule_value:
-                        key, value = rule_value.split("(")
-                        value = value.rstrip(")")
-                        # Handle empty value as default
-                        if value == "":
-                            parsed_values.append({key: "default"})
-                            logger.info(f"Parsed empty value as default for key: {key}")
-                        # Handle * as all values
-                        elif value == "*":
-                            parsed_values.append({key: "*"})
-                            logger.info(f"Parsed wildcard value for key: {key}")
-                        # Handle specific value
-                        else:
-                            parsed_values.append({key: value})
-                            logger.info(f"Parsed specific value '{value}' for key: {key}")
-                        logger.info(f"Parsed single rule with key-value: {key} - {value}")
-                    else:
-                        # No parentheses means default value
-                        parsed_values.append({rule_value: "default"})
-                        logger.info(f"Parsed single rule with default value: {rule_value} - default")
-                
-                logger.info(f"Final parsed rule value: {parsed_values}")
-                return parsed_values
 
             parsed_rule_value = parse_rule_value(rule_value)
             attr_value = parse_rule_value(attributes.get(attr))

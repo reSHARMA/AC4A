@@ -294,32 +294,6 @@ class PolicySystem:
         logger.info(f"Checking rule: {rule}")
         logger.info(f"For attributes: {attributes}")
 
-        # If an app-specific resource_difference(needs, have) is provided, use it
-        if callable(resource_difference):
-            try:
-                diff = resource_difference(rule, attributes)
-            except Exception as e:
-                logger.error(f"resource_difference hook raised an exception: {e}")
-                return False
-
-            # Consider subsumed if diff is empty/falsey by common conventions
-            is_empty = False
-            if diff is None:
-                is_empty = True
-            elif isinstance(diff, (list, tuple, set, dict, str)):
-                is_empty = len(diff) == 0
-            elif hasattr(diff, "__len__"):
-                try:
-                    is_empty = len(diff) == 0
-                except Exception:
-                    is_empty = False
-            else:
-                # For other types, interpret False as empty, True as non-empty
-                is_empty = bool(diff) is False
-
-            logger.info(f"resource_difference result considered empty={is_empty}, diff={diff}")
-            return is_empty
-
         skip_attr = ['expiry']
         for attr in rule:
             if attr in skip_attr:
@@ -344,7 +318,7 @@ class PolicySystem:
             logger.info(f"Attribute value for {attr}: {attr_value}")
             logger.info(f"Rule value for {attr}: {parsed_rule_value}")
             
-            valid = self.validate_attribute(parsed_rule_value, attr_value, attr)
+            valid = self.validate_attribute(parsed_rule_value, attr_value, attr, resource_difference)
             if valid < 0:
                 logger.info(f"Validation failed for attribute: {attr}")
                 return False
@@ -356,7 +330,7 @@ class PolicySystem:
         logger.info("Validation successful, returning True")
         return True
 
-    def validate_attribute(self, rule_value, attribute_value, attribute_type):
+    def validate_attribute(self, rule_value, attribute_value, attribute_type, resource_difference=None):
         logger.info(f"Validating attribute {attribute_type}")
         logger.info(f"Rule value: {rule_value}")
         logger.info(f"Attribute value: {attribute_value}")
@@ -368,6 +342,11 @@ class PolicySystem:
             return True
 
         if attribute_type in self.attribute_definitions:
+
+            if callable(resource_difference) and attribute_type == 'granular_data':
+                valid = resource_difference(rule_value, attribute_value) == set()
+                return valid
+
             hierarchy = self.attribute_definitions[attribute_type]
             for root in hierarchy:
                 if isinstance(root, AttributeTree):

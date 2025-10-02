@@ -16,13 +16,9 @@ class CalendarAPIAnnotation(APIAnnotationBase):
     def __init__(self):
         # Define resources with metadata and edges: Calendar:Year -> Calendar:Month -> Calendar:Day -> Calendar:Hour
     calendar_year = ResourceTypeTree.create_resource('Calendar:Year', description='The year of the calendar', examples=['2025', '2026', '2027'])
-    calendar_month = ResourceTypeTree.create_resource('Calendar:Month', description='The month of the calendar', examples=['January', 'February', 'December'])
-    calendar_day = ResourceTypeTree.create_resource('Calendar:Day', description='The day of the calendar must be a number between 1 and 31', examples=['1', '2', '31'])
-    calendar_hour = ResourceTypeTree.create_resource('Calendar:Hour', description='The hour of the calendar must be a number between 0 and 23', examples=['0', '1', '23'])
-
-    ResourceTypeTree.add_edge(calendar_year, calendar_month)
-    ResourceTypeTree.add_edge(calendar_month, calendar_day)
-    ResourceTypeTree.add_edge(calendar_day, calendar_hour)
+    calendar_month = ResourceTypeTree.create_resource('Calendar:Month', parent=calendar_year, description='The month of the calendar', examples=['January', 'February', 'December'])
+    calendar_day = ResourceTypeTree.create_resource('Calendar:Day', parent=calendar_month, description='The day of the calendar must be a number between 1 and 31', examples=['1', '2', '31'])
+    calendar_hour = ResourceTypeTree.create_resource('Calendar:Hour', parent=calendar_day, description='The hour of the calendar must be a number between 0 and 23', examples=['0', '1', '23'])
 
         # New three-argument init: [granular_data], [data_access], omit position (default applies)
         super().__init__(

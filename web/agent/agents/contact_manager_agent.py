@@ -13,16 +13,13 @@ logger = logging.getLogger(__name__)
 
 class ContactManagerAPIAnnotation(APIAnnotationBase):
     def __init__(self):
-    root = ResourceTypeTree.create_resource('ContactManager:Contact', description='The name of the contact, must be the name of the person', examples=['Ron Swanson', 'Leslie Knope', 'Tom Haverford'])
-    phone = ResourceTypeTree.create_resource('ContactManager:ContactPhone', description='The phone number of the contact, must be a 10 digit number', examples=['2061234567', '7321234567'])
-    address = ResourceTypeTree.create_resource('ContactManager:ContactAddress', description='The address of the contact, must be a valid address', examples=['123 Main St, Anytown, USA'])
-    email = ResourceTypeTree.create_resource('ContactManager:ContactEmail', description='The email of the contact, must be a valid email address', examples=['ron@swanson.com', 'leslie@knope.com'])
-    relation = ResourceTypeTree.create_resource('ContactManager:ContactRelation', description='The relation of the contact, must be a valid relation with the user', examples=['spouse', 'child', 'parent', 'friend', 'business partner', 'other'])
-    birthday = ResourceTypeTree.create_resource('ContactManager:ContactBirthday', description='The birthday of the contact, must be in the format YYYY-MM-DD', examples=['1980-01-01'])
-    notes = ResourceTypeTree.create_resource('ContactManager:ContactNotes', description='The notes of the contact, must be a valid note', examples=['Ron is a great boss'])
-
-        for child in [phone, address, email, relation, birthday, notes]:
-            ResourceTypeTree.add_edge(root, child)
+        root = ResourceTypeTree.create_resource('ContactManager:Contact', description='The name of the contact, must be the name of the person', examples=['Ron Swanson', 'Leslie Knope', 'Tom Haverford'])
+        phone = ResourceTypeTree.create_resource('ContactManager:ContactPhone', parent=root, description='The phone number of the contact, must be a 10 digit number', examples=['2061234567', '7321234567'])
+        address = ResourceTypeTree.create_resource('ContactManager:ContactAddress', parent=root, description='The address of the contact, must be a valid address', examples=['123 Main St, Anytown, USA'])
+        email = ResourceTypeTree.create_resource('ContactManager:ContactEmail', parent=root, description='The email of the contact, must be a valid email address', examples=['ron@swanson.com', 'leslie@knope.com'])
+        relation = ResourceTypeTree.create_resource('ContactManager:ContactRelation', parent=root, description='The relation of the contact, must be a valid relation with the user', examples=['spouse', 'child', 'parent', 'friend', 'business partner', 'other'])
+        birthday = ResourceTypeTree.create_resource('ContactManager:ContactBirthday', parent=root, description='The birthday of the contact, must be in the format YYYY-MM-DD', examples=['1980-01-01'])
+        notes = ResourceTypeTree.create_resource('ContactManager:ContactNotes', parent=root, description='The notes of the contact, must be a valid note', examples=['Ron is a great boss'])
 
         super().__init__(
             "ContactManager",

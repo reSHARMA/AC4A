@@ -14,15 +14,21 @@ class ResourceTypeTree:
         self.examples = examples or []
 
     @staticmethod
-    def create_resource(name: str, description: str = '', examples: list = None):
-        """Create a resource node with metadata. Data value left empty by default."""
-        return ResourceTypeTree(name, children=None, data='', access='', description=description, examples=examples or [])
+    def create_resource(name: str, parent: 'ResourceTypeTree' = None, description: str = '', examples: list = None):
+        """Create a resource node with metadata; optionally attach to parent.
 
-    @staticmethod
-    def add_edge(parent: 'ResourceTypeTree', child: 'ResourceTypeTree') -> 'ResourceTypeTree':
-        """Connect parent -> child and return parent to allow chaining."""
-        parent.children.append(child)
-        return parent
+        Args:
+            name: Node name (key part before any data binding)
+            parent: Optional existing ResourceTypeTree to which this node will be appended as a child
+            description: Human readable description
+            examples: Example values list
+        Returns:
+            The created ResourceTypeTree instance.
+        """
+        node = ResourceTypeTree(name, children=None, data='', access='', description=description, examples=examples or [])
+        if parent is not None:
+            parent.children.append(node)
+        return node
 
     def print_tree(self, level=0):
         indent = "  " * level

@@ -13,51 +13,46 @@ logger = logging.getLogger(__name__)
 
 class CalendarEventsYMDApiAnnotation(APIAnnotationBase):
     """Calendar API annotation using Events with Year/Month/Day hierarchy as the resource model."""
-    
+
     def __init__(self):
-        # Define resources: Year -> Month -> Day -> Event
-    calendar_year = ResourceTypeTree.create_resource(
-            'Calendar:Year', 
-            description='The year of the calendar', 
+        # Root temporal chain Year -> Month -> Day and separate Event root -> Meeting/Reminder/AllDay
+        calendar_year = ResourceTypeTree.create_resource(
+            'Calendar:Year',
+            description='The year of the calendar',
             examples=['2025', '2026', '2027']
         )
-    calendar_month = ResourceTypeTree.create_resource(
-            'Calendar:Month', 
-            description='The month of the calendar', 
+        calendar_month = ResourceTypeTree.create_resource(
+            'Calendar:Month', parent=calendar_year,
+            description='The month of the calendar',
             examples=['January', 'February', 'December']
         )
-    calendar_day = ResourceTypeTree.create_resource(
-            'Calendar:Day', 
-            description='The day of the calendar must be a number between 1 and 31', 
+        ResourceTypeTree.create_resource(
+            'Calendar:Day', parent=calendar_month,
+            description='The day of the calendar must be a number between 1 and 31',
             examples=['1', '2', '31']
         )
-    calendar_event = ResourceTypeTree.create_resource(
-            'Calendar:Event', 
-            description='A specific calendar event', 
+
+        calendar_event = ResourceTypeTree.create_resource(
+            'Calendar:Event',
+            description='A specific calendar event',
             examples=['Team_Meeting', 'Doctor_Appointment', 'Birthday_Party']
         )
-    calendar_meeting = ResourceTypeTree.create_resource(
-            'Calendar:Meeting', 
-            description='A meeting event', 
+        ResourceTypeTree.create_resource(
+            'Calendar:Meeting', parent=calendar_event,
+            description='A meeting event',
             examples=['Team_Standup', 'Client_Call', 'Board_Meeting']
         )
-    calendar_reminder = ResourceTypeTree.create_resource(
-            'Calendar:Reminder', 
-            description='A reminder event', 
+        ResourceTypeTree.create_resource(
+            'Calendar:Reminder', parent=calendar_event,
+            description='A reminder event',
             examples=['Birthday_Reminder', 'Deadline_Alert', 'Medication_Reminder']
         )
-    calendar_all_day = ResourceTypeTree.create_resource(
-            'Calendar:AllDay', 
-            description='An all-day event', 
+        ResourceTypeTree.create_resource(
+            'Calendar:AllDay', parent=calendar_event,
+            description='An all-day event',
             examples=['Holiday', 'Vacation', 'Conference']
         )
-        
-    ResourceTypeTree.add_edge(calendar_year, calendar_month)
-    ResourceTypeTree.add_edge(calendar_month, calendar_day)
-    ResourceTypeTree.add_edge(calendar_event, calendar_meeting)
-    ResourceTypeTree.add_edge(calendar_event, calendar_reminder)
-    ResourceTypeTree.add_edge(calendar_event, calendar_all_day)
-        
+
         super().__init__(
             "CalendarEventsYMD",
             [calendar_year, calendar_event],

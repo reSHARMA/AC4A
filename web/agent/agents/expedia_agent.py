@@ -14,17 +14,12 @@ logger = logging.getLogger(__name__)
 class ExpediaAPIAnnotation(APIAnnotationBase):
     def __init__(self):
     destination = ResourceTypeTree.create_resource('Expedia:Destination', description='The destination of the travel, must be a valid destination, can be a city, state, country etc', examples=['New York', 'Los Angeles', 'San Francisco'])
-    flight = ResourceTypeTree.create_resource('Expedia:Flight', description='The flight number of the flight, must be a valid flight number', examples=['AA123', 'UA456', 'DL789'])
-    hotel = ResourceTypeTree.create_resource('Expedia:Hotel', description='The name of the hotel, must be a valid hotel name', examples=['Courtyard by Marriott', 'Hilton Garden Inn', 'Hyatt Regency'])
-    car = ResourceTypeTree.create_resource('Expedia:CarRental', description='The name of the car to rent, must be a valid car name', examples=['Toyota Camry', 'Honda Accord', 'Ford Fiesta'])
+    flight = ResourceTypeTree.create_resource('Expedia:Flight', parent=destination, description='The flight number of the flight, must be a valid flight number', examples=['AA123', 'UA456', 'DL789'])
+    hotel = ResourceTypeTree.create_resource('Expedia:Hotel', parent=destination, description='The name of the hotel, must be a valid hotel name', examples=['Courtyard by Marriott', 'Hilton Garden Inn', 'Hyatt Regency'])
+    car = ResourceTypeTree.create_resource('Expedia:CarRental', parent=destination, description='The name of the car to rent, must be a valid car name', examples=['Toyota Camry', 'Honda Accord', 'Ford Fiesta'])
     experience = ResourceTypeTree.create_resource('Expedia:Experience', description='The name of the experience, must be a valid experience name', examples=['Theater', 'Cruise', 'Museum'])
-    cruise = ResourceTypeTree.create_resource('Expedia:Cruise', description='The name of the cruise', examples=['Carnival', 'Royal Caribbean', 'Norwegian Cruise Line'])
+    cruise = ResourceTypeTree.create_resource('Expedia:Cruise', parent=experience, description='The name of the cruise', examples=['Carnival', 'Royal Caribbean', 'Norwegian Cruise Line'])
     payment = ResourceTypeTree.create_resource('Expedia:Payment', description='Represents the ability to pay for the booking, must always be *', examples=['*'])
-
-    ResourceTypeTree.add_edge(destination, flight)
-    ResourceTypeTree.add_edge(destination, hotel)
-    ResourceTypeTree.add_edge(destination, car)
-    ResourceTypeTree.add_edge(experience, cruise)
 
         super().__init__(
             "Expedia",

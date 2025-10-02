@@ -15,32 +15,16 @@ class CalendarEventTypesAPIAnnotation(APIAnnotationBase):
     """Calendar API annotation using Events with Meeting/Reminder/AllDay types as the resource model."""
     
     def __init__(self):
-        # Define resources: Event -> Meeting/Reminder/AllDay
-    event = ResourceTypeTree.create_resource(
-            'Calendar:Event', 
-            description='A calendar event', 
+        # Define resources: Event -> (Meeting | Reminder | AllDay)
+        event = ResourceTypeTree.create_resource(
+            'Calendar:Event',
+            description='A calendar event',
             examples=['Team_Meeting', 'Doctor_Appointment', 'Birthday_Reminder']
         )
-    meeting = ResourceTypeTree.create_resource(
-            'Calendar:Meeting', 
-            description='A meeting event', 
-            examples=['Team_Standup', 'Client_Call', 'Board_Meeting']
-        )
-    reminder = ResourceTypeTree.create_resource(
-            'Calendar:Reminder', 
-            description='A reminder event', 
-            examples=['Birthday_Reminder', 'Deadline_Alert', 'Medication_Reminder']
-        )
-    all_day = ResourceTypeTree.create_resource(
-            'Calendar:AllDay', 
-            description='An all-day event', 
-            examples=['Holiday', 'Vacation', 'Conference']
-        )
-        
-    ResourceTypeTree.add_edge(event, meeting)
-    ResourceTypeTree.add_edge(event, reminder)
-    ResourceTypeTree.add_edge(event, all_day)
-        
+        ResourceTypeTree.create_resource('Calendar:Meeting', parent=event, description='A meeting event', examples=['Team_Standup', 'Client_Call', 'Board_Meeting'])
+        ResourceTypeTree.create_resource('Calendar:Reminder', parent=event, description='A reminder event', examples=['Birthday_Reminder', 'Deadline_Alert', 'Medication_Reminder'])
+        ResourceTypeTree.create_resource('Calendar:AllDay', parent=event, description='An all-day event', examples=['Holiday', 'Vacation', 'Conference'])
+
         super().__init__(
             "CalendarEventTypes",
             [event],

@@ -140,13 +140,9 @@ class TrelloWrapper:
 class TrelloAPIAnnotation(APIAnnotationBase):
     def __init__(self):
     workspace = ResourceTypeTree.create_resource('Trello:Workspace', description='The workspace of the trello', examples=['Acme Corporation', 'Marketing Team', 'Q4 Product Launch', 'Personal Life'])
-    board = ResourceTypeTree.create_resource('Trello:Board', description='The board of the trello', examples=['Project Management', 'Company Overview', 'Backlog', 'Marketing Overview', 'Vacation Planning'])
-    list_node = ResourceTypeTree.create_resource('Trello:List', description='The list of the trello', examples=['To Do', 'In Progress', 'Done', 'Code Review','Ideas'])
-    card = ResourceTypeTree.create_resource('Trello:Card', description='The card of the trello', examples=['Implement new feature', 'Fix bug', 'Write documentation', 'Create new project', 'Search flight tickets', 'Book hotel'])
-
-    ResourceTypeTree.add_edge(workspace, board)
-    ResourceTypeTree.add_edge(board, list_node)
-    ResourceTypeTree.add_edge(list_node, card)
+    board = ResourceTypeTree.create_resource('Trello:Board', parent=workspace, description='The board of the trello', examples=['Project Management', 'Company Overview', 'Backlog', 'Marketing Overview', 'Vacation Planning'])
+    list_node = ResourceTypeTree.create_resource('Trello:List', parent=board, description='The list of the trello', examples=['To Do', 'In Progress', 'Done', 'Code Review','Ideas'])
+    card = ResourceTypeTree.create_resource('Trello:Card', parent=list_node, description='The card of the trello', examples=['Implement new feature', 'Fix bug', 'Write documentation', 'Create new project', 'Search flight tickets', 'Book hotel'])
 
         super().__init__(
             "Trello",

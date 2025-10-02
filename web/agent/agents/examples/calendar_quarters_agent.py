@@ -13,22 +13,20 @@ logger = logging.getLogger(__name__)
 
 class CalendarQuartersAPIAnnotation(APIAnnotationBase):
     """Calendar API annotation using Years and Quarters as the resource model."""
-    
+
     def __init__(self):
-        # Define resources: Year -> Quarter (quarters variant only)
-    calendar_year = ResourceTypeTree.create_resource(
-            'Calendar:Year', 
-            description='The year of the calendar', 
+        # Define resources: Year -> Quarter
+        calendar_year = ResourceTypeTree.create_resource(
+            'Calendar:Year',
+            description='The year of the calendar',
             examples=['2025', '2026', '2027']
         )
-    calendar_quarter = ResourceTypeTree.create_resource(
-            'Calendar:Quarter', 
-            description='The quarter of the year (Q1, Q2, Q3, Q4)', 
+        ResourceTypeTree.create_resource(
+            'Calendar:Quarter', parent=calendar_year,
+            description='The quarter of the year (Q1, Q2, Q3, Q4)',
             examples=['Q1', 'Q2', 'Q3', 'Q4']
         )
-        
-    ResourceTypeTree.add_edge(calendar_year, calendar_quarter)
-        
+
         super().__init__(
             "CalendarQuarters",
             [calendar_year],

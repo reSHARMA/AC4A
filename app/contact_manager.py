@@ -1,26 +1,26 @@
 from datetime import datetime
 from src.policy_system.api_annotation import APIAnnotationBase
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 from src.utils.dummy_data import generate_dummy_data
 
 class ContactManagerAPIAnnotation(APIAnnotationBase):
     def __init__(self):
         super().__init__("ContactManager", {
             'granular_data': [
-                AttributeTree(f'ContactManager:Contact', [
-                    AttributeTree(f'ContactManager:ContactName'),
-                    AttributeTree(f'ContactManager:ContactPhone'),
-                    AttributeTree(f'ContactManager:ContactAddress'),
-                    AttributeTree(f'ContactManager:ContactEmail'),
-                    AttributeTree(f'ContactManager:ContactRelation'),
-                    AttributeTree(f'ContactManager:ContactBirthday'),
-                    AttributeTree(f'ContactManager:ContactNotes')
+                ResourceTypeTree(f'ContactManager:Contact', [
+                    ResourceTypeTree(f'ContactManager:ContactName'),
+                    ResourceTypeTree(f'ContactManager:ContactPhone'),
+                    ResourceTypeTree(f'ContactManager:ContactAddress'),
+                    ResourceTypeTree(f'ContactManager:ContactEmail'),
+                    ResourceTypeTree(f'ContactManager:ContactRelation'),
+                    ResourceTypeTree(f'ContactManager:ContactBirthday'),
+                    ResourceTypeTree(f'ContactManager:ContactNotes')
                 ])
             ],
             'data_access': [
-                AttributeTree('Read'),
-                AttributeTree('Write'),
-                AttributeTree('Create')
+                ResourceTypeTree('Read'),
+                ResourceTypeTree('Write'),
+                ResourceTypeTree('Create')
             ]
         })
 

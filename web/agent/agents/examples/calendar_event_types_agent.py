@@ -5,7 +5,7 @@ from typing import Annotated
 from ..base_agent import BaseAgent
 from ..web_input import get_user_input
 from src.policy_system.api_annotation import APIAnnotationBase
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 from src.utils.dummy_data import generate_dummy_data
 
 logger = logging.getLogger(__name__)
@@ -16,35 +16,35 @@ class CalendarEventTypesAPIAnnotation(APIAnnotationBase):
     
     def __init__(self):
         # Define resources: Event -> Meeting/Reminder/AllDay
-        event = AttributeTree.create_resource(
+    event = ResourceTypeTree.create_resource(
             'Calendar:Event', 
             description='A calendar event', 
             examples=['Team_Meeting', 'Doctor_Appointment', 'Birthday_Reminder']
         )
-        meeting = AttributeTree.create_resource(
+    meeting = ResourceTypeTree.create_resource(
             'Calendar:Meeting', 
             description='A meeting event', 
             examples=['Team_Standup', 'Client_Call', 'Board_Meeting']
         )
-        reminder = AttributeTree.create_resource(
+    reminder = ResourceTypeTree.create_resource(
             'Calendar:Reminder', 
             description='A reminder event', 
             examples=['Birthday_Reminder', 'Deadline_Alert', 'Medication_Reminder']
         )
-        all_day = AttributeTree.create_resource(
+    all_day = ResourceTypeTree.create_resource(
             'Calendar:AllDay', 
             description='An all-day event', 
             examples=['Holiday', 'Vacation', 'Conference']
         )
         
-        AttributeTree.add_edge(event, meeting)
-        AttributeTree.add_edge(event, reminder)
-        AttributeTree.add_edge(event, all_day)
+    ResourceTypeTree.add_edge(event, meeting)
+    ResourceTypeTree.add_edge(event, reminder)
+    ResourceTypeTree.add_edge(event, all_day)
         
         super().__init__(
             "CalendarEventTypes",
             [event],
-            [AttributeTree('Read'), AttributeTree('Write'), AttributeTree('Create')]
+            [ResourceTypeTree('Read'), ResourceTypeTree('Write'), ResourceTypeTree('Create')]
         )
 
     def get_hierarchy(self, resource_type, title_or_message, use_wildcard):

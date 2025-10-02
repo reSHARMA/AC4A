@@ -3,7 +3,7 @@ from datetime import datetime
 from .base_agent import BaseAgent
 from ..web_input import get_user_input
 from src.policy_system.api_annotation import APIAnnotationBase
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 from src.utils.dummy_data import generate_dummy_data
 from config import WILDCARD
 from typing import Annotated
@@ -13,19 +13,19 @@ logger = logging.getLogger(__name__)
 
 class WalletAPIAnnotation(APIAnnotationBase):
     def __init__(self):
-        credit_card = AttributeTree.create_resource('Wallet:CreditCard', description='The name of the credit card', examples=['Venture X', 'Amex Gold', 'Chase Sapphire'])
-        credit_card_type = AttributeTree.create_resource('Wallet:CreditCardType', description='The type of the credit card, payment network', examples=['Visa', 'Mastercard', 'Amex'])
-        credit_card_number = AttributeTree.create_resource('Wallet:CreditCardNumber', description='The number of the credit card, must be 16 digits', examples=['1234567890123456'])
-        credit_card_pin = AttributeTree.create_resource('Wallet:CreditCardPin', description='The pin of the credit card, must be 3 for visa and mastercard or 4 for amex', examples=['123', '456', '1234'])
+    credit_card = ResourceTypeTree.create_resource('Wallet:CreditCard', description='The name of the credit card', examples=['Venture X', 'Amex Gold', 'Chase Sapphire'])
+    credit_card_type = ResourceTypeTree.create_resource('Wallet:CreditCardType', description='The type of the credit card, payment network', examples=['Visa', 'Mastercard', 'Amex'])
+    credit_card_number = ResourceTypeTree.create_resource('Wallet:CreditCardNumber', description='The number of the credit card, must be 16 digits', examples=['1234567890123456'])
+    credit_card_pin = ResourceTypeTree.create_resource('Wallet:CreditCardPin', description='The pin of the credit card, must be 3 for visa and mastercard or 4 for amex', examples=['123', '456', '1234'])
 
-        AttributeTree.add_edge(credit_card, credit_card_type)
-        AttributeTree.add_edge(credit_card, credit_card_number)
-        AttributeTree.add_edge(credit_card, credit_card_pin)
+    ResourceTypeTree.add_edge(credit_card, credit_card_type)
+    ResourceTypeTree.add_edge(credit_card, credit_card_number)
+    ResourceTypeTree.add_edge(credit_card, credit_card_pin)
 
         super().__init__(
             "Wallet",
             [credit_card],
-            [AttributeTree('Read'), AttributeTree('Write'), AttributeTree('Create')]
+            [ResourceTypeTree('Read'), ResourceTypeTree('Write'), ResourceTypeTree('Create')]
         )
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):

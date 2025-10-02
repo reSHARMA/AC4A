@@ -38,7 +38,7 @@ from web.agent.queues import (
 
 # Import the agent manager
 from web.agent.agent_manager import agent_manager
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 from src.prompts import POLICY_GENERATOR_WILDCARD_V2
 from src.utils.dummy_data import call_openai_api
 
@@ -134,7 +134,7 @@ def get_attribute_trees():
         
         # Process trees into a format suitable for UI display
         def process_tree(tree):
-            if not isinstance(tree, AttributeTree):
+            if not isinstance(tree, ResourceTypeTree):
                 logger.warning(f"Found non-AttributeTree object: {type(tree)}")
                 return {"label": str(tree), "value": str(tree), "children": [], "access": ""}
             
@@ -156,7 +156,7 @@ def get_attribute_trees():
         seen_keys = set()
         
         for tree in attribute_trees:
-            if isinstance(tree, AttributeTree):
+            if isinstance(tree, ResourceTypeTree):
                 key, _ = list(tree.value.items())[0]
                 if key not in seen_keys:
                     seen_keys.add(key)

@@ -1,15 +1,15 @@
 from datetime import datetime, timedelta
 from src.policy_system.api_annotation import APIAnnotationBase
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 
 class PhotoAPIAnnotation(APIAnnotationBase):
     def __init__(self):
         super().__init__("Photo", {
-            'granular_data': [AttributeTree(f'Photo:Year', [
-                AttributeTree(f'Photo:Month', [
-                    AttributeTree(f'Photo:Week', [
-                        AttributeTree(f'Photo:Day', [
-                            AttributeTree(f'Photo:Hour')
+            'granular_data': [ResourceTypeTree(f'Photo:Year', [
+                ResourceTypeTree(f'Photo:Month', [
+                    ResourceTypeTree(f'Photo:Week', [
+                        ResourceTypeTree(f'Photo:Day', [
+                            ResourceTypeTree(f'Photo:Hour')
                         ])
                     ])
                 ])

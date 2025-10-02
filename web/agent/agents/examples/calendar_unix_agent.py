@@ -5,7 +5,7 @@ from typing import Annotated
 from ..base_agent import BaseAgent
 from ..web_input import get_user_input
 from src.policy_system.api_annotation import APIAnnotationBase
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 from src.utils.dummy_data import generate_dummy_data
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ class CalendarUnixAPIAnnotation(APIAnnotationBase):
     
     def __init__(self):
         # Define Unix timestamp as the main resource
-        unix_timestamp = AttributeTree.create_resource(
+    unix_timestamp = ResourceTypeTree.create_resource(
             'Calendar:UnixTimestamp', 
             description='Unix timestamp representing a specific moment in time',
             examples=['1704067200', '1735689600', '1767225600']  # 2024-01-01, 2025-01-01, 2026-01-01
@@ -25,7 +25,7 @@ class CalendarUnixAPIAnnotation(APIAnnotationBase):
         super().__init__(
             "CalendarUnix",
             [unix_timestamp],
-            [AttributeTree('Read'), AttributeTree('Write'), AttributeTree('Create')]
+            [ResourceTypeTree('Read'), ResourceTypeTree('Write'), ResourceTypeTree('Create')]
         )
 
     def get_timestamp(self, start_time, use_wildcard):

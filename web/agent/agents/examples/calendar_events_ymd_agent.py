@@ -5,7 +5,7 @@ from typing import Annotated
 from ..base_agent import BaseAgent
 from ..web_input import get_user_input
 from src.policy_system.api_annotation import APIAnnotationBase
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 from src.utils.dummy_data import generate_dummy_data
 
 logger = logging.getLogger(__name__)
@@ -16,52 +16,52 @@ class CalendarEventsYMDApiAnnotation(APIAnnotationBase):
     
     def __init__(self):
         # Define resources: Year -> Month -> Day -> Event
-        calendar_year = AttributeTree.create_resource(
+    calendar_year = ResourceTypeTree.create_resource(
             'Calendar:Year', 
             description='The year of the calendar', 
             examples=['2025', '2026', '2027']
         )
-        calendar_month = AttributeTree.create_resource(
+    calendar_month = ResourceTypeTree.create_resource(
             'Calendar:Month', 
             description='The month of the calendar', 
             examples=['January', 'February', 'December']
         )
-        calendar_day = AttributeTree.create_resource(
+    calendar_day = ResourceTypeTree.create_resource(
             'Calendar:Day', 
             description='The day of the calendar must be a number between 1 and 31', 
             examples=['1', '2', '31']
         )
-        calendar_event = AttributeTree.create_resource(
+    calendar_event = ResourceTypeTree.create_resource(
             'Calendar:Event', 
             description='A specific calendar event', 
             examples=['Team_Meeting', 'Doctor_Appointment', 'Birthday_Party']
         )
-        calendar_meeting = AttributeTree.create_resource(
+    calendar_meeting = ResourceTypeTree.create_resource(
             'Calendar:Meeting', 
             description='A meeting event', 
             examples=['Team_Standup', 'Client_Call', 'Board_Meeting']
         )
-        calendar_reminder = AttributeTree.create_resource(
+    calendar_reminder = ResourceTypeTree.create_resource(
             'Calendar:Reminder', 
             description='A reminder event', 
             examples=['Birthday_Reminder', 'Deadline_Alert', 'Medication_Reminder']
         )
-        calendar_all_day = AttributeTree.create_resource(
+    calendar_all_day = ResourceTypeTree.create_resource(
             'Calendar:AllDay', 
             description='An all-day event', 
             examples=['Holiday', 'Vacation', 'Conference']
         )
         
-        AttributeTree.add_edge(calendar_year, calendar_month)
-        AttributeTree.add_edge(calendar_month, calendar_day)
-        AttributeTree.add_edge(calendar_event, calendar_meeting)
-        AttributeTree.add_edge(calendar_event, calendar_reminder)
-        AttributeTree.add_edge(calendar_event, calendar_all_day)
+    ResourceTypeTree.add_edge(calendar_year, calendar_month)
+    ResourceTypeTree.add_edge(calendar_month, calendar_day)
+    ResourceTypeTree.add_edge(calendar_event, calendar_meeting)
+    ResourceTypeTree.add_edge(calendar_event, calendar_reminder)
+    ResourceTypeTree.add_edge(calendar_event, calendar_all_day)
         
         super().__init__(
             "CalendarEventsYMD",
             [calendar_year, calendar_event],
-            [AttributeTree('Read'), AttributeTree('Write'), AttributeTree('Create')]
+            [ResourceTypeTree('Read'), ResourceTypeTree('Write'), ResourceTypeTree('Create')]
         )
 
     def get_hierarchy(self, start_time, duration, description, use_wildcard):

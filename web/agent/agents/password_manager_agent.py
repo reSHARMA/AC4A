@@ -3,7 +3,7 @@ from datetime import datetime
 from .base_agent import BaseAgent
 from ..web_input import get_user_input
 from src.policy_system.api_annotation import APIAnnotationBase
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 from src.utils.dummy_data import generate_dummy_data
 from config import WILDCARD
 from typing import Annotated
@@ -13,13 +13,13 @@ logger = logging.getLogger(__name__)
 
 class PasswordManagerAPIAnnotation(APIAnnotationBase):
     def __init__(self):
-        service = AttributeTree.create_resource('PasswordManager:ServiceName', description='The identifier for the given website or service', examples=['gmail', 'facebook', 'twitter'])
-        user = AttributeTree.create_resource('PasswordManager:UserName', description='The identifier for the given user name', examples=['xyz@gmail.com', 'user123', '@Ron'])
-        AttributeTree.add_edge(service, user)
+    service = ResourceTypeTree.create_resource('PasswordManager:ServiceName', description='The identifier for the given website or service', examples=['gmail', 'facebook', 'twitter'])
+    user = ResourceTypeTree.create_resource('PasswordManager:UserName', description='The identifier for the given user name', examples=['xyz@gmail.com', 'user123', '@Ron'])
+    ResourceTypeTree.add_edge(service, user)
         super().__init__(
             "PasswordManager",
             [service],
-            [AttributeTree('Read'), AttributeTree('Write'), AttributeTree('Create')]
+            [ResourceTypeTree('Read'), ResourceTypeTree('Write'), ResourceTypeTree('Create')]
         )
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):

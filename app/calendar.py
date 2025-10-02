@@ -1,26 +1,26 @@
 from datetime import datetime, timedelta
 from src.policy_system.api_annotation import APIAnnotationBase
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 from src.utils.dummy_data import generate_dummy_data
 
 class CalendarAPIAnnotation(APIAnnotationBase):
     def __init__(self):
         super().__init__("Calendar", {
             'granular_data': [
-                AttributeTree(f'Calendar:Year', [
-                    AttributeTree(f'Calendar:Month', [
-                        AttributeTree(f'Calendar:Week', [
-                            AttributeTree(f'Calendar:Day', [
-                                AttributeTree(f'Calendar:Hour')
+                ResourceTypeTree(f'Calendar:Year', [
+                    ResourceTypeTree(f'Calendar:Month', [
+                        ResourceTypeTree(f'Calendar:Week', [
+                            ResourceTypeTree(f'Calendar:Day', [
+                                ResourceTypeTree(f'Calendar:Hour')
                             ])
                         ])
                     ])
                 ])
             ],
             'data_access': [
-                AttributeTree('Read'),
-                AttributeTree('Write'),
-                AttributeTree('Create')
+                ResourceTypeTree('Read'),
+                ResourceTypeTree('Write'),
+                ResourceTypeTree('Create')
             ]
         })
 

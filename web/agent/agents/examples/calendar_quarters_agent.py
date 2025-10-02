@@ -5,7 +5,7 @@ from typing import Annotated
 from ..base_agent import BaseAgent
 from ..web_input import get_user_input
 from src.policy_system.api_annotation import APIAnnotationBase
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 from src.utils.dummy_data import generate_dummy_data
 
 logger = logging.getLogger(__name__)
@@ -16,23 +16,23 @@ class CalendarQuartersAPIAnnotation(APIAnnotationBase):
     
     def __init__(self):
         # Define resources: Year -> Quarter (quarters variant only)
-        calendar_year = AttributeTree.create_resource(
+    calendar_year = ResourceTypeTree.create_resource(
             'Calendar:Year', 
             description='The year of the calendar', 
             examples=['2025', '2026', '2027']
         )
-        calendar_quarter = AttributeTree.create_resource(
+    calendar_quarter = ResourceTypeTree.create_resource(
             'Calendar:Quarter', 
             description='The quarter of the year (Q1, Q2, Q3, Q4)', 
             examples=['Q1', 'Q2', 'Q3', 'Q4']
         )
         
-        AttributeTree.add_edge(calendar_year, calendar_quarter)
+    ResourceTypeTree.add_edge(calendar_year, calendar_quarter)
         
         super().__init__(
             "CalendarQuarters",
             [calendar_year],
-            [AttributeTree('Read'), AttributeTree('Write'), AttributeTree('Create')]
+            [ResourceTypeTree('Read'), ResourceTypeTree('Write'), ResourceTypeTree('Create')]
         )
 
     def get_quarter_from_month(self, month):

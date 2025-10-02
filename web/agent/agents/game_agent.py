@@ -3,7 +3,7 @@ from datetime import datetime
 from .base_agent import BaseAgent
 from ..web_input import get_user_input
 from src.policy_system.api_annotation import APIAnnotationBase
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 from config import WILDCARD
 from typing import Annotated
 import requests
@@ -13,11 +13,11 @@ logger = logging.getLogger(__name__)
 
 class GameAPIAnnotation(APIAnnotationBase):
     def __init__(self):
-        game_id = AttributeTree.create_resource('Game:GameId', description='The id of the game', examples=['1', '2', '3'])
+    game_id = ResourceTypeTree.create_resource('Game:GameId', description='The id of the game', examples=['1', '2', '3'])
         super().__init__(
             "Game",
             [game_id],
-            [AttributeTree('Read'), AttributeTree('Write'), AttributeTree('Create')]
+            [ResourceTypeTree('Read'), ResourceTypeTree('Write'), ResourceTypeTree('Create')]
         )
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):

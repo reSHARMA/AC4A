@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, List, Any, Optional
 from src.policy_system.policy_system import PolicySystem
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 
 # Import all agent classes from the agents directory
 from .agents.calendar_agent import CalendarAgent
@@ -89,7 +89,7 @@ class AgentManager:
             
         return self.agents.get(agent_name)
     
-    def get_attribute_trees(self) -> List[AttributeTree]:
+    def get_attribute_trees(self) -> List[ResourceTypeTree]:
         """Get all attribute trees for display"""
         logger.info("Getting attribute trees")
         if not self.initialized:
@@ -130,7 +130,7 @@ class AgentManager:
             seen_keys = set()
             
             for tree in trees:
-                if isinstance(tree, AttributeTree):
+                if isinstance(tree, ResourceTypeTree):
                     key, _ = list(tree.value.items())[0]
                     if key not in seen_keys:
                         seen_keys.add(key)

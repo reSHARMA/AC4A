@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from .base_agent import BaseAgent
 from ..web_input import get_user_input
 from src.policy_system.api_annotation import APIAnnotationBase
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 from config import WILDCARD
 from typing import Annotated
 import requests, dotenv
@@ -139,19 +139,19 @@ class TrelloWrapper:
 # --- TrelloAPIAnnotation (already present, unchanged except for generate_attributes) ---
 class TrelloAPIAnnotation(APIAnnotationBase):
     def __init__(self):
-        workspace = AttributeTree.create_resource('Trello:Workspace', description='The workspace of the trello', examples=['Acme Corporation', 'Marketing Team', 'Q4 Product Launch', 'Personal Life'])
-        board = AttributeTree.create_resource('Trello:Board', description='The board of the trello', examples=['Project Management', 'Company Overview', 'Backlog', 'Marketing Overview', 'Vacation Planning'])
-        list_node = AttributeTree.create_resource('Trello:List', description='The list of the trello', examples=['To Do', 'In Progress', 'Done', 'Code Review','Ideas'])
-        card = AttributeTree.create_resource('Trello:Card', description='The card of the trello', examples=['Implement new feature', 'Fix bug', 'Write documentation', 'Create new project', 'Search flight tickets', 'Book hotel'])
+    workspace = ResourceTypeTree.create_resource('Trello:Workspace', description='The workspace of the trello', examples=['Acme Corporation', 'Marketing Team', 'Q4 Product Launch', 'Personal Life'])
+    board = ResourceTypeTree.create_resource('Trello:Board', description='The board of the trello', examples=['Project Management', 'Company Overview', 'Backlog', 'Marketing Overview', 'Vacation Planning'])
+    list_node = ResourceTypeTree.create_resource('Trello:List', description='The list of the trello', examples=['To Do', 'In Progress', 'Done', 'Code Review','Ideas'])
+    card = ResourceTypeTree.create_resource('Trello:Card', description='The card of the trello', examples=['Implement new feature', 'Fix bug', 'Write documentation', 'Create new project', 'Search flight tickets', 'Book hotel'])
 
-        AttributeTree.add_edge(workspace, board)
-        AttributeTree.add_edge(board, list_node)
-        AttributeTree.add_edge(list_node, card)
+    ResourceTypeTree.add_edge(workspace, board)
+    ResourceTypeTree.add_edge(board, list_node)
+    ResourceTypeTree.add_edge(list_node, card)
 
         super().__init__(
             "Trello",
             [workspace],
-            [AttributeTree('Read'), AttributeTree('Write'), AttributeTree('Create')]
+            [ResourceTypeTree('Read'), ResourceTypeTree('Write'), ResourceTypeTree('Create')]
         )
 
     def generate_attributes(self, kwargs, endpoint_name, wildcard):

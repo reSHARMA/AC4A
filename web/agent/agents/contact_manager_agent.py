@@ -3,7 +3,7 @@ from datetime import datetime
 from .base_agent import BaseAgent
 from ..web_input import get_user_input
 from src.policy_system.api_annotation import APIAnnotationBase
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 from src.utils.dummy_data import generate_dummy_data
 from config import WILDCARD
 from typing import Annotated
@@ -13,21 +13,21 @@ logger = logging.getLogger(__name__)
 
 class ContactManagerAPIAnnotation(APIAnnotationBase):
     def __init__(self):
-        root = AttributeTree.create_resource('ContactManager:Contact', description='The name of the contact, must be the name of the person', examples=['Ron Swanson', 'Leslie Knope', 'Tom Haverford'])
-        phone = AttributeTree.create_resource('ContactManager:ContactPhone', description='The phone number of the contact, must be a 10 digit number', examples=['2061234567', '7321234567'])
-        address = AttributeTree.create_resource('ContactManager:ContactAddress', description='The address of the contact, must be a valid address', examples=['123 Main St, Anytown, USA'])
-        email = AttributeTree.create_resource('ContactManager:ContactEmail', description='The email of the contact, must be a valid email address', examples=['ron@swanson.com', 'leslie@knope.com'])
-        relation = AttributeTree.create_resource('ContactManager:ContactRelation', description='The relation of the contact, must be a valid relation with the user', examples=['spouse', 'child', 'parent', 'friend', 'business partner', 'other'])
-        birthday = AttributeTree.create_resource('ContactManager:ContactBirthday', description='The birthday of the contact, must be in the format YYYY-MM-DD', examples=['1980-01-01'])
-        notes = AttributeTree.create_resource('ContactManager:ContactNotes', description='The notes of the contact, must be a valid note', examples=['Ron is a great boss'])
+    root = ResourceTypeTree.create_resource('ContactManager:Contact', description='The name of the contact, must be the name of the person', examples=['Ron Swanson', 'Leslie Knope', 'Tom Haverford'])
+    phone = ResourceTypeTree.create_resource('ContactManager:ContactPhone', description='The phone number of the contact, must be a 10 digit number', examples=['2061234567', '7321234567'])
+    address = ResourceTypeTree.create_resource('ContactManager:ContactAddress', description='The address of the contact, must be a valid address', examples=['123 Main St, Anytown, USA'])
+    email = ResourceTypeTree.create_resource('ContactManager:ContactEmail', description='The email of the contact, must be a valid email address', examples=['ron@swanson.com', 'leslie@knope.com'])
+    relation = ResourceTypeTree.create_resource('ContactManager:ContactRelation', description='The relation of the contact, must be a valid relation with the user', examples=['spouse', 'child', 'parent', 'friend', 'business partner', 'other'])
+    birthday = ResourceTypeTree.create_resource('ContactManager:ContactBirthday', description='The birthday of the contact, must be in the format YYYY-MM-DD', examples=['1980-01-01'])
+    notes = ResourceTypeTree.create_resource('ContactManager:ContactNotes', description='The notes of the contact, must be a valid note', examples=['Ron is a great boss'])
 
         for child in [phone, address, email, relation, birthday, notes]:
-            AttributeTree.add_edge(root, child)
+            ResourceTypeTree.add_edge(root, child)
 
         super().__init__(
             "ContactManager",
             [root],
-            [AttributeTree('Read'), AttributeTree('Write'), AttributeTree('Create')]
+            [ResourceTypeTree('Read'), ResourceTypeTree('Write'), ResourceTypeTree('Create')]
         )
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
@@ -141,20 +141,20 @@ class ContactManagerAgent(BaseAgent):
         
         self.attributes = {
             'granular_data': [
-                AttributeTree(f'ContactManager:Contact', [
-                    AttributeTree(f'ContactManager:ContactName'),
-                    AttributeTree(f'ContactManager:ContactPhone'),
-                    AttributeTree(f'ContactManager:ContactAddress'),
-                    AttributeTree(f'ContactManager:ContactEmail'),
-                    AttributeTree(f'ContactManager:ContactRelation'),
-                    AttributeTree(f'ContactManager:ContactBirthday'),
-                    AttributeTree(f'ContactManager:ContactNotes')
+                ResourceTypeTree(f'ContactManager:Contact', [
+                    ResourceTypeTree(f'ContactManager:ContactName'),
+                    ResourceTypeTree(f'ContactManager:ContactPhone'),
+                    ResourceTypeTree(f'ContactManager:ContactAddress'),
+                    ResourceTypeTree(f'ContactManager:ContactEmail'),
+                    ResourceTypeTree(f'ContactManager:ContactRelation'),
+                    ResourceTypeTree(f'ContactManager:ContactBirthday'),
+                    ResourceTypeTree(f'ContactManager:ContactNotes')
                 ])
             ],
             'data_access': [
-                AttributeTree('Read'),
-                AttributeTree('Write'),
-                AttributeTree('Create')
+                ResourceTypeTree('Read'),
+                ResourceTypeTree('Write'),
+                ResourceTypeTree('Create')
             ]
         }
         

@@ -4,7 +4,7 @@ from typing import Annotated
 
 from ..base_agent import BaseAgent
 from src.policy_system.api_annotation import APIAnnotationBase
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ class ExampleAPIAnnotation(APIAnnotationBase):
     """
 
     def __init__(self):
-        item = AttributeTree.create_resource(
+    item = ResourceTypeTree.create_resource(
             'Example:Item',
             description='A generic example resource item',
             examples=['WidgetA', 'WidgetB']
@@ -26,7 +26,7 @@ class ExampleAPIAnnotation(APIAnnotationBase):
         super().__init__(
             "Example",
             [item],
-            [AttributeTree('Read')]
+            [ResourceTypeTree('Read')]
         )
 
     def generate_attributes(self, kwargs, endpoint_name, wildcard):

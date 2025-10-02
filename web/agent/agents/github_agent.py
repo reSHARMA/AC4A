@@ -3,7 +3,7 @@ from typing import Annotated, List, Optional
 from .base_agent import BaseAgent
 from ..web_input import get_user_input
 from src.policy_system.api_annotation import APIAnnotationBase
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -34,16 +34,16 @@ class GitHubAPIAnnotation(APIAnnotationBase):
             "GitHub",
             {
                 'granular_data': [
-                    AttributeTree('GitHub:Owner', [
-                        AttributeTree('GitHub:Repo', [
-                            AttributeTree('GitHub:Issue')
+                    ResourceTypeTree('GitHub:Owner', [
+                        ResourceTypeTree('GitHub:Repo', [
+                            ResourceTypeTree('GitHub:Issue')
                         ])
                     ])
                 ],
                 'data_access': [
-                    AttributeTree('Read'),
-                    AttributeTree('Write'),
-                    AttributeTree('Create')
+                    ResourceTypeTree('Read'),
+                    ResourceTypeTree('Write'),
+                    ResourceTypeTree('Create')
                 ]
             },
             self.attributes_schema

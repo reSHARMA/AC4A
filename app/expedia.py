@@ -1,26 +1,26 @@
 from datetime import datetime, timedelta
 from src.policy_system.api_annotation import APIAnnotationBase
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 from src.utils.dummy_data import generate_dummy_data
 
 class ExpediaAPIAnnotation(APIAnnotationBase):
     def __init__(self):
         super().__init__("Expedia", {
             'granular_data': [
-                AttributeTree(f'Expedia:Destination', [
-                    AttributeTree(f'Expedia:Flight'),
-                    AttributeTree(f'Expedia:Hotel'),
-                    AttributeTree(f'Expedia:CarRental')
+                ResourceTypeTree(f'Expedia:Destination', [
+                    ResourceTypeTree(f'Expedia:Flight'),
+                    ResourceTypeTree(f'Expedia:Hotel'),
+                    ResourceTypeTree(f'Expedia:CarRental')
                 ]),
-                AttributeTree(f'Expedia:Experience', [
-                    AttributeTree(f'Expedia:Cruise')
+                ResourceTypeTree(f'Expedia:Experience', [
+                    ResourceTypeTree(f'Expedia:Cruise')
                 ]),
-                AttributeTree(f'Expedia:Payment')
+                ResourceTypeTree(f'Expedia:Payment')
             ],
             'data_access': [
-                AttributeTree('Read'),
-                AttributeTree('Write'),
-                AttributeTree('Create')
+                ResourceTypeTree('Read'),
+                ResourceTypeTree('Write'),
+                ResourceTypeTree('Create')
             ]
         })
 

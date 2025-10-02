@@ -3,7 +3,7 @@ from datetime import datetime
 from .base_agent import BaseAgent
 from ..web_input import get_user_input
 from src.policy_system.api_annotation import APIAnnotationBase
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 from src.utils.dummy_data import generate_dummy_data
 from config import WILDCARD
 from typing import Annotated
@@ -13,24 +13,24 @@ logger = logging.getLogger(__name__)
 
 class WebBrowserAPIAnnotation(APIAnnotationBase):
     def __init__(self):
-        url = AttributeTree.create_resource('WebBrowser:URL', description='The full URL of the website', examples=['https://www.google.com/mail?q=read_email'])
-        parent = AttributeTree.create_resource('WebBrowser:ParentDomain', description='The main domain of the website', examples=['google.com', 'amazon.com'])
-        child = AttributeTree.create_resource('WebBrowser:ChildDomain', description='The subdomain of the website', examples=['mail.google.com', 'images.google.com'])
-        path = AttributeTree.create_resource('WebBrowser:Path', description='The path of the website', examples=['/mail', '/images'])
-        query = AttributeTree.create_resource('WebBrowser:QueryParams', description='The query parameters of the website', examples=['?q=python'])
-        cookies = AttributeTree.create_resource('WebBrowser:Cookies', description='The cookies of the website', examples=['JSESSIONID=1234567890'])
-        cookie_name = AttributeTree.create_resource('WebBrowser:CookieName', description='The name of the cookie', examples=['JSESSIONID'])
+    url = ResourceTypeTree.create_resource('WebBrowser:URL', description='The full URL of the website', examples=['https://www.google.com/mail?q=read_email'])
+    parent = ResourceTypeTree.create_resource('WebBrowser:ParentDomain', description='The main domain of the website', examples=['google.com', 'amazon.com'])
+    child = ResourceTypeTree.create_resource('WebBrowser:ChildDomain', description='The subdomain of the website', examples=['mail.google.com', 'images.google.com'])
+    path = ResourceTypeTree.create_resource('WebBrowser:Path', description='The path of the website', examples=['/mail', '/images'])
+    query = ResourceTypeTree.create_resource('WebBrowser:QueryParams', description='The query parameters of the website', examples=['?q=python'])
+    cookies = ResourceTypeTree.create_resource('WebBrowser:Cookies', description='The cookies of the website', examples=['JSESSIONID=1234567890'])
+    cookie_name = ResourceTypeTree.create_resource('WebBrowser:CookieName', description='The name of the cookie', examples=['JSESSIONID'])
 
-        AttributeTree.add_edge(url, parent)
-        AttributeTree.add_edge(url, child)
-        AttributeTree.add_edge(url, path)
-        AttributeTree.add_edge(url, query)
-        AttributeTree.add_edge(cookies, cookie_name)
+    ResourceTypeTree.add_edge(url, parent)
+    ResourceTypeTree.add_edge(url, child)
+    ResourceTypeTree.add_edge(url, path)
+    ResourceTypeTree.add_edge(url, query)
+    ResourceTypeTree.add_edge(cookies, cookie_name)
 
         super().__init__(
             "WebBrowser",
             [url, cookies],
-            [AttributeTree('Read'), AttributeTree('Write'), AttributeTree('Create')]
+            [ResourceTypeTree('Read'), ResourceTypeTree('Write'), ResourceTypeTree('Create')]
         )
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
         api_to_granular_data = {

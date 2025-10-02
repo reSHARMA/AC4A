@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from .base_agent import BaseAgent
 from ..web_input import get_user_input
 from src.policy_system.api_annotation import APIAnnotationBase
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 from src.utils.dummy_data import generate_dummy_data
 from config import WILDCARD
 from typing import Annotated
@@ -15,20 +15,20 @@ logger = logging.getLogger(__name__)
 class CalendarAPIAnnotation(APIAnnotationBase):
     def __init__(self):
         # Define resources with metadata and edges: Calendar:Year -> Calendar:Month -> Calendar:Day -> Calendar:Hour
-        calendar_year = AttributeTree.create_resource('Calendar:Year', description='The year of the calendar', examples=['2025', '2026', '2027'])
-        calendar_month = AttributeTree.create_resource('Calendar:Month', description='The month of the calendar', examples=['January', 'February', 'December'])
-        calendar_day = AttributeTree.create_resource('Calendar:Day', description='The day of the calendar must be a number between 1 and 31', examples=['1', '2', '31'])
-        calendar_hour = AttributeTree.create_resource('Calendar:Hour', description='The hour of the calendar must be a number between 0 and 23', examples=['0', '1', '23'])
+    calendar_year = ResourceTypeTree.create_resource('Calendar:Year', description='The year of the calendar', examples=['2025', '2026', '2027'])
+    calendar_month = ResourceTypeTree.create_resource('Calendar:Month', description='The month of the calendar', examples=['January', 'February', 'December'])
+    calendar_day = ResourceTypeTree.create_resource('Calendar:Day', description='The day of the calendar must be a number between 1 and 31', examples=['1', '2', '31'])
+    calendar_hour = ResourceTypeTree.create_resource('Calendar:Hour', description='The hour of the calendar must be a number between 0 and 23', examples=['0', '1', '23'])
 
-        AttributeTree.add_edge(calendar_year, calendar_month)
-        AttributeTree.add_edge(calendar_month, calendar_day)
-        AttributeTree.add_edge(calendar_day, calendar_hour)
+    ResourceTypeTree.add_edge(calendar_year, calendar_month)
+    ResourceTypeTree.add_edge(calendar_month, calendar_day)
+    ResourceTypeTree.add_edge(calendar_day, calendar_hour)
 
         # New three-argument init: [granular_data], [data_access], omit position (default applies)
         super().__init__(
             "Calendar",
             [calendar_year],
-            [AttributeTree('Read'), AttributeTree('Write'), AttributeTree('Create')]
+            [ResourceTypeTree('Read'), ResourceTypeTree('Write'), ResourceTypeTree('Create')]
         )
 
     def get_hierarchy(self, start_time, duration, use_wildcard):

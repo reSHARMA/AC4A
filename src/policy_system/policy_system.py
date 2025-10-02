@@ -1,5 +1,5 @@
 from datetime import datetime
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 from src.utils.logger import get_logger
 from src.utils.dummy_data import call_openai_api
 from src.utils.rule_parser import parse_rule_value
@@ -100,13 +100,13 @@ class PolicySystem:
                         
                         if isinstance(values, list):
                             for value in values:
-                                if isinstance(value, AttributeTree):
+                                if isinstance(value, ResourceTypeTree):
                                     # Check if this tree already exists
                                     key, _ = list(value.value.items())[0]
                                     is_duplicate = False
                                     
                                     for existing_tree in existing_values:
-                                        if isinstance(existing_tree, AttributeTree):
+                                        if isinstance(existing_tree, ResourceTypeTree):
                                             existing_key, _ = list(existing_tree.value.items())[0]
                                             if key == existing_key:
                                                 is_duplicate = True
@@ -184,7 +184,7 @@ class PolicySystem:
                     if i == 0:
                         # For first node, find it anywhere in any tree
                         for tree in self.attribute_definitions['granular_data']:
-                            if isinstance(tree, AttributeTree):
+                            if isinstance(tree, ResourceTypeTree):
                                 found_node = find_node_in_tree(tree, key)
                                 if found_node:
                                     current_node = found_node
@@ -349,7 +349,7 @@ class PolicySystem:
 
             hierarchy = self.attribute_definitions[attribute_type]
             for root in hierarchy:
-                if isinstance(root, AttributeTree):
+                if isinstance(root, ResourceTypeTree):
                     # Hierarchical structure, convert to flat list and check subsumption
                     logger.info("Processing root of hierarchy")
                     values_list = root
@@ -433,7 +433,7 @@ class PolicySystem:
                         logger.info(f"Using '*' for {node_key} as it's part of a path with special values")
                     
                     logger.info(f"Creating new node for {node_key} with value {node_value}")
-                    new_node = AttributeTree(node_key, data=node_value)
+                    new_node = ResourceTypeTree(node_key, data=node_value)
                     new_node.children.extend(children_with_values)
                     return new_node
 
@@ -457,7 +457,7 @@ class PolicySystem:
 
             new_node = None
             if node_key in all_values or append:
-                new_node = AttributeTree(node_key, data=node_value)
+                new_node = ResourceTypeTree(node_key, data=node_value)
                 append = True
 
             for child in node.children:

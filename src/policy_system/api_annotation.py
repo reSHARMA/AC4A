@@ -13,10 +13,10 @@ class APIAnnotationBase:
         }
         # Default position: Previous->Current, Next->Current
         if position_trees is None:
-            from src.utils.attribute_tree import AttributeTree
+            from src.utils.resource_type_tree import ResourceTypeTree
             self.attributes['position'] = [
-                AttributeTree('Previous', [AttributeTree('Current')]),
-                AttributeTree('Next', [AttributeTree('Current')])
+                ResourceTypeTree('Previous', [ResourceTypeTree('Current')]),
+                ResourceTypeTree('Next', [ResourceTypeTree('Current')])
             ]
         else:
             self.attributes['position'] = position_trees

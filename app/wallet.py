@@ -1,23 +1,23 @@
 from datetime import datetime
 from src.policy_system.api_annotation import APIAnnotationBase
-from src.utils.attribute_tree import AttributeTree
+from src.utils.resource_type_tree import ResourceTypeTree
 from src.utils.dummy_data import generate_dummy_data
 
 class WalletAPIAnnotation(APIAnnotationBase):
     def __init__(self):
         super().__init__("Wallet", {
             'granular_data': [
-                AttributeTree(f'Wallet:CreditCard', [
-                    AttributeTree(f'Wallet:CreditCardName'),
-                    AttributeTree(f'Wallet:CreditCardType'),
-                    AttributeTree(f'Wallet:CreditCardNumber'),
-                    AttributeTree(f'Wallet:CreditCardPin')
+                ResourceTypeTree(f'Wallet:CreditCard', [
+                    ResourceTypeTree(f'Wallet:CreditCardName'),
+                    ResourceTypeTree(f'Wallet:CreditCardType'),
+                    ResourceTypeTree(f'Wallet:CreditCardNumber'),
+                    ResourceTypeTree(f'Wallet:CreditCardPin')
                 ])
             ],
             'data_access': [
-                AttributeTree('Read'),
-                AttributeTree('Write'),
-                AttributeTree('Create')
+                ResourceTypeTree('Read'),
+                ResourceTypeTree('Write'),
+                ResourceTypeTree('Create')
             ]
         })
 

@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class GameAPIAnnotation(APIAnnotationBase):
     def __init__(self):
-    game_id = ResourceTypeTree.create_resource('Game:GameId', description='The id of the game', examples=['1', '2', '3'])
+        game_id = ResourceTypeTree.create_resource('Game:GameId', description='The id of the game', examples=['1', '2', '3'])
         super().__init__(
             "Game",
             [game_id],

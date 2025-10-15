@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 class PasswordManagerAPIAnnotation(APIAnnotationBase):
     def __init__(self):
-    service = ResourceTypeTree.create_resource('PasswordManager:ServiceName', description='The identifier for the given website or service', examples=['gmail', 'facebook', 'twitter'])
-    user = ResourceTypeTree.create_resource('PasswordManager:UserName', parent=service, description='The identifier for the given user name', examples=['xyz@gmail.com', 'user123', '@Ron'])
+        service = ResourceTypeTree.create_resource('PasswordManager:ServiceName', description='The identifier for the given website or service', examples=['gmail', 'facebook', 'twitter'])
+        user = ResourceTypeTree.create_resource('PasswordManager:UserName', parent=service, description='The identifier for the given user name', examples=['xyz@gmail.com', 'user123', '@Ron'])
         super().__init__(
             "PasswordManager",
             [service],

@@ -13,13 +13,13 @@ logger = logging.getLogger(__name__)
 
 class WebBrowserAPIAnnotation(APIAnnotationBase):
     def __init__(self):
-    url = ResourceTypeTree.create_resource('WebBrowser:URL', description='The full URL of the website', examples=['https://www.google.com/mail?q=read_email'])
-    parent = ResourceTypeTree.create_resource('WebBrowser:ParentDomain', parent=url, description='The main domain of the website', examples=['google.com', 'amazon.com'])
-    child = ResourceTypeTree.create_resource('WebBrowser:ChildDomain', parent=url, description='The subdomain of the website', examples=['mail.google.com', 'images.google.com'])
-    path = ResourceTypeTree.create_resource('WebBrowser:Path', parent=url, description='The path of the website', examples=['/mail', '/images'])
-    query = ResourceTypeTree.create_resource('WebBrowser:QueryParams', parent=url, description='The query parameters of the website', examples=['?q=python'])
-    cookies = ResourceTypeTree.create_resource('WebBrowser:Cookies', description='The cookies of the website', examples=['JSESSIONID=1234567890'])
-    cookie_name = ResourceTypeTree.create_resource('WebBrowser:CookieName', parent=cookies, description='The name of the cookie', examples=['JSESSIONID'])
+        url = ResourceTypeTree.create_resource('WebBrowser:URL', description='The full URL of the website', examples=['https://www.google.com/mail?q=read_email'])
+        parent = ResourceTypeTree.create_resource('WebBrowser:ParentDomain', parent=url, description='The main domain of the website', examples=['google.com', 'amazon.com'])
+        child = ResourceTypeTree.create_resource('WebBrowser:ChildDomain', parent=url, description='The subdomain of the website', examples=['mail.google.com', 'images.google.com'])
+        path = ResourceTypeTree.create_resource('WebBrowser:Path', parent=url, description='The path of the website', examples=['/mail', '/images'])
+        query = ResourceTypeTree.create_resource('WebBrowser:QueryParams', parent=url, description='The query parameters of the website', examples=['?q=python'])
+        cookies = ResourceTypeTree.create_resource('WebBrowser:Cookies', description='The cookies of the website', examples=['JSESSIONID=1234567890'])
+        cookie_name = ResourceTypeTree.create_resource('WebBrowser:CookieName', parent=cookies, description='The name of the cookie', examples=['JSESSIONID'])
 
         super().__init__(
             "WebBrowser",

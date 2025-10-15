@@ -13,10 +13,10 @@ logger = logging.getLogger(__name__)
 
 class WalletAPIAnnotation(APIAnnotationBase):
     def __init__(self):
-    credit_card = ResourceTypeTree.create_resource('Wallet:CreditCard', description='The name of the credit card', examples=['Venture X', 'Amex Gold', 'Chase Sapphire'])
-    credit_card_type = ResourceTypeTree.create_resource('Wallet:CreditCardType', parent=credit_card, description='The type of the credit card, payment network', examples=['Visa', 'Mastercard', 'Amex'])
-    credit_card_number = ResourceTypeTree.create_resource('Wallet:CreditCardNumber', parent=credit_card, description='The number of the credit card, must be 16 digits', examples=['1234567890123456'])
-    credit_card_pin = ResourceTypeTree.create_resource('Wallet:CreditCardPin', parent=credit_card, description='The pin of the credit card, must be 3 for visa and mastercard or 4 for amex', examples=['123', '456', '1234'])
+        credit_card = ResourceTypeTree.create_resource('Wallet:CreditCard', description='The name of the credit card', examples=['Venture X', 'Amex Gold', 'Chase Sapphire'])
+        credit_card_type = ResourceTypeTree.create_resource('Wallet:CreditCardType', parent=credit_card, description='The type of the credit card, payment network', examples=['Visa', 'Mastercard', 'Amex'])
+        credit_card_number = ResourceTypeTree.create_resource('Wallet:CreditCardNumber', parent=credit_card, description='The number of the credit card, must be 16 digits', examples=['1234567890123456'])
+        credit_card_pin = ResourceTypeTree.create_resource('Wallet:CreditCardPin', parent=credit_card, description='The pin of the credit card, must be 3 for visa and mastercard or 4 for amex', examples=['123', '456', '1234'])
 
         super().__init__(
             "Wallet",

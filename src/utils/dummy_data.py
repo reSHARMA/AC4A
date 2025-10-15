@@ -199,7 +199,8 @@ def generate_dummy_data(api_endpoint: str, **kwargs) -> dict:
     {history}
 """
 
-    logger.info("Dummy data for API endpoint:", api_endpoint)
+    # Log the API endpoint being used to generate dummy data. Use proper formatting to avoid logging errors.
+    logger.info("Dummy data for API endpoint: %s", api_endpoint)
     # Use the separate function to call the OpenAI API
     dummy_data = call_openai_api("", prompt, "app")
     

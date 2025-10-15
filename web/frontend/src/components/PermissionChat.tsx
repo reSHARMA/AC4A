@@ -1204,9 +1204,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
       const transformedPolicyData = {
         granular_data: granularData.toLowerCase(),
         data_access: policyData.access.toLowerCase(),
-        position: policyData.position === "Current" ? "Current" : 
-                 policyData.position.includes('(') ? policyData.position : 
-                 `${policyData.position}::${policyData.positionValue || 1}`
+        position: "current"
       };
       
       console.log('Deleting policy with data:', transformedPolicyData);

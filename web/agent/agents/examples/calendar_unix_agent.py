@@ -105,74 +105,9 @@ class CalendarUnixAPI:
         self.policy_system = policy_system
 
     def resource_difference(self, needs, have):
-        """Returns what's still needed after subtracting what we have.
-
-        Interprets resources as UnixTimestampInterval(start-end) where end or start may be '*'.
-        Coverage rules:
-        - If have is wildcard (*) -> satisfies any need.
-        - If need is wildcard but have isn't -> not satisfied unless have also wildcard.
-        - Closed interval coverage: have_start <= need_start AND have_end >= need_end.
-        - Open-ended have (start-*) covers any need whose start >= have_start.
-        - Point intervals represented as start-start.
-        - Mismatched types -> not satisfied.
-        """
-        if not needs:
-            return set()
-        if not have:
-            return needs
-
-        def extract(parsed_list):
-            if not parsed_list:
-                return None, None
-            resource_dict = parsed_list[0]
-            key, value = next(iter(resource_dict.items()))
-            if not key.startswith('Calendar:'):
-                return None, None
-            rtype = key[9:]  # strip 'Calendar:'
-            return rtype, value
-
-        needs_type, needs_interval = extract(needs)
-        have_type, have_interval = extract(have)
-
-        if not needs_type or not have_type:
-            return needs
-        if needs_type != have_type:
-            return needs
-
-        # Expect type to be 'UnixTimestampInterval'
-        if needs_interval == '*':
-            # Only satisfied if have is wildcard too
-            return set() if have_interval == '*' else needs
-        if have_interval == '*':
-            return set()
-
-        def parse_interval(interval_str):
-            # interval_str like 'start-end'
-            if '-' not in interval_str:
-                return None, None
-            s, e = interval_str.split('-', 1)
-            start = int(s) if s != '*' and s else None
-            end = int(e) if e != '*' and e else None
-            return start, end
-
-        n_start, n_end = parse_interval(needs_interval)
-        h_start, h_end = parse_interval(have_interval)
-
-        # If parsing failed, be conservative
-        if n_start is None and n_end is None:
-            return needs
-
-        # Start coverage: have start must be <= need start (or have start unspecified)
-        start_ok = (h_start is None) or (n_start is not None and h_start <= n_start)
-        # End coverage: if need has an end, have must have end >= need end or open-ended
-        if n_end is None:
-            # Need is open-ended; require have open-ended and start_ok
-            end_ok = (h_end is None)
-        else:
-            # Need has end; open-ended have (h_end None) ok, or have end >= need end
-            end_ok = (h_end is None) or (h_end >= n_end)
-
-        return set() if (start_ok and end_ok) else needs
+    from src.utils.resource_difference import difference_interval
+    # Here needs/have are expected like [{'Calendar:UnixTimestampInterval': 'start-end'}]
+    return difference_interval(needs, have)
 
     @CalendarUnixAPIAnnotation.export
     def get_attributes(self):

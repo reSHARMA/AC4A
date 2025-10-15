@@ -110,49 +110,27 @@ class CalendarQuartersAPI:
         self.policy_system = policy_system
 
     def resource_difference(self, needs, have):
-        """Returns what's still needed after subtracting what we have."""
         if not needs:
             return set()
         if not have:
             return needs
-        
-        # Extract resource info: [{"Calendar:Year": "2025", "Calendar:Quarter": "Q1"}] -> ("Year", "2025", "Quarter", "Q1")
-        def extract_info(parsed_list):
-            if not parsed_list:
-                return None, None
-            resource_dict = parsed_list[0]
-            year_key = 'Calendar:Year'
-            quarter_key = 'Calendar:Quarter'
-            year_value = resource_dict.get(year_key, None)
-            quarter_value = resource_dict.get(quarter_key, None)
-            return year_value, quarter_value
-        
-        needs_year, needs_quarter = extract_info(needs)
-        have_year, have_quarter = extract_info(have)
-        
-        if not needs_year or not have_year:
-            return needs
-        
-        # Check year coverage
-        year_covered = (needs_year == have_year or have_year == '*')
-        if not year_covered:
-            return needs  # Different year, still need everything
-        
-        # Check quarter coverage
-        quarter_covered = (needs_quarter == have_quarter or have_quarter == '*')
-        if quarter_covered:
-            return set()  # Fully satisfied
-        
-        # Need to calculate missing quarters
-        if needs_quarter == '*':
-            # Need all quarters, but have specific quarter
-            # Return missing quarters
+        from src.utils.resource_difference import difference_tree
+        base = difference_tree(needs, have)
+        if base == set():
+            return set()
+        # If need is full year '*' quarter and have a concrete quarter, we could return remaining quarters.
+        # Keep prior enhancement for partial quarter coverage.
+        resource_dict = needs[0] if isinstance(needs, list) and needs else {}
+        n_year = resource_dict.get('Calendar:Year')
+        n_quarter = resource_dict.get('Calendar:Quarter')
+        have_dict = have[0] if isinstance(have, list) and have else {}
+        h_year = have_dict.get('Calendar:Year')
+        h_quarter = have_dict.get('Calendar:Quarter')
+        if n_quarter == '*' and h_year == n_year and h_quarter not in (None, '*'):
             all_quarters = ['Q1', 'Q2', 'Q3', 'Q4']
-            missing_quarters = [q for q in all_quarters if q != have_quarter]
-            return [{f'Calendar:Year': needs_year, f'Calendar:Quarter': q} for q in missing_quarters]
-        else:
-            # Need specific quarter, don't have it
-            return needs
+            missing = [q for q in all_quarters if q != h_quarter]
+            return [{'Calendar:Year': n_year, 'Calendar:Quarter': q} for q in missing]
+        return needs
 
     @CalendarQuartersAPIAnnotation.export
     def get_attributes(self):

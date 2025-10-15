@@ -17,7 +17,7 @@ class ExampleAPIAnnotation(APIAnnotationBase):
     """
 
     def __init__(self):
-    item = ResourceTypeTree.create_resource(
+        item = ResourceTypeTree.create_resource(
             'Example:Item',
             description='A generic example resource item',
             examples=['WidgetA', 'WidgetB']
@@ -52,9 +52,10 @@ class ExampleAPI:
         """
         Application-provided hook used by the policy system.
         Returns the difference between required (needs) and provided (have) resources.
-        Empty/falsey => subsumption holds. Here we default to empty to allow all.
+        Empty set() => subsumption holds. Uses enum difference utility.
         """
-        return {}
+        from src.utils.resource_difference import difference_enum
+        return difference_enum(needs, have)
 
     @ExampleAPIAnnotation.export
     def get_attributes(self):

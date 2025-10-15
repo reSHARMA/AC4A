@@ -212,44 +212,14 @@ class CalendarEventsYMDApi:
         self.policy_system = policy_system
 
     def resource_difference(self, needs, have):
-        """Returns what's still needed after subtracting what we have."""
+        # We consider two independent trees interleaved in the list: temporal and event.
+        # Coverage: each key present in needs must be present in have with same value or wildcard '*'.
         if not needs:
             return set()
         if not have:
             return needs
-        
-        # Extract resource info from the complex hierarchy
-        def extract_info(parsed_list):
-            if not parsed_list:
-                return None, None, None, None, None
-            resource_dict = parsed_list[0]
-            year = resource_dict.get('Calendar:Year', None)
-            month = resource_dict.get('Calendar:Month', None)
-            day = resource_dict.get('Calendar:Day', None)
-            event = resource_dict.get('Calendar:Event', None)
-            event_type = resource_dict.get('Calendar:Meeting', None) or resource_dict.get('Calendar:Reminder', None) or resource_dict.get('Calendar:AllDay', None)
-            return year, month, day, event, event_type
-        
-        needs_year, needs_month, needs_day, needs_event, needs_type = extract_info(needs)
-        have_year, have_month, have_day, have_event, have_type = extract_info(have)
-        
-        if not needs_year and not needs_event:
-            return needs
-        
-        # Check temporal hierarchy coverage (Year -> Month -> Day)
-        year_covered = (needs_year == have_year or have_year == '*' or not needs_year)
-        month_covered = (needs_month == have_month or have_month == '*' or not needs_month)
-        day_covered = (needs_day == have_day or have_day == '*' or not needs_day)
-        
-        # Check event hierarchy coverage (Event -> {Meeting, Reminder, AllDay})
-        event_covered = (needs_event == have_event or have_event == '*' or not needs_event)
-        type_covered = (needs_type == have_type or have_type == '*' or not needs_type)
-        
-        # Both hierarchies must be satisfied
-        temporal_ok = year_covered and month_covered and day_covered
-        event_ok = event_covered and type_covered
-        
-        return set() if (temporal_ok and event_ok) else needs
+    from src.utils.resource_difference import difference_tree
+    return difference_tree(needs, have)
 
     @CalendarEventsYMDApiAnnotation.export
     def get_attributes(self):

@@ -99,34 +99,10 @@ class CalendarEventTypesAPI:
         self.policy_system = policy_system
 
     def resource_difference(self, needs, have):
-        """Returns what's still needed after subtracting what we have."""
-        if not needs:
-            return set()
-        if not have:
-            return needs
-        
-        # Extract resource info: [{"Calendar:Meeting": "*"}] -> ("Meeting", "*")
-        def extract_info(parsed_list):
-            if not parsed_list:
-                return None, None
-            resource_dict = parsed_list[0]
-            key, value = next(iter(resource_dict.items()))
-            return (key[9:], value) if key.startswith('Calendar:') else (None, None)
-        
-        needs_type, needs_id = extract_info(needs)
-        have_type, have_id = extract_info(have)
-        
-        if not needs_type or not have_type:
-            return needs
-        
-        # Type compatibility: Event > {Meeting, Reminder, AllDay}
-        type_ok = (needs_type == have_type or 
-                  (have_type == 'Event' and needs_type in ['Meeting', 'Reminder', 'AllDay']))
-        
-        # ID compatibility: * means "all", exact match or have *
-        id_ok = (needs_id == have_id or have_id == '*')
-        
-        return set() if (type_ok and id_ok) else needs
+        # Basic enum difference; applications needing Event subsuming Meeting etc.
+        # can extend this later if richer semantics required.
+        from src.utils.resource_difference import difference_enum
+        return difference_enum(needs, have)
 
     @CalendarEventTypesAPIAnnotation.export
     def get_attributes(self):

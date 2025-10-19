@@ -78,7 +78,39 @@ def call_openai_api(system: str, prompt: str, mode: str) -> str:
                 model=model,
                 temperature=1,
             )
-            return completion.choices[0].message.content
+            # Debug logging of raw completion object structure before indexing
+            try:
+                usage_obj = getattr(completion, 'usage', None)
+                # Convert usage to plain dict with primitives only
+                usage_dict = {}
+                if usage_obj:
+                    for k in dir(usage_obj):
+                        if k.startswith('_'): continue
+                        v = getattr(usage_obj, k)
+                        if isinstance(v, (int, float, str, type(None))):
+                            usage_dict[k] = v
+                openai_logger.debug("OpenAI completion debug", extra={
+                    'openai_data': {
+                        'has_choices': hasattr(completion, 'choices'),
+                        'choices_len': len(getattr(completion, 'choices', [])),
+                        'finish_reasons': [getattr(c, 'finish_reason', None) for c in getattr(completion, 'choices', [])],
+                        'first_choice_keys': list(getattr(completion.choices[0], '__dict__', {}).keys()) if getattr(completion, 'choices', None) else [],
+                        'usage': usage_dict,
+                        'model': model
+                    }
+                })
+            except Exception as log_e:
+                openai_logger.error(f"Failed to log OpenAI completion debug: {log_e}")
+            # Defensive handling in case choices list is empty or malformed
+            if not getattr(completion, 'choices', None):
+                openai_logger.error("OpenAI completion returned no choices; returning empty string")
+                return ""
+            first_choice = completion.choices[0]
+            # Some SDKs may not populate message/content; guard access
+            content = getattr(getattr(first_choice, 'message', None), 'content', '') or ''
+            if content == '' and hasattr(first_choice, 'text'):
+                content = getattr(first_choice, 'text', '')
+            return content
         else:
             # Fallback to Azure OpenAI client
             logger.info("OpenAI API key not found, using Azure OpenAI client")
@@ -152,6 +184,35 @@ def call_openai_api(system: str, prompt: str, mode: str) -> str:
                 messages=messages,
                 temperature=1,
             )
+            try:
+                usage_obj = getattr(completion, 'usage', None)
+                usage_dict = {}
+                if usage_obj:
+                    for k in dir(usage_obj):
+                        if k.startswith('_'): continue
+                        v = getattr(usage_obj, k)
+                        if isinstance(v, (int, float, str, type(None))):
+                            usage_dict[k] = v
+                openai_logger.debug("Azure OpenAI completion debug", extra={
+                    'openai_data': {
+                        'has_choices': hasattr(completion, 'choices'),
+                        'choices_len': len(getattr(completion, 'choices', [])),
+                        'finish_reasons': [getattr(c, 'finish_reason', None) for c in getattr(completion, 'choices', [])],
+                        'first_choice_keys': list(getattr(completion.choices[0], '__dict__', {}).keys()) if getattr(completion, 'choices', None) else [],
+                        'usage': usage_dict,
+                        'model': model_name,
+                        'endpoint': endpoint
+                    }
+                })
+            except Exception as log_e:
+                openai_logger.error(f"Failed to log Azure completion debug: {log_e}")
+            if not getattr(completion, 'choices', None):
+                openai_logger.error("Azure OpenAI completion returned no choices; returning empty string")
+                return ""
+            first_choice = completion.choices[0]
+            content = getattr(getattr(first_choice, 'message', None), 'content', '') or ''
+            if content == '' and hasattr(first_choice, 'text'):
+                content = getattr(first_choice, 'text', '')
             
             # Log the Azure OpenAI response
             openai_logger.debug("Received Azure OpenAI API response", extra={
@@ -200,13 +261,17 @@ def generate_dummy_data(api_endpoint: str, **kwargs) -> dict:
 """
 
     # Log the API endpoint being used to generate dummy data. Use proper formatting to avoid logging errors.
-    logger.info("Dummy data for API endpoint: %s", api_endpoint)
+    # logger.info("Dummy data for API endpoint: %s", api_endpoint)
     # Use the separate function to call the OpenAI API
     dummy_data = call_openai_api("", prompt, "app")
+    if dummy_data is None:
+        dummy_data = ""
     
     summary_prompt = f"""You will be given a json output from an API endpoint {api_endpoint}. Generate a summary of the data returned by the API endpoint '{api_endpoint}' such that it can be presented to the user. 
 Keep the summary concise and informative."""   
     summary = call_openai_api(summary_prompt, dummy_data, "app")
+    if summary is None:
+        summary = ""
 
     history += summary + "\n" 
 

@@ -7,6 +7,7 @@ from src.utils.resource_type_tree import ResourceTypeTree
 from src.utils.dummy_data import generate_dummy_data
 from config import WILDCARD
 from typing import Annotated
+import re
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -197,14 +198,36 @@ class CalendarAgent(BaseAgent):
         """
         Read calendar entries
         """
-        logger.info(f"Calling CalendarAPI read with start_time={start_time}, duration={duration}")
-        result = self.calendar_api.read(start_time=start_time, duration=duration)
+        # Support ISO8601 duration strings like 'P1D', 'PT2H', etc.
+        parsed_duration = self._parse_duration(duration)
+        logger.info(f"Calling CalendarAPI read with start_time={start_time}, duration={parsed_duration}")
+        result = self.calendar_api.read(start_time=start_time, duration=parsed_duration)
         return result
         
     async def calendar_check_availability(self, start_time: Annotated[datetime, "The start time of the availability check as offset-naive datetime"], duration: Annotated[timedelta, "The duration of the availability check as timedelta"]) -> str:
         """
         Check availability for a time slot
         """
-        logger.info(f"Calling CalendarAPI check_available with start_time={start_time}, duration={duration}")
-        result = self.calendar_api.check_available(start_time=start_time, duration=duration)
+        parsed_duration = self._parse_duration(duration)
+        logger.info(f"Calling CalendarAPI check_available with start_time={start_time}, duration={parsed_duration}")
+        result = self.calendar_api.check_available(start_time=start_time, duration=parsed_duration)
         return result 
+
+    def _parse_duration(self, duration) -> timedelta:
+        """Parse a duration which may already be timedelta or ISO8601 string (very limited subset)."""
+        if isinstance(duration, timedelta):
+            return duration
+        if isinstance(duration, str):
+            # Basic patterns: PnD, PTnH, PTnM, PTnS combined
+            pattern = re.compile(r'^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$')
+            m = pattern.match(duration)
+            if m:
+                days = int(m.group(1)) if m.group(1) else 0
+                hours = int(m.group(2)) if m.group(2) else 0
+                minutes = int(m.group(3)) if m.group(3) else 0
+                seconds = int(m.group(4)) if m.group(4) else 0
+                return timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+            logger.warning(f"Unrecognized duration string '{duration}', defaulting to 0 seconds")
+            return timedelta(0)
+        logger.warning(f"Unsupported duration type {type(duration)}, defaulting to 0 seconds")
+        return timedelta(0)

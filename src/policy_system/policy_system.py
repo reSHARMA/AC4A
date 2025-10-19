@@ -275,26 +275,38 @@ class PolicySystem:
 
     def _check_single_attribute(self, attributes, print_policy=True, resource_difference=None):
         """Check a single attribute object against policy rules"""
+        print_policy = True
         logger.info(f"POLICY CHECK - Single Attribute: {attributes}")
+
+        needs = [attributes]
 
         for rule in self.policy_rules:
             if print_policy:
                 logger.info(f"POLICY RULE CHECK - Rule: {rule}")
-            if self.check_subsumption(rule, attributes, resource_difference):
-                if print_policy:
-                    logger.info(f"✅ POLICY ALLOWED - Action is allowed by rule: {rule}")
-                    send_custom_log("✅ Access Granted by", f"{rule}")
-                return True
-        if print_policy:
-            logger.error(f"❌ POLICY DENIED - Action not allowed for attributes: {attributes}")
-            send_custom_log("❌ Access Denied for", f"{attributes}")
-        return False
+                while(len(needs) > 0):
+                    need = needs.pop(0)
+                    logger.info(f"Checking need: {need}")
+                    required = self.check_subsumption(rule, need, resource_difference)
+                    for req in required:
+                        needs.append(req)
+
+        if len(needs) == 0:
+            if print_policy:
+                logger.info(f"✅ POLICY ALLOWED - Action is allowed by rule: {rule}")
+                send_custom_log("✅ Access Granted by", f"{rule}")
+            return True
+        else:
+            if print_policy:
+                logger.error(f"❌ POLICY DENIED - Action not allowed for attributes: {attributes}")
+                send_custom_log("❌ Access Denied for", f"{attributes}")
+            return False
 
     def check_subsumption(self, rule, attributes, resource_difference=None):
         logger.info(f"Checking rule: {rule}")
         logger.info(f"For attributes: {attributes}")
 
         skip_attr = ['expiry']
+        new_need = {}
         for attr in rule:
             if attr in skip_attr:
                 continue
@@ -306,7 +318,7 @@ class PolicySystem:
             if attr == 'expiry':
                 # Compare datetime values directly
                 if datetime.now() >= rule_value:
-                    return False
+                    return attributes
                 continue  
 
             if rule_value == '*':
@@ -319,32 +331,38 @@ class PolicySystem:
             logger.info(f"Rule value for {attr}: {parsed_rule_value}")
             
             valid = self.validate_attribute(parsed_rule_value, attr_value, attr, resource_difference)
-            if valid < 0:
-                logger.info(f"Validation failed for attribute: {attr}")
-                return False
+            new_need[attr] = valid
 
-            if attr == 'granular_data' and valid > 0:
-                # Skip position validation since position is removed
-                pass
+        max_length_attr = 0
+        for attr, value in new_need.items():
+            if len(value) > max_length_attr:
+                max_length_attr = len(value)
 
-        logger.info("Validation successful, returning True")
-        return True
+        new_attributes_list = []
+        for x in range(max_length_attr):
+            new_attr = {}
+            for attr, value in new_need.items():
+                new_attr[attr] = value[x] if x < len(value) else value[0]
+            new_attributes_list.append(new_attr)
+
+        logger.info(f"New needs generated: {new_attributes_list}")
+        return new_attributes_list
 
     def validate_attribute(self, rule_value, attribute_value, attribute_type, resource_difference=None):
         logger.info(f"Validating attribute {attribute_type}")
         logger.info(f"Rule value: {rule_value}")
         logger.info(f"Attribute value: {attribute_value}")
         
-        valid = -1  # Initialize valid at the start
+        valid = [attribute_value]
         
         if not rule_value:
             logger.info("No rule value provided")
-            return True
+            return [attribute_value]
 
         if attribute_type in self.attribute_definitions:
 
             if callable(resource_difference) and attribute_type == 'granular_data':
-                valid = resource_difference(rule_value, attribute_value) == set()
+                valid = resource_difference(rule_value, attribute_value)
                 return valid
 
             hierarchy = self.attribute_definitions[attribute_type]
@@ -376,7 +394,7 @@ class PolicySystem:
                     logger.info(f"Validation result for current root: {valid}")
                     
                     if valid >= 0:
-                        return valid
+                        return []
                 
         logger.info(f"Final validation result: {valid}")
         return valid

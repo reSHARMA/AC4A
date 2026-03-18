@@ -1,12 +1,15 @@
 import logging
 from enum import Enum
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple, List, Optional
 import os
 import requests
 import base64
 import re
 import json
 import time
+import subprocess
+import sys
+import tempfile
 from src.utils.dummy_data import call_openai_api
 from .agent_manager import agent_manager
 from src.policy_system.policy_system import PolicySystem
@@ -532,20 +535,54 @@ def compress_screenshot(screenshot_data: bytes, max_size: tuple = (800, 600), qu
         logger.error(f"Error compressing screenshot: {str(e)}")
         return screenshot_data  # Return original if compression fails
 
-def get_latest_screenshot() -> bytes:
+def add_ruler_to_screenshot(screenshot_data: bytes) -> bytes:
     """
-    Get the latest screenshot from the Flask screenshot server
-    
+    Draw coordinate rulers on the top (x) and left (y) edges so the LLM can align (x,y).
+    Ruler uses 100px ticks and labels. Does not change image dimensions.
+    """
+    try:
+        img = Image.open(io.BytesIO(screenshot_data)).convert("RGB")
+        w, h = img.size
+        from PIL import ImageDraw, ImageFont
+        draw = ImageDraw.Draw(img)
+        try:
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 14)
+        except OSError:
+            font = ImageFont.load_default()
+        color = (255, 200, 0)  # yellow, visible on most backgrounds
+        # Top edge: x-axis ticks and labels every 100px
+        for x in range(0, w, 100):
+            draw.line([(x, 0), (x, 12)], fill=color, width=2)
+            draw.text((x + 2, 0), str(x), fill=color, font=font)
+        # Left edge: y-axis ticks and labels every 100px
+        for y in range(0, h, 100):
+            draw.line([(0, y), (14, y)], fill=color, width=2)
+            draw.text((2, y + 1), str(y), fill=color, font=font)
+        out = io.BytesIO()
+        img.save(out, format="PNG")
+        return out.getvalue()
+    except Exception as e:
+        logger.warning("Could not add ruler to screenshot: %s", e)
+        return screenshot_data
+
+def get_latest_screenshot(compress: bool = True) -> bytes:
+    """
+    Get the latest screenshot from the Flask screenshot server.
+
+    Args:
+        compress: If True (default), resize/compress for general use. Use False for
+                  computer-use so coordinates match the real 1024x768 viewport.
     Returns:
-        bytes: Raw PNG image data
+        bytes: Raw PNG (or JPEG if compressed) image data
     """
     try:
         # Get the latest screenshot from the Flask API
         response = requests.get('http://localhost:8080/screenshot', timeout=10)
         
         if response.status_code == 200:
-            # Compress the screenshot before returning
-            return compress_screenshot(response.content)
+            if compress:
+                return compress_screenshot(response.content)
+            return response.content
         elif response.status_code == 404:
             logger.warning("Screenshot not available yet")
             return b''
@@ -561,6 +598,59 @@ def get_latest_screenshot() -> bytes:
 
 # Add a global click counter for browser chat
 browser_click_counter = 0
+
+def _extract_pyautogui_script(response: str) -> Optional[str]:
+    """Extract a Python code block that uses pyautogui from the LLM response."""
+    if not response or "pyautogui" not in response:
+        return None
+    match = re.search(r"```(?:python)?\s*(.*?)```", response, re.DOTALL | re.IGNORECASE)
+    if not match:
+        return None
+    code = match.group(1).strip()
+    if "pyautogui" not in code:
+        return None
+    return code
+
+def _run_pyautogui_script(script: str, timeout_seconds: int = 15) -> Tuple[bool, str]:
+    """Run the pyautogui script with DISPLAY=:99 (browser display). Returns (success, output_or_error)."""
+    env = os.environ.copy()
+    env["DISPLAY"] = ":99"
+    env["PYAUTOGUI_FAKE_LOADTIME"] = "0.1"
+    # Use same X authority as browser stack (start_vnc_stack.sh / start_full_browser.sh)
+    xauth = os.environ.get("XAUTHORITY") or os.path.join(
+        os.environ.get("HOME", os.path.expanduser("~")), "browser-remote", ".Xauthority"
+    )
+    if os.path.isfile(xauth):
+        env["XAUTHORITY"] = xauth
+    logger.info("Running pyautogui script with DISPLAY=%s XAUTHORITY=%s", env.get("DISPLAY"), env.get("XAUTHORITY"))
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            f.write(script)
+            path = f.name
+        try:
+            result = subprocess.run(
+                [sys.executable, path],
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+                cwd=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            )
+            out = (result.stdout or "").strip()
+            err = (result.stderr or "").strip()
+            if result.returncode != 0:
+                return False, err or out or f"Exit code {result.returncode}"
+            return True, out or "Action executed."
+        finally:
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+    except subprocess.TimeoutExpired:
+        return False, "Script timed out."
+    except Exception as e:
+        logger.exception("Error running pyautogui script")
+        return False, str(e)
 
 def process_with_computer_use(user_input: str) -> Dict[str, Any]:
     global browser_click_counter
@@ -595,7 +685,10 @@ def process_with_computer_use(user_input: str) -> Dict[str, Any]:
         infer_permissions_from_html(screenshot_data)
 
         time.sleep(1)
-        screenshot_data = get_latest_screenshot()
+        # Uncompressed so (x,y) match real viewport 1024x768; add ruler for coordinate alignment
+        screenshot_data = get_latest_screenshot(compress=False)
+        if screenshot_data:
+            screenshot_data = add_ruler_to_screenshot(screenshot_data)
         # Convert screenshot to base64
         screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
         
@@ -628,19 +721,45 @@ User: {user_input}
         
         # Call the OpenAI API using the existing function
         response = call_openai_api(system_prompt, input_content, "computer-use")
-        
-        if response:
+
+        if not response:
             return create_message(
-                content=response,
-                role="assistant",
-                msg_type=MessageType.ASSISTANT
-            )
-        else:
-            return create_message(
-                content="No response generated from model",
+                content="No response generated from model. Check backend logs (logs/backend.log) for details.",
                 role="system",
                 msg_type=MessageType.ERROR
             )
+        if response.strip().startswith("Error from API:"):
+            return create_message(
+                content=response,
+                role="system",
+                msg_type=MessageType.ERROR
+            )
+
+        script = _extract_pyautogui_script(response)
+        if script:
+            logger.info("Browser agent LLM response (action): %s", response[:500] + ("..." if len(response) > 500 else ""))
+            logger.info("Extracted pyautogui script:\n%s", script)
+            ok, out = _run_pyautogui_script(script)
+            if ok:
+                msg = (out or "Action executed.") + "\n\n**Script run:**\n```python\n" + script.strip() + "\n```"
+                logger.info("Pyautogui script completed. stdout/stderr: %s", out)
+                return create_message(
+                    content=msg,
+                    role="assistant",
+                    msg_type=MessageType.ASSISTANT
+                )
+            logger.warning("Pyautogui script failed: %s", out)
+            return create_message(
+                content=f"Script failed: {out}\n\n**Script that was run:**\n```python\n{script.strip()}\n```",
+                role="assistant",
+                msg_type=MessageType.ASSISTANT
+            )
+
+        return create_message(
+            content=response,
+            role="assistant",
+            msg_type=MessageType.ASSISTANT
+        )
             
     except Exception as e:
         logger.error(f"Error in computer use processing: {str(e)}", exc_info=True)

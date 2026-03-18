@@ -71,7 +71,11 @@ def call_openai_api(system: str, prompt: str, mode: str) -> str:
             elif mode == "app":
                 model = f"{os.getenv('APP_BACKEND_MODEL')}-{os.getenv('APP_BACKEND_MODEL_DATE')}"
             elif mode == "computer-use":
-                model = f"{os.getenv('PERM_MODEL')}-{os.getenv('PERM_MODEL_DATE')}"
+                # Prefer COMPUTER_USE_MODEL for vision/automation; fall back to PERM_MODEL
+                base = os.getenv('COMPUTER_USE_MODEL') or os.getenv('PERM_MODEL')
+                date = os.getenv('COMPUTER_USE_MODEL_DATE') or os.getenv('PERM_MODEL_DATE')
+                model = f"{base}-{date}" if date else base
+                logger.info("Computer-use model: %s (COMPUTER_USE_MODEL=%s, COMPUTER_USE_MODEL_DATE=%s)", model, os.getenv('COMPUTER_USE_MODEL'), os.getenv('COMPUTER_USE_MODEL_DATE'))
 
             completion = client.chat.completions.create(
                 messages=messages,
@@ -229,10 +233,10 @@ def call_openai_api(system: str, prompt: str, mode: str) -> str:
             
             return completion.choices[0].message.content
     except Exception as e:
-        # Log any errors
+        # Log any errors and return error message so callers can show it (e.g. browser chat)
         openai_logger.error(f"Error in OpenAI API call: {str(e)}", exc_info=True)
         logger.error(f"An error occurred while calling the API: {e}")
-        return ""
+        return f"Error from API: {e}"
 
 def generate_dummy_data(api_endpoint: str, **kwargs) -> dict:
     """

@@ -58,6 +58,7 @@ openai==1.73.0
 opentelemetry-api==1.32.0
 packaging==24.2
 pandas==2.2.3
+pyautogui>=0.9.50
 parso==0.8.4
 pexpect==4.9.0
 pillow==11.2.1

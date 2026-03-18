@@ -31,6 +31,25 @@ def set_screenshot_path(path):
     SCREENSHOT_PATH = path
     logger.info(f"Screenshot path set to: {SCREENSHOT_PATH}")
 
+def check_cdp_reachable():
+    """
+    Check if Chrome DevTools Protocol is reachable.
+    Returns (True, tabs_list) on success, or (False, error_message) on failure.
+    """
+    try:
+        response = requests.get(f"{CDP_BASE_URL}/json", timeout=2)
+        if response.status_code != 200:
+            return False, f"CDP returned HTTP {response.status_code}"
+        return True, response.json()
+    except requests.exceptions.ConnectionError as e:
+        return False, (
+            "Chrome DevTools Protocol (port 9222) is not reachable. "
+            "Start the browser with remote debugging, e.g. run web/browser/start_full_browser.sh"
+        )
+    except Exception as e:
+        return False, str(e)
+
+
 def get_active_tab():
     """Get the active Chrome tab using DevTools Protocol"""
     try:
@@ -257,12 +276,19 @@ def get_html_source():
         JSON: HTML source content or error message
     """
     try:
+        cdp_ok, cdp_result = check_cdp_reachable()
+        if not cdp_ok:
+            msg = cdp_result if isinstance(cdp_result, str) else 'Chrome DevTools Protocol unavailable'
+            return jsonify({
+                'error': 'Browser CDP unavailable',
+                'message': msg
+            }), 503
         # Get the active tab
         active_tab = get_active_tab()
         if not active_tab:
             return jsonify({
                 'error': 'No active browser tab found',
-                'message': 'Chrome DevTools Protocol connection failed or no tabs available'
+                'message': 'No tabs available. Open a page in the browser.'
             }), 404
         
         # Get HTML content
@@ -297,8 +323,14 @@ def get_tabs():
         JSON: List of tabs with their info
     """
     try:
-        response = requests.get(f"{CDP_BASE_URL}/json", timeout=5)
-        tabs = response.json()
+        cdp_ok, cdp_result = check_cdp_reachable()
+        if not cdp_ok:
+            msg = cdp_result if isinstance(cdp_result, str) else 'Chrome DevTools Protocol unavailable'
+            return jsonify({
+                'error': 'Browser CDP unavailable',
+                'message': msg
+            }), 503
+        tabs = cdp_result
         
         # Filter and format tab information
         formatted_tabs = []
@@ -581,13 +613,10 @@ def health_check():
     Returns:
         JSON: Server status
     """
-    # Check CDP connectivity
-    cdp_available = False
-    try:
-        response = requests.get(f"{CDP_BASE_URL}/json", timeout=2)
-        cdp_available = response.status_code == 200
-    except:
-        pass
+    cdp_available, cdp_result = check_cdp_reachable()
+    hint = None
+    if not cdp_available and isinstance(cdp_result, str):
+        hint = cdp_result
     
     return jsonify({
         'status': 'healthy',
@@ -596,6 +625,7 @@ def health_check():
         'html_source_available': cdp_available,
         'css_injection_available': cdp_available,
         'cdp_endpoint': CDP_BASE_URL,
+        'cdp_hint': hint,
         'endpoints': {
             'screenshot': '/screenshot',
             'html_source': '/html-source',

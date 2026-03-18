@@ -19,14 +19,17 @@ def parse_rule_value(rule_value):
     - "simple_key" -> [{"simple_key": "default"}]
     
     Args:
-        rule_value (str): The rule value string to parse
+        rule_value (str or list): The rule value string to parse, or already-parsed list of dicts (returned as-is)
         
     Returns:
         list: List of dictionaries containing parsed key-value pairs
     """
     if not rule_value:
         return []
-        
+    # Already parsed (list of dicts) - e.g. from a different code path
+    if isinstance(rule_value, list):
+        return rule_value
+
     parsed_values = []
     
     if "::" in rule_value:

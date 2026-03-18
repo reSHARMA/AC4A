@@ -11,6 +11,20 @@ from typing import Annotated
 # Set up logging
 logger = logging.getLogger(__name__)
 
+
+def _parse_date(value):
+    """Parse a date from kwargs: datetime as-is, str YYYY-MM-DD to date, else None."""
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        try:
+            return datetime.strptime(value[:10], "%Y-%m-%d")
+        except (ValueError, TypeError):
+            return None
+    return None
+
 class ExpediaAPIAnnotation(APIAnnotationBase):
     def __init__(self):
         destination = ResourceTypeTree.create_resource('Expedia:Destination', description='The destination of the travel, must be a valid destination, can be a city, state, country etc', examples=['New York', 'Los Angeles', 'San Francisco'])
@@ -67,15 +81,16 @@ class ExpediaAPIAnnotation(APIAnnotationBase):
             return 'Write'
 
     def generate_attributes(self, kwargs, endpoint_name, wildcard):
+        # Date kwargs may be strings (e.g. "2026-03-29"); parse before any datetime arithmetic
         if 'search_flights' in endpoint_name or 'book_flight' in endpoint_name:
-            start_time = kwargs.get('departure_date', datetime.now())
-            end_time = kwargs.get('return_date', start_time + timedelta(days=1))
+            start_time = _parse_date(kwargs.get('departure_date')) or datetime.now()
+            end_time = _parse_date(kwargs.get('return_date')) or (start_time + timedelta(days=1) if isinstance(start_time, datetime) else start_time)
         elif 'search_hotels' in endpoint_name or 'book_hotel' in endpoint_name:
-            start_time = kwargs.get('check_in_date', datetime.now())
-            end_time = kwargs.get('check_out_date', start_time + timedelta(days=1))
+            start_time = _parse_date(kwargs.get('check_in_date')) or datetime.now()
+            end_time = _parse_date(kwargs.get('check_out_date')) or (start_time + timedelta(days=1) if isinstance(start_time, datetime) else start_time)
         elif 'rent_car' in endpoint_name:
-            start_time = kwargs.get('pickup_date', datetime.now())
-            end_time = kwargs.get('return_date', start_time + timedelta(days=1))
+            start_time = _parse_date(kwargs.get('pickup_date')) or datetime.now()
+            end_time = _parse_date(kwargs.get('return_date')) or (start_time + timedelta(days=1) if isinstance(start_time, datetime) else start_time)
         else:
             start_time = datetime.now()
             end_time = start_time + timedelta(days=1)

@@ -426,32 +426,17 @@ const PermissionChat: React.FC = (): JSX.Element => {
     return `${resource_value_specification}-${action}`;
   };
 
-  // Function to parse a node label and extract its value
+  // Function to parse a node label and extract its value (values may contain spaces/parentheses)
   const parseNodeLabel = (label: string): { baseLabel: string, value: string | null } => {
-    // If it's a chained label, only parse the first part
-    if (label.includes('::')) {
-      const firstPart = label.split('::')[0];
-      const match = firstPart.match(/^(.*?)\((.*?)\)$/);
-      if (match) {
-        return {
-          baseLabel: match[1],
-          value: match[2]
-        };
-      }
-    }
-    
-    // For non-chained labels, parse normally
-    const match = label.match(/^(.*?)\((.*?)\)$/);
-    if (match) {
+    const part = label.includes('::') ? label.split('::')[0] : label;
+    const openIdx = part.indexOf('(');
+    if (openIdx >= 0 && part.endsWith(')')) {
       return {
-        baseLabel: match[1],
-        value: match[2]
+        baseLabel: part.slice(0, openIdx),
+        value: part.slice(openIdx + 1, -1)
       };
     }
-    return {
-      baseLabel: label,
-      value: null
-    };
+    return { baseLabel: part, value: null };
   };
 
   // Function to create a hierarchical tree from a chained label
@@ -1281,21 +1266,18 @@ const PermissionChat: React.FC = (): JSX.Element => {
   };
 
   // Function to parse any label into its components (treats single labels as chains of length 1)
+  // Values may contain spaces and parentheses; we take from first ( to last ).
   const parseLabel = (label: string): { baseLabel: string, value: string }[] => {
-    // Split by :: to handle both single and chained labels
     const parts = label.split('::');
     return parts.map(part => {
-      const match = part.match(/^(.*?)\((.*?)\)$/);
-      if (match) {
+      const openIdx = part.indexOf('(');
+      if (openIdx >= 0 && part.endsWith(')')) {
         return {
-          baseLabel: match[1],
-          value: match[2]
+          baseLabel: part.slice(0, openIdx),
+          value: part.slice(openIdx + 1, -1)
         };
       }
-      return {
-        baseLabel: part,
-        value: ''
-      };
+      return { baseLabel: part, value: '' };
     });
   };
 
@@ -1423,14 +1405,17 @@ const PermissionChat: React.FC = (): JSX.Element => {
       return path;
     };
 
-    // Process each policy
+    // Process each policy (values may contain spaces and parentheses)
     policies.forEach(policy => {
       const parts = policy.resource_value_specification.split('::').map(part => {
-        const [label, value] = part.split('(');
-        return {
-          label,
-          value: value ? value.replace(')', '') : ''
-        };
+        const openIdx = part.indexOf('(');
+        if (openIdx >= 0 && part.endsWith(')')) {
+          return {
+            label: part.slice(0, openIdx),
+            value: part.slice(openIdx + 1, -1)
+          };
+        }
+        return { label: part, value: '' };
       });
 
       if (parts.length === 0) return;

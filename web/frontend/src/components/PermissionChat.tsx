@@ -258,6 +258,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [attributeTrees, setAttributeTrees] = useState<TreeNode[]>([]);
+  /** Trees with policies applied; used only for Active Permissions view. Resource Type Trees uses attributeTrees (schema only). */
+  const [permittedTrees, setPermittedTrees] = useState<TreeNode[]>([]);
   const [editViewTrees, setEditViewTrees] = useState<TreeNode[]>([]);
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -342,6 +344,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
       console.log('Received policy update:', data);
       setAttributeTrees(data.attribute_trees || []);
       setPolicies(data.policies || []);
+      setShouldApplyPolicies(true);
       setIsLoading(false);
     });
     
@@ -803,15 +806,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
     console.log('Finished applying policies. Updated trees:', updatedTrees);
     console.log('Final node map size:', updatedNodeMap.size);
     
-    // Only update the state if there are actual changes
+    // Always update permitted trees from merged result (never mutate attributeTrees - that stays schema-only for Resource Type Trees tab)
+    setPermittedTrees(updatedTrees);
     if (changesMade) {
-      console.log('Changes detected, updating state');
-      setAttributeTrees(updatedTrees);
-      
-      // Update the node map state to trigger a re-render
       setNodeMap(updatedNodeMap);
-    } else {
-      console.log('No changes detected, skipping state update');
     }
   };
 
@@ -1556,7 +1554,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
   const convertAllPermissionsToText = async () => {
     try {
       setIsLoading(true);
-      const permissionNodes = getAllPermissionNodes(attributeTrees);
+      const permissionNodes = getAllPermissionNodes(permittedTrees);
       const texts = await Promise.all(permissionNodes.map(convertPermissionToText));
       setPermissionTexts(texts);
     } catch (err) {
@@ -1572,7 +1570,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
     if (displayMode === 'text' && viewMode === 'permitted') {
       convertAllPermissionsToText();
     }
-  }, [displayMode, viewMode, attributeTrees]);
+  }, [displayMode, viewMode, permittedTrees]);
 
   const handlePolicyTextSubmit = async () => {
     if (!policyText.trim()) return;
@@ -1841,8 +1839,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
                 )}
               </VStack>
             ) : viewMode === 'permitted' ? (
-              getAllPermissionNodes(attributeTrees).length > 0 ? (
-                getAllPermissionNodes(attributeTrees).map((tree, index) => renderTree(tree, index))
+              getAllPermissionNodes(permittedTrees).length > 0 ? (
+                getAllPermissionNodes(permittedTrees).map((tree, index) => renderTree(tree, index))
               ) : (
                 <Box p={8} textAlign="center" bg="gray.50" borderRadius="md">
                   <Text color="gray.500" fontSize="lg">No active permissions</Text>

@@ -24,6 +24,23 @@ def _format_access_denied_log(attributes):
     category = f"❌ Access to {namespace} Denied"
     return category, f"{display_attrs}"
 
+
+def _format_permission_log(event_type, target_key):
+    """Format Permission Added/Removed: extract namespace and return (category, message) without namespace in spec.
+    target_key is like 'calendar:year(?)-write' -> category 'Permission Added for Calendar', message 'year(?)-write'.
+    """
+    if not target_key or '-' not in target_key:
+        return event_type, target_key or ''
+    spec_part, _, action_part = target_key.rpartition('-')
+    if not spec_part or ':' not in spec_part:
+        return event_type, target_key
+    namespace = spec_part.split(':')[0]
+    rest = ':'.join(spec_part.split(':')[1:])
+    short_message = f"{rest}-{action_part}"
+    category = f"{event_type} for {namespace.title()}"
+    return category, short_message
+
+
 app = Flask(__name__)
 CORS(app, resources={
     r"/get_attribute_trees": {"origins": "*"},
@@ -263,7 +280,8 @@ class PolicySystem:
             if callable(value):
                 policy_rule[attr] = value()
         self.policy_rules.append(policy_rule)
-        send_custom_log("Permission Added", f"{target_key}")
+        category, message = _format_permission_log("Permission Added", target_key)
+        send_custom_log(category, message)
         logger.info(f"Added new policy with key: {target_key}")
 
     def is_action_allowed(self, attributes, print_policy=True, resource_difference=None):
@@ -516,7 +534,8 @@ class PolicySystem:
         
         # Create composite key for the policy to remove
         target_key = f"{policy_rule['resource_value_specification'].lower()}-{policy_rule['action'].lower()}"
-        send_custom_log("Permission Removed", f"{target_key}")
+        category, message = _format_permission_log("Permission Removed", target_key)
+        send_custom_log(category, message)
         
         # Find and remove the matching policy
         for i, rule in enumerate(self.policy_rules):

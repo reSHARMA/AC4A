@@ -108,6 +108,19 @@ new_session_needed = False
 # Add cache dictionary at the top level of the file
 text_cache = {}
 
+
+def _format_permission_log(event_type, target_key):
+    """Format Permission Added/Removed: extract namespace, return (category, short_message) without namespace in spec."""
+    if not target_key or '-' not in target_key:
+        return event_type, target_key or ''
+    spec_part, _, action_part = target_key.rpartition('-')
+    if not spec_part or ':' not in spec_part:
+        return event_type, target_key
+    namespace = spec_part.split(':')[0]
+    rest = ':'.join(spec_part.split(':')[1:])
+    return f"{event_type} for {namespace.title()}", f"{rest}-{action_part}"
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -211,11 +224,12 @@ def add_policy():
         # Emit policy update to all connected clients
         emit_policy_update()
         
-        # Emit a log entry for the new policy
+        # Emit a log entry for the new policy (category and message without namespace in spec)
+        level, msg = _format_permission_log("Permission Added", policy_key)
         emit_new_log({
             'source': 'CustomLog',
-            'level': 'CUSTOM_Permission Added',
-            'message': policy_key
+            'level': f'CUSTOM_{level}',
+            'message': msg
         })
         
         return jsonify({"status": "success", "message": "Policy added successfully"})
@@ -287,11 +301,12 @@ def delete_policy():
         # Emit policy update to all connected clients
         emit_policy_update()
         
-        # Emit a log entry for the removed policy
+        # Emit a log entry for the removed policy (category and message without namespace in spec)
+        level, msg = _format_permission_log("Permission Removed", policy_key)
         emit_new_log({
             'source': 'CustomLog',
-            'level': 'CUSTOM_Permission Removed',
-            'message': policy_key
+            'level': f'CUSTOM_{level}',
+            'message': msg
         })
         
         return jsonify({"status": "success", "message": "Policy deleted successfully"})

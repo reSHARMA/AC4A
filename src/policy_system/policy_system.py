@@ -422,11 +422,10 @@ class PolicySystem:
                     logger.info("Built attribute tree from values")
                     attribute_tree.print_tree()  # Print the attribute tree
                     
-                    valid = rule_tree.check_subtree(attribute_tree)
-                    logger.info(f"Validation result for current root: {valid}")
-                    
-                    if valid >= 0:
-                        return []
+                    sub_result = rule_tree.check_subtree(attribute_tree)
+                    logger.info(f"Validation result for current root: {sub_result}")
+                    # check_subtree returns an int; caller expects a list (empty = no expansion)
+                    return []
                 
         logger.info(f"Final validation result: {valid}")
         return valid

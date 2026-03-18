@@ -146,7 +146,7 @@ const TreeView: React.FC<TreeViewProps> = ({
         ) : (
           <MdLabel color="#718096" size={20} />
         )}
-        <Text ml={2} fontSize="sm" fontWeight={hasChildren ? "medium" : "normal"} flex={1}>
+        <Text ml={2} fontWeight={hasChildren ? "medium" : "normal"} flex={1}>
           {data.displayLabel ?? data.label}
           {/* show child values inline for permitted view */}
           {viewMode === 'permitted' && isRoot && (

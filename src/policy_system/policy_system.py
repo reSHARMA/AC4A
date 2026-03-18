@@ -322,26 +322,32 @@ class PolicySystem:
         return False
 
     def _check_single_attribute(self, attributes, print_policy=True, resource_difference=None):
-        """Check a single attribute object against policy rules"""
+        """Check a single attribute object against policy rules.
+        Each need is processed once per rule; remaining needs after a rule are carried to the next rule.
+        """
         print_policy = True
         logger.info(f"POLICY CHECK - Single Attribute: {attributes}")
 
         needs = [attributes]
+        last_satisfying_rule = None
 
         for rule in self.policy_rules:
             if print_policy:
                 logger.info(f"POLICY RULE CHECK - Rule: {rule}")
-                while(len(needs) > 0):
-                    need = needs.pop(0)
-                    logger.info(f"Checking need: {need}")
-                    required = self.check_subsumption(rule, need, resource_difference)
-                    for req in required:
-                        needs.append(req)
+            next_needs = []
+            for need in needs:
+                logger.info(f"Checking need: {need}")
+                required = self.check_subsumption(rule, need, resource_difference)
+                next_needs.extend(required)
+            needs = next_needs
+            if len(needs) == 0:
+                last_satisfying_rule = rule
+                break
 
-        if len(needs) == 0:
+        if len(needs) == 0 and last_satisfying_rule is not None:
             if print_policy:
-                logger.info(f"✅ POLICY ALLOWED - Action is allowed by rule: {rule}")
-                category, message = _format_access_granted_log(rule)
+                logger.info(f"✅ POLICY ALLOWED - Action is allowed by rule: {last_satisfying_rule}")
+                category, message = _format_access_granted_log(last_satisfying_rule)
                 send_custom_log(category, message)
             return True
         else:
@@ -383,10 +389,18 @@ class PolicySystem:
             valid = self.validate_attribute(parsed_rule_value, attr_value, attr, resource_difference)
             new_need[attr] = valid
 
-        # Use min length so we never index an empty list (empty = rule satisfied for that attr)
         lengths = [len(value) for value in new_need.values()]
-        max_length_attr = min(lengths) if lengths else 0
+        # Rule covers request only when ALL attributes are satisfied (all return []).
+        # If any attribute is not satisfied (length > 0), the rule does not cover; return original request as remaining need.
+        if lengths and all(l == 0 for l in lengths):
+            logger.info("Rule fully covers request (all attributes satisfied)")
+            return []
+        if lengths and any(l == 0 for l in lengths) and any(l > 0 for l in lengths):
+            logger.info("Rule partially covers (some attributes satisfied, some not) - request still needed")
+            return [attributes]
 
+        # All attributes have at least one value; build remaining needs from the lists
+        max_length_attr = min(lengths) if lengths else 0
         new_attributes_list = []
         for x in range(max_length_attr):
             new_attr = {}
@@ -441,8 +455,11 @@ class PolicySystem:
                     
                     sub_result = rule_tree.check_subtree(attribute_tree)
                     logger.info(f"Validation result for current root: {sub_result}")
-                    # check_subtree returns an int; caller expects a list (empty = no expansion)
-                    return []
+                    # check_subtree: >=0 means rule covers request (satisfied); -1 means no match
+                    # Return [] only when rule covers request; otherwise return [attribute_value] so need remains
+                    if sub_result >= 0:
+                        return []
+                    return [attribute_value]
                 
         logger.info(f"Final validation result: {valid}")
         return valid

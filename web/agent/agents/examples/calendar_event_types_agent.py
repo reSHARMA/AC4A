@@ -33,7 +33,7 @@ class CalendarEventTypesAPIAnnotation(APIAnnotationBase):
 
     def get_hierarchy(self, resource_type, title_or_message, use_wildcard):
         """Build simple resource hierarchy."""
-        identifier = '*' if use_wildcard else title_or_message.replace(' ', '_')
+        identifier = '?' if use_wildcard else title_or_message.replace(' ', '_')
         return f'{self.namespace}:{resource_type}({identifier})'
 
     def get_access_level(self, endpoint_name):
@@ -57,10 +57,10 @@ class CalendarEventTypesAPIAnnotation(APIAnnotationBase):
             'schedule_meeting': ('Meeting', 'title'),
             'create_reminder': ('Reminder', 'message'),
             'add_all_day_event': ('AllDay', 'title'),
-            'get_events_by_type': (kwargs.get('event_type', 'Event'), '*'),
-            'check_meeting_exists': ('Meeting', '*'),
-            'check_reminder_exists': ('Reminder', '*'),
-            'remove_event': ('Event', '*')
+            'get_events_by_type': (kwargs.get('event_type', 'Event'), '?'),
+            'check_meeting_exists': ('Meeting', '?'),
+            'check_reminder_exists': ('Reminder', '?'),
+            'remove_event': ('Event', '?')
         }
         
         # Category to resource type mapping for add_event
@@ -72,22 +72,22 @@ class CalendarEventTypesAPIAnnotation(APIAnnotationBase):
         
         if endpoint_name in endpoint_config:
             resource_type, param_key = endpoint_config[endpoint_name]
-            if param_key == '*':
-                granular_data = self.get_hierarchy(resource_type, '*', True)
+            if param_key == '?':
+                resource_value_specification = self.get_hierarchy(resource_type, '?', True)
             else:
                 value = kwargs.get(param_key, '')
-                granular_data = self.get_hierarchy(resource_type, value, wildcard)
+                resource_value_specification = self.get_hierarchy(resource_type, value, wildcard)
         elif endpoint_name == 'add_event':
             title = kwargs.get('title', '')
             category = kwargs.get('category')
             resource_type = category_map.get(category.lower(), 'Event') if category else 'Event'
-            granular_data = self.get_hierarchy(resource_type, title, wildcard)
+            resource_value_specification = self.get_hierarchy(resource_type, title, wildcard)
         else:
-            granular_data = self.get_hierarchy('Event', '*', True)
+            resource_value_specification = self.get_hierarchy('Event', '?', True)
             
         return [{
-            'granular_data': granular_data,
-            'data_access': self.get_access_level(endpoint_name)
+            'resource_value_specification': resource_value_specification,
+            'action': self.get_access_level(endpoint_name)
         }]
 
 

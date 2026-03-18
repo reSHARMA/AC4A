@@ -15,8 +15,8 @@ def RandomTest1():
 
     # Add example policy rules with fixed time calculations
     policy_system.add_policy({
-        "granular_data": "Calendar:Year(1995)::Calendar:Month(1)",
-        "data_access": "Read",
+        "resource_value_specification": "Calendar:Year(1995)::Calendar:Month(1)",
+        "action": "Read",
         "expiry": TimeUtils.next_seconds(10)  # Policy expires in 10 seconds
     })
 
@@ -71,8 +71,8 @@ def SimplePolicyTest():
     policy_system.register_api(CalendarAPI)
 
     policy_system.add_policy({
-        "granular_data": "Calendar:Month",
-        "data_access": "Read",
+        "resource_value_specification": "Calendar:Month",
+        "action": "Read",
     })
 
     calendar_api = CalendarAPI(policy_system)
@@ -98,8 +98,8 @@ def SimplePolicyStarTest():
     policy_system.register_api(CalendarAPI)
 
     policy_system.add_policy({
-        "granular_data": "Calendar:Month(*)",
-        "data_access": "Read",
+        "resource_value_specification": "Calendar:Month(?)",
+        "action": "Read",
     })
 
     calendar_api = CalendarAPI(policy_system)
@@ -125,8 +125,8 @@ def PolicyValueTest1():
     policy_system.register_api(CalendarAPI)
 
     policy_system.add_policy({
-        "granular_data": "Calendar:Month(1)",
-        "data_access": "Read",
+        "resource_value_specification": "Calendar:Month(1)",
+        "action": "Read",
     })
 
     calendar_api = CalendarAPI(policy_system)

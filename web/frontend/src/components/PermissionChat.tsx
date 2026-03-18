@@ -17,8 +17,8 @@ interface TreeNode {
 }
 
 interface Policy {
-  granular_data: string;
-  data_access: string;
+  resource_value_specification: string;
+  action: string;
 }
 
 interface TreeViewProps {
@@ -107,14 +107,14 @@ const TreeView: React.FC<TreeViewProps> = ({
   // Function to get value display
   const getValueDisplay = () => {
     if (data.value === '') return "DEFAULT";
-    if (data.value === '*') return "All Values";
+    if (data.value === '?') return "All Values";
     return data.value;
   };
 
   // Get the badge text for the value
   const getValueBadgeText = () => {
     if (data.value === '') return "DEFAULT";
-    if (data.value === '*') return "All Values";
+    if (data.value === '?') return "All Values";
     return data.value;
   };
 
@@ -148,9 +148,9 @@ const TreeView: React.FC<TreeViewProps> = ({
           {data.label}
           {/* show child values inline for permitted view */}
           {viewMode === 'permitted' && isRoot && (
-            data.children.filter(child => child.value !== '' && child.value !== '*').length > 0 && (
+            data.children.filter(child => child.value !== '' && child.value !== '?').length > 0 && (
               <Text as="span" ml={2} fontSize="sm" color="gray.500">
-                ({data.children.filter(child => child.value !== '' && child.value !== '*').map(child => child.value).join(', ')})
+                ({data.children.filter(child => child.value !== '' && child.value !== '?').map(child => child.value).join(', ')})
               </Text>
             )
           )}
@@ -199,7 +199,7 @@ const TreeView: React.FC<TreeViewProps> = ({
                 value={data.access || ""} 
                 onChange={handleAccessChange}
                 onClick={(e) => e.stopPropagation()}
-                placeholder="Access"
+                placeholder="Action"
               >
                 <option value="Read">Read</option>
                 <option value="Write">Write</option>
@@ -208,7 +208,7 @@ const TreeView: React.FC<TreeViewProps> = ({
             </Tooltip>
           ) : (
             <Badge colorScheme="blue">
-              {data.access ? data.access.toUpperCase() : "Access"}
+              {data.access ? data.access.toUpperCase() : "Action"}
             </Badge>
           )}
               
@@ -417,8 +417,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
   }, [attributeTrees]);
 
   // Function to create a composite key for node lookup
-  const createNodeKey = (granular_data: string, data_access: string): string => {
-    return `${granular_data}-${data_access}`;
+  const createNodeKey = (resource_value_specification: string, action: string): string => {
+    return `${resource_value_specification}-${action}`;
   };
 
   // Function to parse a node label and extract its value
@@ -450,12 +450,12 @@ const PermissionChat: React.FC = (): JSX.Element => {
   };
 
   // Function to create a hierarchical tree from a chained label
-  const createTreeFromChainedLabel = (granular_data: string, access: string): TreeNode => {
+  const createTreeFromChainedLabel = (resource_value_specification: string, access: string): TreeNode => {
     console.log('createTreeFromChainedLabel called with:');
-    console.log('granular_data:', granular_data);
+    console.log('resource_value_specification:', resource_value_specification);
     console.log('access:', access);
     
-    const parts = parseLabel(granular_data);
+    const parts = parseLabel(resource_value_specification);
     console.log('Parsed parts:', parts);
     
     if (parts.length === 0) {
@@ -516,9 +516,9 @@ const PermissionChat: React.FC = (): JSX.Element => {
         childNode.value = parts[currentPartIdx].value;
         currentPartIdx++;
       }
-      // For nodes after the last explicitly mentioned node, use ALL_VALUES
+      // For nodes after the last explicitly mentioned node, use ALL_VALUES (wildcard ?)
       else if (currentPartIdx >= parts.length) {
-        childNode.value = '*';
+        childNode.value = '?';
       }
       // For intermediate nodes, use empty value
       else {
@@ -606,12 +606,12 @@ const PermissionChat: React.FC = (): JSX.Element => {
     // Apply each policy to the attribute trees
     policies.forEach(policy => {
       // Create a unique key for the policy
-      const policyKey = `${policy.granular_data}-${policy.data_access}`;
+      const policyKey = `${policy.resource_value_specification}-${policy.action}`;
       
       console.log('Processing policy:', policy);
       console.log('Policy key:', policyKey);
-      console.log('Policy granular_data:', policy.granular_data);
-      console.log('Policy data_access:', policy.data_access);
+      console.log('Policy resource_value_specification:', policy.resource_value_specification);
+      console.log('Policy action:', policy.action);
       
       // Skip if we've already processed this policy
       if (processedPolicies.has(policyKey)) {
@@ -623,7 +623,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
       console.log('Applying policy:', policy);
       
       // Create composite key for node lookup
-      const nodeKey = createNodeKey(policy.granular_data, policy.data_access);
+      const nodeKey = createNodeKey(policy.resource_value_specification, policy.action);
       
       console.log('Looking for node with key:', nodeKey);
       console.log('Node exists in map:', existingNodesMap.has(nodeKey));
@@ -635,10 +635,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
         console.log('Found existing node with same attributes:', existingNode);
         return; // Node already exists with these exact attributes
       } else {
-        console.log('Node not found with these attributes, creating new node:', policy.granular_data);
+        console.log('Node not found with these attributes, creating new node:', policy.resource_value_specification);
         
-        // Parse the granular_data to get the base label
-        const { baseLabel } = parseNodeLabel(policy.granular_data);
+        // Parse the resource_value_specification to get the base label
+        const { baseLabel } = parseNodeLabel(policy.resource_value_specification);
         
         // Find the parent node by searching through the existing attribute trees
         let parentNode: TreeNode | undefined;
@@ -650,7 +650,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
           console.log(`Looking for parent of node with label: ${baseLabel}`);
           console.log(`Current node's children:`, tree.children.map(child => child.label));
           
-          // Check if any of this node's children match the policy's granular_data by label only
+          // Check if any of this node's children match the policy's resource_value_specification by label only
           const matchingChild = tree.children.find(child => {
             const { baseLabel: childBaseLabel } = parseNodeLabel(child.label);
             return childBaseLabel === baseLabel;
@@ -688,8 +688,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
           
           // Create the new node tree from the chained label
           const newNodeTree = createTreeFromChainedLabel(
-            policy.granular_data,
-            policy.data_access.toLowerCase()
+            policy.resource_value_specification,
+            policy.action.toLowerCase()
           );
           
           // Add the new node tree to the parent in the updated trees
@@ -759,8 +759,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
           
           // Create a new root node tree from the chained label
           const newRootNodeTree = createTreeFromChainedLabel(
-            policy.granular_data,
-            policy.data_access.toLowerCase()
+            policy.resource_value_specification,
+            policy.action.toLowerCase()
           );
             
             // Check if a root node with the same composite key already exists
@@ -1059,8 +1059,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
           console.log('All child granular data:', allChildGranularData);
           // Create combined policies for each chainable child
           const policyData = {
-            granular_data: allChildGranularData,
-            data_access: node.access
+            resource_value_specification: allChildGranularData,
+            action: node.access
           };
           
           const apiUrl = import.meta.env.PROD 
@@ -1082,8 +1082,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
         } else {
           // Create regular policy for non-chainable node
           const policyData = {
-            granular_data: node.label.includes('(') ? node.label : `${node.label}(${node.value || ''})`,
-            data_access: node.access
+            resource_value_specification: node.label.includes('(') ? node.label : `${node.label}(${node.value || ''})`,
+            action: node.access
           };
           
           const apiUrl = import.meta.env.PROD 
@@ -1162,14 +1162,14 @@ const PermissionChat: React.FC = (): JSX.Element => {
       
       if (current.value === '') {
         // Skip empty values
-      } else if (current.value === '*') {
-        // Collect nodes with all values
+      } else if (current.value === '?') {
+        // Collect nodes with all values (wildcard)
         nodesWithAllValues.push(current.label);
       } else {
         // If we have collected any all-value nodes, add them first
         if (nodesWithAllValues.length > 0) {
           if (result) result += '::';
-          result += nodesWithAllValues.map(label => `${label}(*)`).join('::');
+          result += nodesWithAllValues.map(label => `${label}(?)`).join('::');
           nodesWithAllValues.length = 0; // Clear the array
         }
         
@@ -1185,7 +1185,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
     }
     
     if (result === '') {
-      result = nodesWithAllValues[0] + '(*)';
+      result = nodesWithAllValues[0] + '(?)';
     }
 
     console.log('Generated label:', result);
@@ -1198,12 +1198,12 @@ const PermissionChat: React.FC = (): JSX.Element => {
       setIsLoading(true);
       console.log('Starting policy deletion with node:', policyData);
       const granularData = getCompleteLabel(policyData);
-      console.log('Generated granular_data:', granularData);
+      console.log('Generated resource_value_specification:', granularData);
 
       // Transform the policy data into the format expected by the backend
       const transformedPolicyData = {
-        granular_data: granularData.toLowerCase(),
-        data_access: policyData.access.toLowerCase(),
+        resource_value_specification: granularData.toLowerCase(),
+        action: policyData.access.toLowerCase(),
         position: "current"
       };
       
@@ -1397,7 +1397,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
 
     // Process each policy
     policies.forEach(policy => {
-      const parts = policy.granular_data.split('::').map(part => {
+      const parts = policy.resource_value_specification.split('::').map(part => {
         const [label, value] = part.split('(');
         return {
           label,
@@ -1420,7 +1420,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
       const rootNode: TreeNode = {
         label: firstNode.label,
         value: parts[0].value,
-        access: policy.data_access,
+        access: policy.action,
         children: []
       };
 
@@ -1441,7 +1441,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
           const newNode: TreeNode = {
             label: pathNode.label,
             value: pathNode === nextNode ? parts[i].value : '',
-            access: policy.data_access,
+            access: policy.action,
             children: []
           };
 
@@ -1467,8 +1467,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
         currentNode.children.forEach(child => {
           lastNode.children.push({
             label: child.label,
-            value: '*',
-            access: policy.data_access,
+            value: '?',
+            access: policy.action,
             children: []
           });
         });
@@ -1523,8 +1523,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
     try {
       const granularData = getCompleteLabel(node);
       const policyData = {
-        granular_data: granularData.toLowerCase(),
-        data_access: node.access.toLowerCase()
+        resource_value_specification: granularData.toLowerCase(),
+        action: node.access.toLowerCase()
       };
 
       const port = import.meta.env.VITE_PORT || 5002;
@@ -1669,10 +1669,10 @@ const PermissionChat: React.FC = (): JSX.Element => {
 
         <Box mb={4}>
           <HStack spacing={0} borderBottom="2px solid" borderColor="gray.200">
-            <Tooltip label="View the complete data schema retrieved from the available applications." placement="top">
+            <Tooltip label="View the complete resource type trees retrieved from the available applications." placement="top">
               <Button
                 size="md"
-                flex={1}
+                flex={1.15}
                 colorScheme={viewMode === 'all' ? 'blue' : 'gray'}
                 variant={viewMode === 'all' ? 'solid' : 'ghost'}
                 onClick={() => handleViewModeChange('all')}
@@ -1685,7 +1685,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
                 }}
                 transition="all 0.2s"
               >
-                Data Schema
+                Resource Type Trees
               </Button>
             </Tooltip>
             <Tooltip label="View and manage currently active permissions." placement="top">
@@ -1731,7 +1731,8 @@ const PermissionChat: React.FC = (): JSX.Element => {
             <Tooltip label="View logs of permissions getting added and removed from the system. Also, the API calls made by the agents along with the arguments passed to them with the permission which allowed that action." placement="top">
               <Button
                 size="md"
-                flex={0.5}
+                flex="0 0 auto"
+                minW="72px"
                 colorScheme={viewMode === 'logs' ? 'blue' : 'gray'}
                 variant={viewMode === 'logs' ? 'solid' : 'ghost'}
                 onClick={() => handleViewModeChange('logs')}

@@ -596,9 +596,6 @@ def get_latest_screenshot(compress: bool = True) -> bytes:
         logger.error(f"Error getting screenshot: {str(e)}", exc_info=True)
         return b''
 
-# Add a global click counter for browser chat
-browser_click_counter = 0
-
 def _extract_pyautogui_script(response: str) -> Optional[str]:
     """Extract a Python code block that uses pyautogui from the LLM response."""
     if not response or "pyautogui" not in response:
@@ -653,44 +650,35 @@ def _run_pyautogui_script(script: str, timeout_seconds: int = 15) -> Tuple[bool,
         return False, str(e)
 
 def process_with_computer_use(user_input: str) -> Dict[str, Any]:
-    global browser_click_counter
-    browser_click_counter += 1
-    # Odd click: only infer permissions
-    if browser_click_counter % 2 == 1:
-        screenshot_data = get_latest_screenshot()
-        if not screenshot_data:
-            return create_message(
-                content="Failed to get screenshot",
-                role="system",
-                msg_type=MessageType.DEBUG
-            )
-        infer_permissions_from_html(screenshot_data)
-        return create_message(
-            content="Screenshot ready for processing.",
-            role="system",
-            msg_type=MessageType.SYSTEM,
-            visibility=MessageVisibility.INTERNAL
-        )
-    # Even click: original logic
+    """
+    For each user message:
+    1. Process permissions and enforce them (infer from current page + HTML, then
+       inject blocks for not-allowed elements via handle_not_allowed_elements).
+    2. Take the screenshot that will be sent to the LLM (after enforcement, so
+       the image shows the same view as the user, including any blocks).
+    3. Send that screenshot to the LLM; run returned pyautogui script or show message.
+    """
     try:
-        # Get the latest screenshot
-        screenshot_data = get_latest_screenshot()
-        if not screenshot_data:
+        # --- Step 1: Process and enforce permissions ---
+        # Use current screenshot for permission inference (analyze structure, policy check, then enforce)
+        screenshot_for_permissions = get_latest_screenshot()
+        if not screenshot_for_permissions:
             return create_message(
                 content="Failed to get screenshot",
                 role="system",
                 msg_type=MessageType.ERROR
             )
+        infer_permissions_from_html(screenshot_for_permissions)  # infers + enforces (injects blocks into page)
 
-        infer_permissions_from_html(screenshot_data)
+        time.sleep(1)  # allow injected blocks to render
 
-        time.sleep(1)
-        # Uncompressed so (x,y) match real viewport 1024x768; add ruler for coordinate alignment
+        # --- Step 2: Take the screenshot that goes to the LLM (after enforcement) ---
         screenshot_data = get_latest_screenshot(compress=False)
         if screenshot_data:
             screenshot_data = add_ruler_to_screenshot(screenshot_data)
-        # Convert screenshot to base64
         screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
+
+        # --- Step 3: Send to LLM and run script or return message ---
         
         # Create the system prompt for computer use
         system_prompt = BROWSER_AGENT
@@ -1512,7 +1500,7 @@ def get_allowed_and_not_allowed_elements_from_text(data_required: Dict[str, Any]
     
     allowed_elements = {'read': [], 'write': [], 'create': []}
     not_allowed_elements = {'read': [], 'write': [], 'create': []}
-    granular_data = {}
+    resource_value_specification = {}
 
     for data_type, selectors in data_required['data'].items():
         permission_result = {'read': None, 'write': None, 'create': None}
@@ -1526,17 +1514,17 @@ def get_allowed_and_not_allowed_elements_from_text(data_required: Dict[str, Any]
             if permission_result[selector_type] is None:
                 temp_policy_system = PolicySystem()
                 permission_text = f"Grant {selector_type} access for {data_type}"
-                if data_type not in granular_data:
+                if data_type not in resource_value_specification:
                     temp_policy_system.add_policies_from_text(permission_text, agent_manager)
-                    granular_data[data_type] = [
-                        policy.get('granular_data')
+                    resource_value_specification[data_type] = [
+                        policy.get('resource_value_specification')
                         for policy in temp_policy_system.get_all_policy_rules()
                     ]
                 else: 
-                    for granular_data_type in granular_data[data_type]:
+                    for resource_value_specification_type in resource_value_specification[data_type]:
                                         temp_policy_system.add_policy({
-                    "granular_data": f"{granular_data_type}",
-                    "data_access": "Read" if selector_type == 'read' else "Write" if selector_type == 'write' else "Create" if selector_type == 'create' else "Create"
+                    "resource_value_specification": f"{resource_value_specification_type}",
+                    "action": "Read" if selector_type == 'read' else "Write" if selector_type == 'write' else "Create" if selector_type == 'create' else "Create"
                 })
 
                 permission_allowed = True
@@ -1551,7 +1539,7 @@ def get_allowed_and_not_allowed_elements_from_text(data_required: Dict[str, Any]
             else:
                 not_allowed_elements[selector_type].append(selector)
 
-    update_config(granular_data)
+    update_config(resource_value_specification)
     return allowed_elements, not_allowed_elements
             
 def get_allowed_and_not_allowed_elements_from_config(data_required: Dict[str, Any], html_structure: Dict[str, Any]) -> Tuple[Dict[str, List[str]], Dict[str, List[str]]]:
@@ -1588,8 +1576,8 @@ def get_allowed_and_not_allowed_elements_from_config(data_required: Dict[str, An
                 permission_text = f"Grant {selector_type} access for {data_type}"
                 logger.info(f"[DEBUG] Checking permission: {permission_text}")
                 temp_policy_system.add_policy({
-                    "granular_data": f"{data_type}",
-                    "data_access": "Read" if selector_type == 'read' else "Write" if selector_type == 'write' else "Create"
+                    "resource_value_specification": f"{data_type}",
+                    "action": "Read" if selector_type == 'read' else "Write" if selector_type == 'write' else "Create"
                 })
                 permission_allowed = True
                 for policy in temp_policy_system.get_all_policy_rules():
@@ -1995,7 +1983,7 @@ def handle_not_allowed_elements(not_allowed_elements: Dict[str, List[str]]) -> D
             'error': f'Handling failed: {str(e)}'
         }
 
-def update_config(granular_data: Dict[str, Any]) -> None:
+def update_config(resource_value_specification: Dict[str, Any]) -> None:
     """
     Update the config with the granular data
     """
@@ -2011,9 +1999,9 @@ def update_config(granular_data: Dict[str, Any]) -> None:
 
     active_url = active_tab.get('url', 'unknown')
 
-    for data_type, granular_data_type in granular_data.items():
+    for data_type, resource_value_specification_type in resource_value_specification.items():
         data_value = config[active_url]['data'].get(data_type, [])
-        for gd in granular_data_type:
+        for gd in resource_value_specification_type:
             if not gd in config[active_url]['data']:
                 config[active_url]['data'][gd] = data_value
             else:

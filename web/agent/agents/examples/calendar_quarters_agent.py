@@ -53,17 +53,17 @@ class CalendarQuartersAPIAnnotation(APIAnnotationBase):
         end_quarter = self.get_quarter_from_month(end_time.month)
         
         if use_wildcard:
-            return f'{self.namespace}:Year(*)::{self.namespace}:Quarter(*)'
+            return f'{self.namespace}:Year(?)::{self.namespace}:Quarter(?)'
         else:
             if start_time.year == end_time.year and start_quarter == end_quarter:
                 # Same year and quarter
                 return f'{self.namespace}:Year({start_time.year})::{self.namespace}:Quarter({start_quarter})'
             elif start_time.year == end_time.year:
                 # Same year, different quarters
-                return f'{self.namespace}:Year({start_time.year})::{self.namespace}:Quarter(*)'
+                return f'{self.namespace}:Year({start_time.year})::{self.namespace}:Quarter(?)'
             else:
                 # Different years
-                return f'{self.namespace}:Year(*)::{self.namespace}:Quarter(*)'
+                return f'{self.namespace}:Year(?)::{self.namespace}:Quarter(?)'
 
     def get_access_level(self, endpoint_name):
         """Get access level for endpoint using dictionary mapping."""
@@ -81,24 +81,24 @@ class CalendarQuartersAPIAnnotation(APIAnnotationBase):
         if 'start_time' in kwargs and 'duration' in kwargs:
             start_time = kwargs['start_time']
             duration = kwargs['duration']
-            granular_data = self.get_hierarchy(start_time, duration, wildcard)
+            resource_value_specification = self.get_hierarchy(start_time, duration, wildcard)
         elif 'year' in kwargs and 'month' in kwargs:
             # For get_monthly_events operation - convert month to quarter
             year = kwargs['year']
             month = kwargs['month']
             quarter = self.get_quarter_from_month(month)
-            granular_data = f'{self.namespace}:Year({year})::{self.namespace}:Quarter({quarter})'
+            resource_value_specification = f'{self.namespace}:Year({year})::{self.namespace}:Quarter({quarter})'
         elif 'year' in kwargs:
             # For get_yearly_events operation
             year = kwargs['year']
-            granular_data = f'{self.namespace}:Year({year})::{self.namespace}:Quarter(*)'
+            resource_value_specification = f'{self.namespace}:Year({year})::{self.namespace}:Quarter(?)'
         else:
             # Default fallback
-            granular_data = f'{self.namespace}:Year(*)::{self.namespace}:Quarter(*)'
+            resource_value_specification = f'{self.namespace}:Year(?)::{self.namespace}:Quarter(?)'
             
         return [{
-            'granular_data': granular_data,
-            'data_access': self.get_access_level(endpoint_name)
+            'resource_value_specification': resource_value_specification,
+            'action': self.get_access_level(endpoint_name)
         }]
 
 
@@ -118,7 +118,7 @@ class CalendarQuartersAPI:
         base = difference_tree(needs, have)
         if base == set():
             return set()
-        # If need is full year '*' quarter and have a concrete quarter, we could return remaining quarters.
+        # If need is full year '?' quarter and have a concrete quarter, we could return remaining quarters.
         # Keep prior enhancement for partial quarter coverage.
         resource_dict = needs[0] if isinstance(needs, list) and needs else {}
         n_year = resource_dict.get('Calendar:Year')
@@ -126,7 +126,7 @@ class CalendarQuartersAPI:
         have_dict = have[0] if isinstance(have, list) and have else {}
         h_year = have_dict.get('Calendar:Year')
         h_quarter = have_dict.get('Calendar:Quarter')
-        if n_quarter == '*' and h_year == n_year and h_quarter not in (None, '*'):
+        if n_quarter == '?' and h_year == n_year and h_quarter not in (None, '?'):
             all_quarters = ['Q1', 'Q2', 'Q3', 'Q4']
             missing = [q for q in all_quarters if q != h_quarter]
             return [{'Calendar:Year': n_year, 'Calendar:Quarter': q} for q in missing]

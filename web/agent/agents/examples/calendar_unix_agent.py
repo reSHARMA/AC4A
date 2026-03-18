@@ -15,7 +15,7 @@ class CalendarUnixAPIAnnotation(APIAnnotationBase):
     """Calendar API annotation using Unix timestamp intervals as the primary resource model.
 
     Main resource model: Calendar:UnixTimestampInterval(start-end) where start and end are Unix epoch seconds.
-    Wildcard: Calendar:UnixTimestampInterval(*) meaning any interval.
+    Wildcard: Calendar:UnixTimestampInterval(?) meaning any interval.
     If only start is known (no end provided) we'll represent as start-* to indicate an open-ended interval.
     """
 
@@ -41,16 +41,16 @@ class CalendarUnixAPIAnnotation(APIAnnotationBase):
         """Build interval resource string.
 
         Cases:
-        - wildcard -> Calendar:UnixTimestampInterval(*)
+        - wildcard -> Calendar:UnixTimestampInterval(?)
         - start & end -> Calendar:UnixTimestampInterval(start-end)
-        - start only -> Calendar:UnixTimestampInterval(start-*) (open ended)
+        - start only -> Calendar:UnixTimestampInterval(start-?) (open ended)
         - none -> wildcard
         """
         if use_wildcard or start_time is None:
-            return f'{self.namespace}:UnixTimestampInterval(*)'
+            return f'{self.namespace}:UnixTimestampInterval(?)'
         start_epoch = int(start_time.timestamp())
         if end_time is None:
-            return f'{self.namespace}:UnixTimestampInterval({start_epoch}-*)'
+            return f'{self.namespace}:UnixTimestampInterval({start_epoch}-?)'
         end_epoch = int(end_time.timestamp())
         return f'{self.namespace}:UnixTimestampInterval({start_epoch}-{end_epoch})'
 
@@ -75,25 +75,25 @@ class CalendarUnixAPIAnnotation(APIAnnotationBase):
         - timestamp (int) legacy single point -> treat as point interval start-start
         - none -> wildcard
         """
-        granular_data = None
+        resource_value_specification = None
 
         if 'timestamp_interval' in kwargs and kwargs['timestamp_interval']:
             interval = kwargs['timestamp_interval']
-            granular_data = f'{self.namespace}:UnixTimestampInterval({interval})'
+            resource_value_specification = f'{self.namespace}:UnixTimestampInterval({interval})'
         elif 'start_time' in kwargs:
             start_time = kwargs.get('start_time')
             end_time = kwargs.get('end_time')
-            granular_data = self.get_interval(start_time, end_time, wildcard)
+            resource_value_specification = self.get_interval(start_time, end_time, wildcard)
         elif 'timestamp' in kwargs:  # legacy single point
             ts = kwargs['timestamp']
-            granular_data = f'{self.namespace}:UnixTimestampInterval({ts}-{ts})'
+            resource_value_specification = f'{self.namespace}:UnixTimestampInterval({ts}-{ts})'
 
-        if granular_data is None:
-            granular_data = self.get_interval(use_wildcard=True)
+        if resource_value_specification is None:
+            resource_value_specification = self.get_interval(use_wildcard=True)
 
         return [{
-            'granular_data': granular_data,
-            'data_access': self.get_access_level(endpoint_name)
+            'resource_value_specification': resource_value_specification,
+            'action': self.get_access_level(endpoint_name)
         }]
 
 

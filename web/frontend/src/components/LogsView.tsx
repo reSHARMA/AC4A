@@ -230,20 +230,12 @@ const LogsView: React.FC = () => {
               {filteredLogs.map((log, index) => {
                 // Define colors for different log categories
                 const getCategoryColor = (level: string) => {
-                  switch (level) {
-                    case 'Permission Added':
-                      return 'green.500';
-                    case 'Permission Removed':
-                      return 'red.500';
-                    case 'Calling':
-                      return 'blue.500';
-                    case 'Access Denied by':
-                      return 'red.500';
-                    case 'Access Granted by':
-                      return 'green.500';
-                    default:
-                      return 'gray.500';
-                  }
+                  if (level === 'Permission Added') return 'green.500';
+                  if (level === 'Permission Removed') return 'red.500';
+                  if (level === 'Calling') return 'blue.500';
+                  if (level.startsWith('❌ Access') && level.includes('Denied')) return 'red.500';
+                  if (level === '✅ Access Granted by') return 'green.500';
+                  return 'gray.500';
                 };
 
                 return (

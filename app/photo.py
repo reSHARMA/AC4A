@@ -5,7 +5,7 @@ from src.utils.resource_type_tree import ResourceTypeTree
 class PhotoAPIAnnotation(APIAnnotationBase):
     def __init__(self):
         super().__init__("Photo", {
-            'granular_data': [ResourceTypeTree(f'Photo:Year', [
+            'resource_value_specification': [ResourceTypeTree(f'Photo:Year', [
                 ResourceTypeTree(f'Photo:Month', [
                     ResourceTypeTree(f'Photo:Week', [
                         ResourceTypeTree(f'Photo:Day', [
@@ -14,7 +14,7 @@ class PhotoAPIAnnotation(APIAnnotationBase):
                     ])
                 ])
             ])],
-            'data_access': ['Read', 'Write', 'Create'],
+            'action': ['Read', 'Write', 'Create'],
             'time': ['Past', 'Present', 'Future']
         })
 
@@ -55,8 +55,8 @@ class PhotoAPIAnnotation(APIAnnotationBase):
         start_time = kwargs['start_time']
         duration = kwargs['duration']
         return [{
-            'granular_data': self.get_hierarchy(start_time, duration),
-            'data_access': self.get_access_level(endpoint_name),
+            'resource_value_specification': self.get_hierarchy(start_time, duration),
+            'action': self.get_access_level(endpoint_name),
             'time': self.get_time_period(start_time, duration),
         }]
 

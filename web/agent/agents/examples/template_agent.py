@@ -30,14 +30,14 @@ class ExampleAPIAnnotation(APIAnnotationBase):
         )
 
     def generate_attributes(self, kwargs, endpoint_name, wildcard):
-        name = kwargs.get('name', '*')
+        name = kwargs.get('name', '?')
         if wildcard:
-            name = '*'
+            name = '?'
         # Map endpoint name to access level
-        data_access = 'Read'
+        action = 'Read'
         return [{
-            'granular_data': f"Example:Item({name})",
-            'data_access': data_access
+            'resource_value_specification': f"Example:Item({name})",
+            'action': action
         }]
 
 

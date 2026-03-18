@@ -4,12 +4,12 @@ from config import WILDCARD
 from web.utils.custom_logger import send_custom_log
 
 class APIAnnotationBase:
-    def __init__(self, namespace, granular_data_trees, data_access_trees, position_trees=None, attributes_schema=None):
+    def __init__(self, namespace, resource_value_specification_trees, action_trees, position_trees=None, attributes_schema=None):
         self.namespace = namespace
         # New three-list API
         self.attributes = {
-            'granular_data': granular_data_trees or [],
-            'data_access': data_access_trees or []
+            'resource_value_specification': resource_value_specification_trees or [],
+            'action': action_trees or []
         }
         # Default position: Previous->Current, Next->Current
         if position_trees is None:
@@ -27,7 +27,7 @@ class APIAnnotationBase:
         else:
             # Derive schema from resource trees if metadata present
             derived = {}
-            for tree_list_key in ['granular_data']:
+            for tree_list_key in ['resource_value_specification']:
                 for tree in self.attributes.get(tree_list_key, []):
                     if hasattr(tree, 'collect_schema'):
                         derived.update(tree.collect_schema())

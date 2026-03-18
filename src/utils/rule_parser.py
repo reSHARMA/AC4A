@@ -13,7 +13,7 @@ def parse_rule_value(rule_value):
     
     Handles formats like:
     - "key(value)" -> [{"key": "value"}]
-    - "key(*)" -> [{"key": "*"}]
+    - "key(?)" -> [{"key": "?"}]
     - "key()" -> [{"key": "default"}]
     - "key1(value1)::key2(value2)" -> [{"key1": "value1"}, {"key2": "value2"}]
     - "simple_key" -> [{"simple_key": "default"}]
@@ -70,9 +70,9 @@ def _parse_single_part(part):
         if value == "":
             result = {key: "default"}
             logger.info(f"Parsed empty value as default for key: {key}")
-        # Handle * as all values
-        elif value == "*":
-            result = {key: "*"}
+        # Handle ? as all values (wildcard)
+        elif value == "?":
+            result = {key: "?"}
             logger.info(f"Parsed wildcard value for key: {key}")
         # Handle specific value
         else:
@@ -90,7 +90,7 @@ def _parse_single_part(part):
 
 def parse_resource_string(resource_str):
     """
-    Parse a resource string like 'Calendar:Meeting(*)' into type and identifier.
+    Parse a resource string like 'Calendar:Meeting(?)' into type and identifier.
     
     Args:
         resource_str (str): Resource string to parse

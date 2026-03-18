@@ -71,20 +71,20 @@ class CalendarEventsYMDApiAnnotation(APIAnnotationBase):
         event_id = f"{start_time.strftime('%H%M')}_{description.replace(' ', '_')}"
         
         if use_wildcard:
-            return f'{self.namespace}:Year(*)::{self.namespace}:Month(*)::{self.namespace}:Day(*)::{self.namespace}:Event(*)'
+            return f'{self.namespace}:Year(?)::{self.namespace}:Month(?)::{self.namespace}:Day(?)::{self.namespace}:Event(?)'
         else:
             if start_time.year == end_time.year and start_time.month == end_time.month and start_time.day == end_time.day:
                 # Same day
                 return f'{self.namespace}:Year({start_time.year})::{self.namespace}:Month({month_names[start_time.month - 1]})::{self.namespace}:Day({start_time.day})::{self.namespace}:Event({event_id})'
             elif start_time.year == end_time.year and start_time.month == end_time.month:
                 # Same month, different days
-                return f'{self.namespace}:Year({start_time.year})::{self.namespace}:Month({month_names[start_time.month - 1]})::{self.namespace}:Day(*)::{self.namespace}:Event(*)'
+                return f'{self.namespace}:Year({start_time.year})::{self.namespace}:Month({month_names[start_time.month - 1]})::{self.namespace}:Day(?)::{self.namespace}:Event(?)'
             elif start_time.year == end_time.year:
                 # Same year, different months
-                return f'{self.namespace}:Year({start_time.year})::{self.namespace}:Month(*)::{self.namespace}:Day(*)::{self.namespace}:Event(*)'
+                return f'{self.namespace}:Year({start_time.year})::{self.namespace}:Month(?)::{self.namespace}:Day(?)::{self.namespace}:Event(?)'
             else:
                 # Different years
-                return f'{self.namespace}:Year(*)::{self.namespace}:Month(*)::{self.namespace}:Day(*)::{self.namespace}:Event(*)'
+                return f'{self.namespace}:Year(?)::{self.namespace}:Month(?)::{self.namespace}:Day(?)::{self.namespace}:Event(?)'
 
     def get_access_level(self, endpoint_name):
         """Get access level for endpoint using dictionary mapping."""
@@ -125,18 +125,18 @@ class CalendarEventsYMDApiAnnotation(APIAnnotationBase):
         def build_temporal(start_time, duration, use_wild):
             end_time = start_time + duration
             if use_wild:
-                return f'{self.namespace}:Year(*)::{self.namespace}:Month(*)::{self.namespace}:Day(*)'
+                return f'{self.namespace}:Year(?)::{self.namespace}:Month(?)::{self.namespace}:Day(?)'
             if start_time.year == end_time.year and start_time.month == end_time.month and start_time.day == end_time.day:
                 return f'{self.namespace}:Year({start_time.year})::{self.namespace}:Month({month_names[start_time.month - 1]})::{self.namespace}:Day({start_time.day})'
             if start_time.year == end_time.year and start_time.month == end_time.month:
-                return f'{self.namespace}:Year({start_time.year})::{self.namespace}:Month({month_names[start_time.month - 1]})::{self.namespace}:Day(*)'
+                return f'{self.namespace}:Year({start_time.year})::{self.namespace}:Month({month_names[start_time.month - 1]})::{self.namespace}:Day(?)'
             if start_time.year == end_time.year:
-                return f'{self.namespace}:Year({start_time.year})::{self.namespace}:Month(*)::{self.namespace}:Day(*)'
-            return f'{self.namespace}:Year(*)::{self.namespace}:Month(*)::{self.namespace}:Day(*)'
+                return f'{self.namespace}:Year({start_time.year})::{self.namespace}:Month(?)::{self.namespace}:Day(?)'
+            return f'{self.namespace}:Year(?)::{self.namespace}:Month(?)::{self.namespace}:Day(?)'
 
         # Build event resource if applicable
         def build_event(resource_type, identifier, use_wild):
-            ident = '*' if use_wild else (identifier or '*')
+            ident = '?' if use_wild else (identifier or '?')
             return f'{self.namespace}:{resource_type}({ident})'
 
         # Parameters
@@ -150,18 +150,18 @@ class CalendarEventsYMDApiAnnotation(APIAnnotationBase):
         # EVENT-ONLY
         if endpoint_name in event_only_endpoints:
             if endpoint_name == 'add_meeting':
-                results.append({'granular_data': build_event('Event', title.replace(' ', '_'), wildcard), 'data_access': access})
-                results.append({'granular_data': build_event('Meeting', title.replace(' ', '_'), wildcard), 'data_access': access})
+                results.append({'resource_value_specification': build_event('Event', title.replace(' ', '_'), wildcard), 'action': access})
+                results.append({'resource_value_specification': build_event('Meeting', title.replace(' ', '_'), wildcard), 'action': access})
             elif endpoint_name == 'add_reminder':
-                results.append({'granular_data': build_event('Event', message.replace(' ', '_'), wildcard), 'data_access': access})
-                results.append({'granular_data': build_event('Reminder', message.replace(' ', '_'), wildcard), 'data_access': access})
+                results.append({'resource_value_specification': build_event('Event', message.replace(' ', '_'), wildcard), 'action': access})
+                results.append({'resource_value_specification': build_event('Reminder', message.replace(' ', '_'), wildcard), 'action': access})
             elif endpoint_name == 'add_all_day_event':
-                results.append({'granular_data': build_event('Event', title.replace(' ', '_'), wildcard), 'data_access': access})
-                results.append({'granular_data': build_event('AllDay', title.replace(' ', '_'), wildcard), 'data_access': access})
+                results.append({'resource_value_specification': build_event('Event', title.replace(' ', '_'), wildcard), 'action': access})
+                results.append({'resource_value_specification': build_event('AllDay', title.replace(' ', '_'), wildcard), 'action': access})
             elif endpoint_name in {'update_event', 'delete_event'} and event_id:
-                results.append({'granular_data': build_event('Event', event_id, wildcard), 'data_access': access})
+                results.append({'resource_value_specification': build_event('Event', event_id, wildcard), 'action': access})
             else:
-                results.append({'granular_data': build_event('Event', '*', True), 'data_access': access})
+                results.append({'resource_value_specification': build_event('Event', '?', True), 'action': access})
             return results
 
         # TEMPORAL-ONLY
@@ -170,14 +170,14 @@ class CalendarEventsYMDApiAnnotation(APIAnnotationBase):
                 year = kwargs['year']
                 month = kwargs['month']
                 month_name = month_names[month - 1]
-                results.append({'granular_data': f'{self.namespace}:Year({year})::{self.namespace}:Month({month_name})::{self.namespace}:Day(*)', 'data_access': access})
+                results.append({'resource_value_specification': f'{self.namespace}:Year({year})::{self.namespace}:Month({month_name})::{self.namespace}:Day(?)', 'action': access})
                 return results
             if 'year' in kwargs:
                 year = kwargs['year']
-                results.append({'granular_data': f'{self.namespace}:Year({year})::{self.namespace}:Month(*)::{self.namespace}:Day(*)', 'data_access': access})
+                results.append({'resource_value_specification': f'{self.namespace}:Year({year})::{self.namespace}:Month(?)::{self.namespace}:Day(?)', 'action': access})
                 return results
             if start_time is not None:
-                results.append({'granular_data': build_temporal(start_time, duration, wildcard), 'data_access': access})
+                results.append({'resource_value_specification': build_temporal(start_time, duration, wildcard), 'action': access})
                 return results
 
         # COMBINED (temporal + event) – return both resources
@@ -185,22 +185,22 @@ class CalendarEventsYMDApiAnnotation(APIAnnotationBase):
             # Temporal part
             if start_time is None:
                 # Fallback to wildcard temporal if no date provided (e.g., tomorrow computed upstream)
-                temporal_path = f'{self.namespace}:Year(*)::{self.namespace}:Month(*)::{self.namespace}:Day(*)'
+                temporal_path = f'{self.namespace}:Year(?)::{self.namespace}:Month(?)::{self.namespace}:Day(?)'
             else:
                 temporal_path = build_temporal(start_time, duration, wildcard)
-            results.append({'granular_data': temporal_path, 'data_access': access})
+            results.append({'resource_value_specification': temporal_path, 'action': access})
 
             # Event part
             ident = (title or description or message or (event_id or '')).replace(' ', '_')
             if endpoint_name in {'set_reminder_on_date', 'set_reminder_tomorrow'}:
-                results.append({'granular_data': build_event('Reminder', ident, wildcard), 'data_access': access})
+                results.append({'resource_value_specification': build_event('Reminder', ident, wildcard), 'action': access})
             else:
-                results.append({'granular_data': build_event('Event', ident, wildcard), 'data_access': access})
+                results.append({'resource_value_specification': build_event('Event', ident, wildcard), 'action': access})
             return results
 
         # Default fallback: return both trees with all
-        results.append({'granular_data': f'{self.namespace}:Year(*)::{self.namespace}:Month(*)::{self.namespace}:Day(*)', 'data_access': access})
-        results.append({'granular_data': f'{self.namespace}:Event(*)', 'data_access': access})
+        results.append({'resource_value_specification': f'{self.namespace}:Year(?)::{self.namespace}:Month(?)::{self.namespace}:Day(?)', 'action': access})
+        results.append({'resource_value_specification': f'{self.namespace}:Event(?)', 'action': access})
         return results
 
 
@@ -213,7 +213,7 @@ class CalendarEventsYMDApi:
 
     def resource_difference(self, needs, have):
         # We consider two independent trees interleaved in the list: temporal and event.
-        # Coverage: each key present in needs must be present in have with same value or wildcard '*'.
+        # Coverage: each key present in needs must be present in have with same value or wildcard '?'.
         if not needs:
             return set()
         if not have:

@@ -21,7 +21,7 @@ class CalendarAPIAnnotation(APIAnnotationBase):
         calendar_day = ResourceTypeTree.create_resource('Calendar:Day', parent=calendar_month, description='The day of the calendar must be a number between 1 and 31', examples=['1', '2', '31'])
         calendar_hour = ResourceTypeTree.create_resource('Calendar:Hour', parent=calendar_day, description='The hour of the calendar must be a number between 0 and 23', examples=['0', '1', '23'])
 
-        # New three-argument init: [granular_data], [data_access], omit position (default applies)
+        # New three-argument init: [resource_value_specification], [action], omit position (default applies)
         super().__init__(
             "Calendar",
             [calendar_year],
@@ -54,7 +54,7 @@ class CalendarAPIAnnotation(APIAnnotationBase):
         composite_data = []
         for (days, label, start_value), (_, _, end_value) in zip(start_hierarchy, end_hierarchy):
             if use_wildcard:
-                composite_data.append(f'{self.namespace}:{label}(*)')
+                composite_data.append(f'{self.namespace}:{label}(?)')
             else:
                 composite_data.append(f'{self.namespace}:{label}({start_value})')
             
@@ -112,11 +112,11 @@ class CalendarAPIAnnotation(APIAnnotationBase):
                     return "Current"
                 elif diff > 1:
                     if use_wildcard:
-                        return "Next(*)"
+                        return "Next(?)"
                     return f"Next({abs(diff)})"
                 else:  # diff < -1
                     if use_wildcard:
-                        return "Previous(*)"
+                        return "Previous(?)"
                     return f"Previous({abs(diff)})"
         
         # If all values are same, return Current
@@ -126,8 +126,8 @@ class CalendarAPIAnnotation(APIAnnotationBase):
         start_time = kwargs['start_time']
         duration = kwargs['duration']
         return [{
-            'granular_data': self.get_hierarchy(start_time, duration, wildcard),
-            'data_access': self.get_access_level(endpoint_name)
+            'resource_value_specification': self.get_hierarchy(start_time, duration, wildcard),
+            'action': self.get_access_level(endpoint_name)
         }]
 
 class CalendarAPI:

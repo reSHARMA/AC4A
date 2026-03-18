@@ -6,7 +6,7 @@ from src.utils.dummy_data import generate_dummy_data
 class ContactManagerAPIAnnotation(APIAnnotationBase):
     def __init__(self):
         super().__init__("ContactManager", {
-            'granular_data': [
+            'resource_value_specification': [
                 ResourceTypeTree(f'ContactManager:Contact', [
                     ResourceTypeTree(f'ContactManager:ContactName'),
                     ResourceTypeTree(f'ContactManager:ContactPhone'),
@@ -17,7 +17,7 @@ class ContactManagerAPIAnnotation(APIAnnotationBase):
                     ResourceTypeTree(f'ContactManager:ContactNotes')
                 ])
             ],
-            'data_access': [
+            'action': [
                 ResourceTypeTree('Read'),
                 ResourceTypeTree('Write'),
                 ResourceTypeTree('Create')
@@ -25,16 +25,16 @@ class ContactManagerAPIAnnotation(APIAnnotationBase):
         })
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
-        api_to_granular_data = {
-            'add_contact': ('Contact', kwargs.get('name', '*')),
-            'remove_contact': ('Contact', kwargs.get('name', '*')),
-            'update_contact': ('Contact', kwargs.get('name', '*')),
-            'get_contact_info': ('Contact', kwargs.get('name', '*')),
-            'get_names_by_relation': ('Contact', '*')
+        api_to_resource_value_specification = {
+            'add_contact': ('Contact', kwargs.get('name', '?')),
+            'remove_contact': ('Contact', kwargs.get('name', '?')),
+            'update_contact': ('Contact', kwargs.get('name', '?')),
+            'get_contact_info': ('Contact', kwargs.get('name', '?')),
+            'get_names_by_relation': ('Contact', '?')
         }
-        label, detail = api_to_granular_data.get(endpoint_name, ('Contact', '*'))
+        label, detail = api_to_resource_value_specification.get(endpoint_name, ('Contact', '?'))
         if use_wildcard:
-            return f"{self.namespace}:{label}(*)"
+            return f"{self.namespace}:{label}(?)"
         else:
             return f"{self.namespace}:{label}({detail})"
 
@@ -59,8 +59,8 @@ class ContactManagerAPIAnnotation(APIAnnotationBase):
             end_time = kwargs['end_time']
         
         return {
-            'granular_data': self.get_hierarchy(endpoint_name, kwargs, use_wildcard),
-            'data_access': self.get_access_level(endpoint_name)
+            'resource_value_specification': self.get_hierarchy(endpoint_name, kwargs, use_wildcard),
+            'action': self.get_access_level(endpoint_name)
         }
 
 class ContactManagerAPI:

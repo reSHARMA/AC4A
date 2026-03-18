@@ -152,34 +152,34 @@ class TrelloAPIAnnotation(APIAnnotationBase):
 
     def generate_attributes(self, kwargs, endpoint_name, wildcard):
         # Simple mapping for demonstration; can be made more granular
-        workspace = kwargs.get('workspace_name', '*')
-        board = kwargs.get('board_name', '*')
-        list_ = kwargs.get('list_name', '*')
-        card = kwargs.get('card_name', '*')
+        workspace = kwargs.get('workspace_name', '?')
+        board = kwargs.get('board_name', '?')
+        list_ = kwargs.get('list_name', '?')
+        card = kwargs.get('card_name', '?')
         if wildcard:
-            workspace = board = list_ = card = '*'
+            workspace = board = list_ = card = '?'
         if endpoint_name in ['list_workspaces', 'create_board', 'list_boards']:
-            granular_data = f"Trello:Workspace({workspace})"
+            resource_value_specification = f"Trello:Workspace({workspace})"
         elif endpoint_name in ['delete_board', 'list_lists', 'create_list']:
-            granular_data = f"Trello:Workspace(?)::Trello:Board({board})"
+            resource_value_specification = f"Trello:Workspace(?)::Trello:Board({board})"
         elif endpoint_name in ['list_cards', 'archive_list']:
-            granular_data = f"Trello:Workspace(?)::Trello:Board({board})::Trello:List({list_})"
+            resource_value_specification = f"Trello:Workspace(?)::Trello:Board({board})::Trello:List({list_})"
         elif endpoint_name in ['add_card', 'archive_card', 'mark_card_as_complete']:
-            granular_data = f"Trello:Workspace(?)::Trello:Board({board})::Trello:List({list_})::Trello:Card({card})"
+            resource_value_specification = f"Trello:Workspace(?)::Trello:Board({board})::Trello:List({list_})::Trello:Card({card})"
         else:
-            granular_data = f"Trello:Workspace({workspace})::Trello:Board({board})::Trello:List({list_})::Trello:Card({card})"
+            resource_value_specification = f"Trello:Workspace({workspace})::Trello:Board({board})::Trello:List({list_})::Trello:Card({card})"
         if endpoint_name.startswith('create') or endpoint_name.startswith('add'):
-            data_access = 'Create'
+            action = 'Create'
         elif endpoint_name.startswith('archive') or endpoint_name.startswith('delete') or endpoint_name.startswith('mark'):
-            data_access = 'Write'
+            action = 'Write'
         else:
-            data_access = 'Read'
+            action = 'Read'
         
         # Return a list containing the single attribute object for now
         # This maintains backward compatibility while allowing for future expansion
         return [{
-            'granular_data': granular_data,
-            'data_access': data_access
+            'resource_value_specification': resource_value_specification,
+            'action': action
         }]
 
 # --- TrelloAPI Class ---

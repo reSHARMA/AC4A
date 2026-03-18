@@ -60,8 +60,8 @@ class AttributeTree:
                 logger.info(f"Value of node2 is wildcard: {value2} == ?")
                 result = 0
                 
-            elif value1.lower() == '*':
-                logger.info(f"Value of node1 is wildcard: {value1} == *")
+            elif value1.lower() == '?':
+                logger.info(f"Value of node1 is wildcard: {value1} == ?")
                 result = 1
 
             

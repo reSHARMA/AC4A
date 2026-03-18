@@ -38,13 +38,13 @@ def _extract_interval(lst: List[Dict[str, str]]) -> Tuple[str, str]:
 
 
 def _parse_bounds(val: str) -> Tuple[Optional[int], Optional[int]]:
-    if val == '*':
+    if val == '?':
         return None, None
     if '-' not in val:
         return None, None
     s, e = val.split('-', 1)
-    start = int(s) if s and s != '*' else None
-    end = int(e) if e and e != '*' else None
+    start = int(s) if s and s != '?' else None
+    end = int(e) if e and e != '?' else None
     return start, end
 
 
@@ -52,8 +52,8 @@ def difference_interval(need: List[Dict[str, str]], have: List[Dict[str, str]], 
     """Interval difference.
 
     Rules:
-      - Wildcard in have ('*') -> covers need.
-      - Need wildcard '*' only covered if have wildcard.
+      - Wildcard in have ('?') -> covers need.
+      - Need wildcard '?' only covered if have wildcard.
       - Containment (have.start <= need.start AND have.end >= need.end with open bounds allowed) -> covered.
       - Otherwise (partial overlap or disjoint) -> return need.
 
@@ -69,9 +69,9 @@ def difference_interval(need: List[Dict[str, str]], have: List[Dict[str, str]], 
     if n_key != h_key:
         return need
     # Wildcards
-    if n_val == '*':
-        return set() if h_val == '*' else need
-    if h_val == '*':
+    if n_val == '?':
+        return set() if h_val == '?' else need
+    if h_val == '?':
         return set()
 
     n_start, n_end = _parse_bounds(n_val)

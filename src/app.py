@@ -53,8 +53,8 @@ def convert_to_text():
     try:
         data = request.get_json()
         policy = {
-            'granular_data': data['granular_data'],
-            'data_access': data['data_access'],
+            'resource_value_specification': data['resource_value_specification'],
+            'action': data['action'],
             'position': data['position']
         }
         text = policy_system.text(policy=policy, mode="decl")

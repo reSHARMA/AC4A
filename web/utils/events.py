@@ -37,7 +37,7 @@ def emit_policy_update():
             
             return node
         
-        # Process each tree in granular_data
+        # Process each tree in resource_value_specification
         processed_trees = []
         seen_keys = set()
         

@@ -21,15 +21,15 @@ class GameAPIAnnotation(APIAnnotationBase):
         )
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
-        api_to_granular_data = {
-            'get_games': ('GameId', '*'),
-            'get_game': ('GameId', kwargs.get('game_id', '*')),
-            'create_game': ('GameId', '*'),
-            'delete_game': ('GameId', kwargs.get('game_id', '*')),
+        api_to_resource_value_specification = {
+            'get_games': ('GameId', '?'),
+            'get_game': ('GameId', kwargs.get('game_id', '?')),
+            'create_game': ('GameId', '?'),
+            'delete_game': ('GameId', kwargs.get('game_id', '?')),
         }
-        label, detail = api_to_granular_data.get(endpoint_name, ('Game', '*'))
+        label, detail = api_to_resource_value_specification.get(endpoint_name, ('Game', '?'))
         if use_wildcard:
-            return f"{self.namespace}:{label}(*)"
+            return f"{self.namespace}:{label}(?)"
         else:
             return f"{self.namespace}:{label}({detail})"
 
@@ -42,11 +42,11 @@ class GameAPIAnnotation(APIAnnotationBase):
             return 'Read'
 
     def generate_attributes(self, kwargs, endpoint_name, wildcard):
-        granular_data = self.get_hierarchy(endpoint_name, kwargs, wildcard)
-        data_access = self.get_access_level(endpoint_name)
+        resource_value_specification = self.get_hierarchy(endpoint_name, kwargs, wildcard)
+        action = self.get_access_level(endpoint_name)
         return [{
-            'granular_data': granular_data,
-            'data_access': data_access
+            'resource_value_specification': resource_value_specification,
+            'action': action
         }]
 
 class GameAPI:

@@ -28,16 +28,16 @@ class ContactManagerAPIAnnotation(APIAnnotationBase):
         )
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
-        api_to_granular_data = {
-            'add_contact': ('Contact', kwargs.get('name', '*')),
-            'remove_contact': ('Contact', kwargs.get('name', '*')),
-            'update_contact': ('Contact', kwargs.get('name', '*')),
-            'get_contact_info': ('Contact', kwargs.get('name', '*')),
-            'get_names_by_relation': ('Contact', '*')
+        api_to_resource_value_specification = {
+            'add_contact': ('Contact', kwargs.get('name', '?')),
+            'remove_contact': ('Contact', kwargs.get('name', '?')),
+            'update_contact': ('Contact', kwargs.get('name', '?')),
+            'get_contact_info': ('Contact', kwargs.get('name', '?')),
+            'get_names_by_relation': ('Contact', '?')
         }
-        label, detail = api_to_granular_data.get(endpoint_name, ('Contact', '*'))
+        label, detail = api_to_resource_value_specification.get(endpoint_name, ('Contact', '?'))
         if use_wildcard:
-            return f"{self.namespace}:{label}(*)"
+            return f"{self.namespace}:{label}(?)"
         else:
             return f"{self.namespace}:{label}({detail})"
 
@@ -55,12 +55,12 @@ class ContactManagerAPIAnnotation(APIAnnotationBase):
     def generate_attributes(self, kwargs, endpoint_name, wildcard):
         start_time = datetime.now()
         end_time = start_time  # For contact operations, the time period is typically immediate
-        granular_data = self.get_hierarchy(endpoint_name, kwargs, wildcard)
-        data_access = self.get_access_level(endpoint_name)
+        resource_value_specification = self.get_hierarchy(endpoint_name, kwargs, wildcard)
+        action = self.get_access_level(endpoint_name)
         
         return [{
-            'granular_data': granular_data,
-            'data_access': data_access
+            'resource_value_specification': resource_value_specification,
+            'action': action
         }]
 
 class ContactManagerAPI:
@@ -137,7 +137,7 @@ class ContactManagerAgent(BaseAgent):
         ]
         
         self.attributes = {
-            'granular_data': [
+            'resource_value_specification': [
                 ResourceTypeTree(f'ContactManager:Contact', [
                     ResourceTypeTree(f'ContactManager:ContactName'),
                     ResourceTypeTree(f'ContactManager:ContactPhone'),
@@ -148,7 +148,7 @@ class ContactManagerAgent(BaseAgent):
                     ResourceTypeTree(f'ContactManager:ContactNotes')
                 ])
             ],
-            'data_access': [
+            'action': [
                 ResourceTypeTree('Read'),
                 ResourceTypeTree('Write'),
                 ResourceTypeTree('Create')

@@ -22,15 +22,15 @@ class PasswordManagerAPIAnnotation(APIAnnotationBase):
         )
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
-        api_to_granular_data = {
-            'add_password': f'{self.namespace}:ServiceName({kwargs.get("service_name", "*")})::{self.namespace}:UserName({kwargs.get("user_name", "*")})',
-            'remove_password': f'{self.namespace}:ServiceName({kwargs.get("service_name", "*")})::{self.namespace}:UserName({kwargs.get("user_name", "*")})',
-            'update_password': f'{self.namespace}:ServiceName({kwargs.get("service_name", "*")})::{self.namespace}:UserName({kwargs.get("user_name", "*")})',
-            'get_password': f'{self.namespace}:ServiceName({kwargs.get("service_name", "*")})::{self.namespace}:UserName({kwargs.get("user_name", "*")})',
-            'list_all_saved_password_services': f'{self.namespace}:ServiceName(*)',
-            'list_all_saved_password_users': f'{self.namespace}:ServiceName({kwargs.get("service_name", "*")})::{self.namespace}:UserName(*)'
+        api_to_resource_value_specification = {
+            'add_password': f'{self.namespace}:ServiceName({kwargs.get("service_name", "?")})::{self.namespace}:UserName({kwargs.get("user_name", "?")})',
+            'remove_password': f'{self.namespace}:ServiceName({kwargs.get("service_name", "?")})::{self.namespace}:UserName({kwargs.get("user_name", "?")})',
+            'update_password': f'{self.namespace}:ServiceName({kwargs.get("service_name", "?")})::{self.namespace}:UserName({kwargs.get("user_name", "?")})',
+            'get_password': f'{self.namespace}:ServiceName({kwargs.get("service_name", "?")})::{self.namespace}:UserName({kwargs.get("user_name", "?")})',
+            'list_all_saved_password_services': f'{self.namespace}:ServiceName(?)',
+            'list_all_saved_password_users': f'{self.namespace}:ServiceName({kwargs.get("service_name", "?")})::{self.namespace}:UserName(?)'
         }
-        data = api_to_granular_data.get(endpoint_name, (f'{self.namespace}:ServiceName(*)'))
+        data = api_to_resource_value_specification.get(endpoint_name, (f'{self.namespace}:ServiceName(?)'))
         return data
 
     def get_access_level(self, endpoint_name):
@@ -47,12 +47,12 @@ class PasswordManagerAPIAnnotation(APIAnnotationBase):
     def generate_attributes(self, kwargs, endpoint_name, wildcard):
         start_time = datetime.now()
         end_time = start_time  # For password manager operations, the time period is typically immediate
-        granular_data = self.get_hierarchy(endpoint_name, kwargs, wildcard)
-        data_access = self.get_access_level(endpoint_name)
+        resource_value_specification = self.get_hierarchy(endpoint_name, kwargs, wildcard)
+        action = self.get_access_level(endpoint_name)
         
         return [{
-            'granular_data': granular_data,
-            'data_access': data_access
+            'resource_value_specification': resource_value_specification,
+            'action': action
         }]
 
 class PasswordManagerAPI:

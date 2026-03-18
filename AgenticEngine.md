@@ -41,16 +41,16 @@ GitHub Agentic workflows are an example of an abstraction over agentic engines l
    ```
    update_issue(...) based on the arguments requires the following permissions:
    - GH:Issue(id):write -> Allows updating all the fields of the issue id 
-   - GH:Issue(id)::GH:Body(*):write -> Allows updating the body of the issue id  
-   - GH:Issue(id)::GH:Title(*):write -> Allows updating the title of the issue id
-   - GH:Issue(id)::GH:Label(*):write -> Allows updating the labels of the issue id
-   - GH:Issue(id)::GH:State(*):write -> Allows updating the state of the issue id
-   - GH:Issue(id)::GH:Assignee(*):write -> Allows updating the assignee of the issue id
-   - GH:Issue(id)::GH:SubIssue(*):write -> Allows updating the sub-issues of the issue id
-   - GH:Issue(id)::GH:Comment(*):write -> Allows updating the comments of the issue id
+   - GH:Issue(id)::GH:Body(?):write -> Allows updating the body of the issue id  
+   - GH:Issue(id)::GH:Title(?):write -> Allows updating the title of the issue id
+   - GH:Issue(id)::GH:Label(?):write -> Allows updating the labels of the issue id
+   - GH:Issue(id)::GH:State(?):write -> Allows updating the state of the issue id
+   - GH:Issue(id)::GH:Assignee(?):write -> Allows updating the assignee of the issue id
+   - GH:Issue(id)::GH:SubIssue(?):write -> Allows updating the sub-issues of the issue id
+   - GH:Issue(id)::GH:Comment(?):write -> Allows updating the comments of the issue id
 
    search_issues(...) based on the arguments requires the following permissions:
-   - GH:Issue(*):read -> Allows reading all the fields of the issue
+   - GH:Issue(?):read -> Allows reading all the fields of the issue
    ```
 
 2. In the GitHub Agentic workflow definition, the user will define the permissions granted to the agentic engine for each resource used in the workflow.

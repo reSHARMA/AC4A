@@ -25,16 +25,16 @@ class WalletAPIAnnotation(APIAnnotationBase):
         )
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
-        api_to_granular_data = {
-            'add_credit_card': ('CreditCard', kwargs.get('card_name', '*')),
-            'remove_credit_card': ('CreditCard', kwargs.get('card_name', '*')),
-            'update_credit_card': ('CreditCard', kwargs.get('card_name', '*')),
-            'get_credit_card_info': ('CreditCard', kwargs.get('card_name', '*')),
-            'get_all_credit_card_names': ('CreditCard', '*')
+        api_to_resource_value_specification = {
+            'add_credit_card': ('CreditCard', kwargs.get('card_name', '?')),
+            'remove_credit_card': ('CreditCard', kwargs.get('card_name', '?')),
+            'update_credit_card': ('CreditCard', kwargs.get('card_name', '?')),
+            'get_credit_card_info': ('CreditCard', kwargs.get('card_name', '?')),
+            'get_all_credit_card_names': ('CreditCard', '?')
         }
-        label, detail = api_to_granular_data.get(endpoint_name, ('CreditCard', '*'))
+        label, detail = api_to_resource_value_specification.get(endpoint_name, ('CreditCard', '?'))
         if use_wildcard:
-            return f"{self.namespace}:{label}(*)"
+            return f"{self.namespace}:{label}(?)"
         else:
             return f"{self.namespace}:{label}({detail})"
 
@@ -52,12 +52,12 @@ class WalletAPIAnnotation(APIAnnotationBase):
     def generate_attributes(self, kwargs, endpoint_name, wildcard):
         start_time = datetime.now()
         end_time = start_time  # For wallet operations, the time period is typically immediate
-        granular_data = self.get_hierarchy(endpoint_name, kwargs, wildcard)
-        data_access = self.get_access_level(endpoint_name)
+        resource_value_specification = self.get_hierarchy(endpoint_name, kwargs, wildcard)
+        action = self.get_access_level(endpoint_name)
         
         return [{
-            'granular_data': granular_data,
-            'data_access': data_access
+            'resource_value_specification': resource_value_specification,
+            'action': action
         }]
 
 class WalletAPI:

@@ -10,6 +10,20 @@ from flask_cors import CORS
 # Set up logger for policy system
 logger = get_logger(__name__)
 
+
+def _format_access_denied_log(attributes):
+    """Extract namespace from resource_value_specification and return (category, message) for Access Denied log."""
+    rv = attributes.get('resource_value_specification') or ''
+    if not rv or ':' not in rv:
+        return "❌ Access Denied for", f"{attributes}"
+    namespace = rv.split(':')[0]
+    # Strip namespace prefix from each segment: "Calendar:Year(2026)" -> "Year(2026)"
+    shortened = '::'.join(part.split(':', 1)[-1] if ':' in part else part for part in rv.split('::'))
+    display_attrs = dict(attributes)
+    display_attrs['resource_value_specification'] = shortened
+    category = f"❌ Access to {namespace} Denied"
+    return category, f"{display_attrs}"
+
 app = Flask(__name__)
 CORS(app, resources={
     r"/get_attribute_trees": {"origins": "*"},
@@ -77,7 +91,7 @@ class PolicySystem:
         logger.info(f"📦 Created API instance: {api_instance}")
         
         # Define the list of allowed attributes
-        allowed_attributes = ['granular_data', 'data_access']
+        allowed_attributes = ['resource_value_specification', 'action']
         logger.info(f"📋 Allowed attributes: {allowed_attributes}")
 
         # Extract attribute definitions from the API instance
@@ -147,12 +161,12 @@ class PolicySystem:
         return self.policy_rules
 
     def add_policy(self, policy_rule):
-        # Validate granular_data hierarchy
-        if 'granular_data' in policy_rule and 'granular_data' in self.attribute_definitions:
-            granular_data = policy_rule['granular_data']
-            if granular_data:
+        # Validate resource_value_specification hierarchy
+        if 'resource_value_specification' in policy_rule and 'resource_value_specification' in self.attribute_definitions:
+            resource_value_specification = policy_rule['resource_value_specification']
+            if resource_value_specification:
                 # First validate the format of each part
-                values = granular_data.split("::")
+                values = resource_value_specification.split("::")
                 for value in values:
                     if "(" not in value or ")" not in value:
                         error_msg = f"Invalid format: {value} must follow the format key(value), value can be * or a specific string"
@@ -183,7 +197,7 @@ class PolicySystem:
                     
                     if i == 0:
                         # For first node, find it anywhere in any tree
-                        for tree in self.attribute_definitions['granular_data']:
+                        for tree in self.attribute_definitions['resource_value_specification']:
                             if isinstance(tree, ResourceTypeTree):
                                 found_node = find_node_in_tree(tree, key)
                                 if found_node:
@@ -213,14 +227,14 @@ class PolicySystem:
             send_custom_log("Permission Subsumed", f"{policy_rule}")
             return
 
-        if policy_rule['granular_data']:
-            values = policy_rule['granular_data'].split("::")
+        if policy_rule['resource_value_specification']:
+            values = policy_rule['resource_value_specification'].split("::")
             logger.info(f"Split granular data into values: {values}")
             
             value_idx = None
             # iterate values in reverse order
             for i in range(len(values) - 1, -1, -1):
-                if values[i].split("(")[0] + "*)" != values[i]:
+                if values[i].split("(")[0] + "?)" != values[i]:
                     value_idx = i
 
             if value_idx is None:
@@ -229,17 +243,17 @@ class PolicySystem:
             else:
                 logger.info(f"Found non-wildcard pattern at index: {value_idx}")
             
-            policy_rule['granular_data'] = (
+            policy_rule['resource_value_specification'] = (
                 "::".join(values[value_idx:]) if value_idx is not None 
                 else values[0]
             )
-            logger.info(f"Updated granular data to: {policy_rule['granular_data']}")
+            logger.info(f"Updated granular data to: {policy_rule['resource_value_specification']}")
 
         # Check for duplicate policy using the same key matching logic as remove_policy
-        target_key = f"{policy_rule['granular_data'].lower()}-{policy_rule['data_access'].lower()}"
+        target_key = f"{policy_rule['resource_value_specification'].lower()}-{policy_rule['action'].lower()}"
         
         for rule in self.policy_rules:
-            rule_key = f"{rule['granular_data'].lower()}-{rule['data_access'].lower()}"
+            rule_key = f"{rule['resource_value_specification'].lower()}-{rule['action'].lower()}"
             if rule_key == target_key:
                 logger.info(f"Duplicate policy found with key: {target_key}, skipping addition")
                 return
@@ -298,7 +312,8 @@ class PolicySystem:
         else:
             if print_policy:
                 logger.error(f"❌ POLICY DENIED - Action not allowed for attributes: {attributes}")
-                send_custom_log("❌ Access Denied for", f"{attributes}")
+                category, message = _format_access_denied_log(attributes)
+                send_custom_log(category, message)
             return False
 
     def check_subsumption(self, rule, attributes, resource_difference=None):
@@ -321,7 +336,7 @@ class PolicySystem:
                     return attributes
                 continue  
 
-            if rule_value == '*':
+            if rule_value == '?':
                 continue
 
             parsed_rule_value = parse_rule_value(rule_value)
@@ -333,16 +348,15 @@ class PolicySystem:
             valid = self.validate_attribute(parsed_rule_value, attr_value, attr, resource_difference)
             new_need[attr] = valid
 
-        max_length_attr = 0
-        for attr, value in new_need.items():
-            if len(value) > max_length_attr:
-                max_length_attr = len(value)
+        # Use min length so we never index an empty list (empty = rule satisfied for that attr)
+        lengths = [len(value) for value in new_need.values()]
+        max_length_attr = min(lengths) if lengths else 0
 
         new_attributes_list = []
         for x in range(max_length_attr):
             new_attr = {}
             for attr, value in new_need.items():
-                new_attr[attr] = value[x] if x < len(value) else value[0]
+                new_attr[attr] = value[x]
             new_attributes_list.append(new_attr)
 
         logger.info(f"New needs generated: {new_attributes_list}")
@@ -361,7 +375,7 @@ class PolicySystem:
 
         if attribute_type in self.attribute_definitions:
 
-            if callable(resource_difference) and attribute_type == 'granular_data':
+            if callable(resource_difference) and attribute_type == 'resource_value_specification':
                 valid = resource_difference(rule_value, attribute_value)
                 return valid
 
@@ -400,11 +414,11 @@ class PolicySystem:
         return valid
 
     def build_tree_from_values(self, hierarchy_tree, values):
-        # Check if any value is not '*', 'default', or ''
+        # Check if any value is not '?', 'default', or ''
         has_special_value = False
         for val in values:
             for v in val.values():
-                if v not in ['*', 'default', '']:
+                if v not in ['?', 'default', '']:
                     has_special_value = True
                     break
             if has_special_value:
@@ -427,10 +441,10 @@ class PolicySystem:
                     logger.error(f"Error finding value for {node_key}: {str(e)}")
                     node_value = None
 
-                # If parent has special value, this node should be '*' unless it has its own special value
+                # If parent has special value, this node should be '?' unless it has its own special value
                 if parent_has_special and node_value is None:
-                    node_value = '*'
-                    logger.info(f"Using '*' for {node_key} as parent has special value")
+                    node_value = '?'
+                    logger.info(f"Using '?' for {node_key} as parent has special value")
 
                 # Process children first to check if any have special values
                 children_with_values = []
@@ -445,10 +459,10 @@ class PolicySystem:
                 # If we have children with values or this node has a value, create the node
                 if children_with_values or node_value is not None:
                     # If this node doesn't have a specific value but is part of a path with special values,
-                    # use '*' as the value
+                    # use '?' as the value
                     if node_value is None:
-                        node_value = '*'
-                        logger.info(f"Using '*' for {node_key} as it's part of a path with special values")
+                        node_value = '?'
+                        logger.info(f"Using '?' for {node_key} as it's part of a path with special values")
                     
                     logger.info(f"Creating new node for {node_key} with value {node_value}")
                     new_node = ResourceTypeTree(node_key, data=node_value)
@@ -470,7 +484,7 @@ class PolicySystem:
         root = None
         def dfs(node, values, append):
             node_key = list(node.value.keys())[0]
-            node_value = next((v[node_key] for v in values if node_key in v), '*')
+            node_value = next((v[node_key] for v in values if node_key in v), '?')
             all_values = [list(val.keys())[0] for val in values]
 
             new_node = None
@@ -501,12 +515,12 @@ class PolicySystem:
         logger.info(f"Attempting to remove policy: {policy_rule}")
         
         # Create composite key for the policy to remove
-        target_key = f"{policy_rule['granular_data'].lower()}-{policy_rule['data_access'].lower()}"
+        target_key = f"{policy_rule['resource_value_specification'].lower()}-{policy_rule['action'].lower()}"
         send_custom_log("Permission Removed", f"{target_key}")
         
         # Find and remove the matching policy
         for i, rule in enumerate(self.policy_rules):
-            rule_key = f"{rule['granular_data'].lower()}-{rule['data_access'].lower()}"
+            rule_key = f"{rule['resource_value_specification'].lower()}-{rule['action'].lower()}"
             if rule_key == target_key:
                 logger.info(f"Found matching policy at index {i}, removing it")
                 removed_policy = self.policy_rules.pop(i)

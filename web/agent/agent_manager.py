@@ -120,10 +120,10 @@ class AgentManager:
         attribute_definitions = self.policy_system.export_attributes()
         logger.info(f"Exported attributes: {attribute_definitions.keys()}")
         
-        if 'granular_data' in attribute_definitions:
+        if 'resource_value_specification' in attribute_definitions:
             # Get the trees from the policy system
-            trees = attribute_definitions['granular_data']
-            logger.info(f"Found granular_data with {len(trees)} trees")
+            trees = attribute_definitions['resource_value_specification']
+            logger.info(f"Found resource_value_specification with {len(trees)} trees")
             
             # Deduplicate trees based on their root key
             unique_trees = []
@@ -142,7 +142,7 @@ class AgentManager:
             self.attribute_trees = unique_trees
             logger.info(f"Deduplicated trees: {len(self.attribute_trees)} unique trees")
         else:
-            logger.warning("No granular_data found in attribute definitions")
+            logger.warning("No resource_value_specification found in attribute definitions")
             self.attribute_trees = []
         
         logger.info(f"Updated attribute trees: found {len(self.attribute_trees)} trees")

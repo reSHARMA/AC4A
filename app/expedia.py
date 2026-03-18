@@ -6,7 +6,7 @@ from src.utils.dummy_data import generate_dummy_data
 class ExpediaAPIAnnotation(APIAnnotationBase):
     def __init__(self):
         super().__init__("Expedia", {
-            'granular_data': [
+            'resource_value_specification': [
                 ResourceTypeTree(f'Expedia:Destination', [
                     ResourceTypeTree(f'Expedia:Flight'),
                     ResourceTypeTree(f'Expedia:Hotel'),
@@ -17,7 +17,7 @@ class ExpediaAPIAnnotation(APIAnnotationBase):
                 ]),
                 ResourceTypeTree(f'Expedia:Payment')
             ],
-            'data_access': [
+            'action': [
                 ResourceTypeTree('Read'),
                 ResourceTypeTree('Write'),
                 ResourceTypeTree('Create')
@@ -25,27 +25,27 @@ class ExpediaAPIAnnotation(APIAnnotationBase):
         })
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
-        api_to_granular_data = {
-            'search_flights': ('Flight', kwargs.get('airline', '*')),
-            'book_flight': ('Flight', kwargs.get('airline', '*')),
-            'search_hotels': ('Hotel', kwargs.get('hotel_name', '*')),
-            'book_hotel': ('Hotel', kwargs.get('hotel_name', '*')),
-            'search_cars': ('CarRental', kwargs.get('car_type', '*')),
-            'rent_car': ('CarRental', kwargs.get('car_type', '*')),
-            'search_experiences': ('Experience', '*'),
-            'book_experience': ('Experience', '*'),
-            'search_cruise': ('Cruise', '*'),
-            'get_cruise_info': ('Cruise', '*'),
-            'book_cruise': ('Cruise', '*'),
-            'pay_for_itenary': ('Payment', '*')
+        api_to_resource_value_specification = {
+            'search_flights': ('Flight', kwargs.get('airline', '?')),
+            'book_flight': ('Flight', kwargs.get('airline', '?')),
+            'search_hotels': ('Hotel', kwargs.get('hotel_name', '?')),
+            'book_hotel': ('Hotel', kwargs.get('hotel_name', '?')),
+            'search_cars': ('CarRental', kwargs.get('car_type', '?')),
+            'rent_car': ('CarRental', kwargs.get('car_type', '?')),
+            'search_experiences': ('Experience', '?'),
+            'book_experience': ('Experience', '?'),
+            'search_cruise': ('Cruise', '?'),
+            'get_cruise_info': ('Cruise', '?'),
+            'book_cruise': ('Cruise', '?'),
+            'pay_for_itenary': ('Payment', '?')
         }
-        label, detail = api_to_granular_data.get(endpoint_name, ('Destination', '*'))
+        label, detail = api_to_resource_value_specification.get(endpoint_name, ('Destination', '?'))
 
         if "cruise" in endpoint_name.lower():
-            label, detail = ('Cruise', kwargs.get('cruise_id', '*'))
+            label, detail = ('Cruise', kwargs.get('cruise_id', '?'))
         
         if use_wildcard:
-            return f"{self.namespace}:{label}(*)"
+            return f"{self.namespace}:{label}(?)"
         else:
             return f"{self.namespace}:{label}({detail})"
 
@@ -78,8 +78,8 @@ class ExpediaAPIAnnotation(APIAnnotationBase):
             end_time = kwargs['end_time']
         
         return {
-            'granular_data': self.get_hierarchy(endpoint_name, kwargs, use_wildcard),
-            'data_access': self.get_access_level(endpoint_name)
+            'resource_value_specification': self.get_hierarchy(endpoint_name, kwargs, use_wildcard),
+            'action': self.get_access_level(endpoint_name)
         }
 
 class ExpediaAPI:

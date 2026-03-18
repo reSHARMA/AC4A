@@ -151,7 +151,7 @@ def get_attribute_trees():
             
             return node
         
-        # Process each tree in granular_data
+        # Process each tree in resource_value_specification
         processed_trees = []
         seen_keys = set()
         
@@ -204,7 +204,7 @@ def add_policy():
         logger.info(f"Added policy: {policy_data}")
         
         # Construct policy key for highlighting
-        policy_key = f"{policy_data['granular_data']}-{policy_data['data_access']}"
+        policy_key = f"{policy_data['resource_value_specification']}-{policy_data['action']}"
         logger.info(f"Emitting highlight for policy: {policy_key}")
         socketio.emit('highlight_policy', policy_key)
         
@@ -280,7 +280,7 @@ def delete_policy():
         logger.info(f"Successfully removed policy: {policy_data}")
         
         # Construct policy key for highlighting
-        policy_key = f"{policy_data['granular_data']}-{policy_data['data_access']}"
+        policy_key = f"{policy_data['resource_value_specification']}-{policy_data['action']}"
         logger.info(f"Emitting highlight for policy: {policy_key}")
         socketio.emit('highlight_policy', policy_key)
         
@@ -498,7 +498,7 @@ def convert_to_text():
     try:
         data = request.get_json()
         # Create a unique key for the policy
-        cache_key = f"{data['granular_data']}-{data['data_access']}"
+        cache_key = f"{data['resource_value_specification']}-{data['action']}"
         
         # Check if we have a cached result
         if cache_key in text_cache:
@@ -506,8 +506,8 @@ def convert_to_text():
             return jsonify({'text': text_cache[cache_key]})
             
         policy = {
-            'granular_data': data['granular_data'],
-            'data_access': data['data_access']
+            'resource_value_specification': data['resource_value_specification'],
+            'action': data['action']
         }
         text = agent_manager.policy_system.text(policy=policy, mode="decl")
         

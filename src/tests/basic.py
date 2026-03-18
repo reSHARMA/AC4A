@@ -7,8 +7,8 @@ if __name__ == "__main__":
     policy_system.register_api(CalendarAPI)
 
     # Add example policy rules
-    policy_system.add_policy({"granular_data": "Year", "data_access": "Read", "time": "Future"})
-    policy_system.add_policy({"granular_data": "Month", "data_access": "Read", "time": "Future"})
+    policy_system.add_policy({"resource_value_specification": "Year", "action": "Read", "time": "Future"})
+    policy_system.add_policy({"resource_value_specification": "Month", "action": "Read", "time": "Future"})
 
     calendar_api = CalendarAPI()
 

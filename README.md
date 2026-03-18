@@ -44,7 +44,7 @@ AC4A Framework
 ### 🔐 Fine-Grained Access Control
 - **Hierarchical Data Permissions**: Define permissions over nested data structures
 - **Read/Write Separation**: Distinguish between data access and modification capabilities
-- **Wildcard Support**: Use `*` for flexible permission patterns
+- **Wildcard Support**: Use `?` for flexible permission patterns
 - **Context-Aware Enforcement**: Permissions adapt based on agent context and task
 
 ### 🎛️ Visual Policy Management
@@ -138,15 +138,15 @@ After running the setup script, access the following services:
 ```python
 # Allow agent to read calendar events for specific month only
 policy_system.add_policy({
-    'granular_data': 'Calendar:Year(2025)::Calendar:Month(6)',
-    'data_access': 'read',
+    'resource_value_specification': 'Calendar:Year(2025)::Calendar:Month(6)',
+    'action': 'read',
     'position': 'current'
 })
 
 # Allow agent to add new credit cards but not view existing ones
 policy_system.add_policy({
-    'granular_data': 'Wallet:CreditCard(*)',
-    'data_access': 'write',
+    'resource_value_specification': 'Wallet:CreditCard(?)',
+    'action': 'write',
     'position': 'current'
 })
 ```

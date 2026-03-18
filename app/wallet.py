@@ -6,7 +6,7 @@ from src.utils.dummy_data import generate_dummy_data
 class WalletAPIAnnotation(APIAnnotationBase):
     def __init__(self):
         super().__init__("Wallet", {
-            'granular_data': [
+            'resource_value_specification': [
                 ResourceTypeTree(f'Wallet:CreditCard', [
                     ResourceTypeTree(f'Wallet:CreditCardName'),
                     ResourceTypeTree(f'Wallet:CreditCardType'),
@@ -14,7 +14,7 @@ class WalletAPIAnnotation(APIAnnotationBase):
                     ResourceTypeTree(f'Wallet:CreditCardPin')
                 ])
             ],
-            'data_access': [
+            'action': [
                 ResourceTypeTree('Read'),
                 ResourceTypeTree('Write'),
                 ResourceTypeTree('Create')
@@ -22,15 +22,15 @@ class WalletAPIAnnotation(APIAnnotationBase):
         })
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
-        api_to_granular_data = {
-            'add_credit_card': ('CreditCard', kwargs.get('card_name', '*')),
-            'remove_credit_card': ('CreditCard', kwargs.get('card_name', '*')),
-            'update_credit_card': ('CreditCard', kwargs.get('card_name', '*')),
-            'get_credit_card_info': ('CreditCard', kwargs.get('card_name', '*'))
+        api_to_resource_value_specification = {
+            'add_credit_card': ('CreditCard', kwargs.get('card_name', '?')),
+            'remove_credit_card': ('CreditCard', kwargs.get('card_name', '?')),
+            'update_credit_card': ('CreditCard', kwargs.get('card_name', '?')),
+            'get_credit_card_info': ('CreditCard', kwargs.get('card_name', '?'))
         }
-        label, detail = api_to_granular_data.get(endpoint_name, ('CreditCard', '*'))
+        label, detail = api_to_resource_value_specification.get(endpoint_name, ('CreditCard', '?'))
         if use_wildcard:
-            return f"{self.namespace}:{label}(*)"
+            return f"{self.namespace}:{label}(?)"
         else:
             return f"{self.namespace}:{label}({detail})"
 
@@ -55,8 +55,8 @@ class WalletAPIAnnotation(APIAnnotationBase):
             end_time = kwargs['end_time']
         
         return {
-            'granular_data': self.get_hierarchy(endpoint_name, kwargs, use_wildcard),
-            'data_access': self.get_access_level(endpoint_name)
+            'resource_value_specification': self.get_hierarchy(endpoint_name, kwargs, use_wildcard),
+            'action': self.get_access_level(endpoint_name)
         }
 
 class WalletAPI:

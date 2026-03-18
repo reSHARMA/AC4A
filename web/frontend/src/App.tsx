@@ -34,7 +34,7 @@ function App() {
       <Container 
         maxW="container.xl" 
         py={8}
-        px={{ base: 4, md: 8 }}
+        px={{ base: 2, md: 4 }}
       >
         <Box
           bg="white"

@@ -27,19 +27,19 @@ class WebBrowserAPIAnnotation(APIAnnotationBase):
             [ResourceTypeTree('Read'), ResourceTypeTree('Write'), ResourceTypeTree('Create')]
         )
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
-        api_to_granular_data = {
-            'get_attributes': f'{self.namespace}:URL(*)',
-            'get_attributes_schema': f'{self.namespace}:URL(*)',
-            'post_request': f'{self.namespace}:URL({kwargs.get("url", "*")})',
-            'get_request': f'{self.namespace}:URL({kwargs.get("url", "*")})',
-            'put_request': f'{self.namespace}:URL({kwargs.get("url", "*")})',
-            'delete_request': f'{self.namespace}:URL({kwargs.get("url", "*")})',
-            'add_cookie': f'{self.namespace}:Cookies({kwargs.get("cookie_name", "*")})',
-            'remove_cookie': f'{self.namespace}:Cookies({kwargs.get("cookie_name", "*")})',
-            'update_cookie': f'{self.namespace}:Cookies({kwargs.get("cookie_name", "*")})',
-            'get_all_cookies': f'{self.namespace}:Cookies(*)'
+        api_to_resource_value_specification = {
+            'get_attributes': f'{self.namespace}:URL(?)',
+            'get_attributes_schema': f'{self.namespace}:URL(?)',
+            'post_request': f'{self.namespace}:URL({kwargs.get("url", "?")})',
+            'get_request': f'{self.namespace}:URL({kwargs.get("url", "?")})',
+            'put_request': f'{self.namespace}:URL({kwargs.get("url", "?")})',
+            'delete_request': f'{self.namespace}:URL({kwargs.get("url", "?")})',
+            'add_cookie': f'{self.namespace}:Cookies({kwargs.get("cookie_name", "?")})',
+            'remove_cookie': f'{self.namespace}:Cookies({kwargs.get("cookie_name", "?")})',
+            'update_cookie': f'{self.namespace}:Cookies({kwargs.get("cookie_name", "?")})',
+            'get_all_cookies': f'{self.namespace}:Cookies(?)'
         }
-        return api_to_granular_data.get(endpoint_name, f'{self.namespace}:URL(*)')
+        return api_to_resource_value_specification.get(endpoint_name, f'{self.namespace}:URL(?)')
 
     def get_access_level(self, endpoint_name):
         if 'add' in endpoint_name:
@@ -55,12 +55,12 @@ class WebBrowserAPIAnnotation(APIAnnotationBase):
     def generate_attributes(self, kwargs, endpoint_name, wildcard):
         start_time = datetime.now()
         end_time = start_time  # For wallet operations, the time period is typically immediate
-        granular_data = self.get_hierarchy(endpoint_name, kwargs, wildcard)
-        data_access = self.get_access_level(endpoint_name)
+        resource_value_specification = self.get_hierarchy(endpoint_name, kwargs, wildcard)
+        action = self.get_access_level(endpoint_name)
         
         return [{
-            'granular_data': granular_data,
-            'data_access': data_access
+            'resource_value_specification': resource_value_specification,
+            'action': action
         }]
 
 class WebBrowserAPI:

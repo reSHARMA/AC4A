@@ -24,8 +24,8 @@ class GitHubAPIAnnotation(APIAnnotationBase):
             'examples': ['vscode', 'hello-world', 'linux']
         },
         'GitHub:Issue': {
-            'description': 'A specific issue number within the repository; "*" wildcard when not targeting a specific issue',
-            'examples': ['1', '42', '*']
+            'description': 'A specific issue number within the repository; "?" wildcard when not targeting a specific issue',
+            'examples': ['1', '42', '?']
         }
     }
 
@@ -33,14 +33,14 @@ class GitHubAPIAnnotation(APIAnnotationBase):
         super().__init__(
             "GitHub",
             {
-                'granular_data': [
+                'resource_value_specification': [
                     ResourceTypeTree('GitHub:Owner', [
                         ResourceTypeTree('GitHub:Repo', [
                             ResourceTypeTree('GitHub:Issue')
                         ])
                     ])
                 ],
-                'data_access': [
+                'action': [
                     ResourceTypeTree('Read'),
                     ResourceTypeTree('Write'),
                     ResourceTypeTree('Create')
@@ -50,18 +50,18 @@ class GitHubAPIAnnotation(APIAnnotationBase):
         )
 
     def get_hierarchy(self, endpoint_name, kwargs, use_wildcard):
-        owner = kwargs.get('owner', '*')
-        repo = kwargs.get('repo', '*')
+        owner = kwargs.get('owner', '?')
+        repo = kwargs.get('repo', '?')
         if endpoint_name in ('update_issue', 'get_issue'):
-            issue = kwargs.get('issue_number', '*')
+            issue = kwargs.get('issue_number', '?')
         else:
             # create_issue (new issue not yet numbered) and list_issues (multiple issues)
-            issue = '*'
+            issue = '?'
 
         if use_wildcard:
-            owner_part = 'GitHub:Owner(*)'
-            repo_part = 'GitHub:Repo(*)'
-            issue_part = 'GitHub:Issue(*)'
+            owner_part = 'GitHub:Owner(?)'
+            repo_part = 'GitHub:Repo(?)'
+            issue_part = 'GitHub:Issue(?)'
         else:
             owner_part = f'GitHub:Owner({owner})'
             repo_part = f'GitHub:Repo({repo})'
@@ -81,8 +81,8 @@ class GitHubAPIAnnotation(APIAnnotationBase):
 
     def generate_attributes(self, kwargs, endpoint_name, wildcard):
         return [{
-            'granular_data': self.get_hierarchy(endpoint_name, kwargs, wildcard),
-            'data_access': self.get_access_level(endpoint_name)
+            'resource_value_specification': self.get_hierarchy(endpoint_name, kwargs, wildcard),
+            'action': self.get_access_level(endpoint_name)
         }]
 
 

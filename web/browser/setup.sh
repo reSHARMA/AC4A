@@ -12,6 +12,8 @@ UBOL_URL="https://github.com/uBlockOrigin/uBOL-home/releases/download/uBOLite_${
 
 # Default mode
 MODE="normal"
+# If true, skip install and only start services (no rm -rf, no conda/env/playwright/novnc install)
+START_ONLY=false
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -24,6 +26,10 @@ while [[ $# -gt 0 ]]; do
             MODE="normal"
             shift
             ;;
+        -s|--start-only)
+            START_ONLY=true
+            shift
+            ;;
         -h|--help)
             show_help
             ;;
@@ -34,6 +40,16 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Use local Xvfb/x11vnc when available (no sudo) - same layout as start_vnc_stack.sh
+if [ -d "$HOME/rpm/xvfb/usr/bin" ] && [ -d "$HOME/local/x11vnc/bin" ]; then
+    export PATH="$HOME/rpm/xvfb/usr/bin:$HOME/local/x11vnc/bin:$PATH"
+    export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
+    [ -d "$HOME/local/openssl/install/lib" ] && LD_LIBRARY_PATH="$HOME/local/openssl/install/lib:$LD_LIBRARY_PATH"
+    [ -d "$HOME/local/libvncserver/lib64" ] && LD_LIBRARY_PATH="$HOME/local/libvncserver/lib64:$LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH
+    echo "Using local Xvfb and x11vnc from \$HOME/rpm and \$HOME/local"
+fi
 
 echo "🚀 Starting browser setup in $MODE mode..."
 
@@ -54,6 +70,25 @@ cleanup() {
 # Register cleanup function to run on script exit
 trap cleanup EXIT
 
+# When --start-only: skip full install and only start services (no wipe, no reinstall)
+if [ "$START_ONLY" = true ]; then
+    if [ ! -d "$INSTALL_DIR/playwright-project" ] || [ ! -d "$INSTALL_DIR/noVNC" ]; then
+        echo "Error: --start-only requires an existing install. Run without --start-only first."
+        exit 1
+    fi
+    echo "Start-only mode: using existing $INSTALL_DIR"
+    # One capture process only: stop any existing screenshot.js from previous runs
+    pkill -f "node.*screenshot\.js" 2>/dev/null && echo "Stopped previous screenshot capture" || true
+    sleep 1
+    mkdir -p "$INSTALL_DIR/screenshots"
+    # Copy updated screenshot/capture script so fixes (e.g. CDP capture) are used
+    cp "${SCRIPT_DIR}/screenshot.js" "$INSTALL_DIR/playwright-project/screenshot.js"
+    cp "${SCRIPT_DIR}/screenshot_server.py" "$INSTALL_DIR/screenshot_server.py"
+    cd "$INSTALL_DIR"
+    source "$MINICONDA_DIR/etc/profile.d/conda.sh"
+    conda activate "$ENV_NAME"
+else
+# Full install path (default)
 # Clean up existing environment if it exists
 if [ -d "$MINICONDA_DIR" ]; then
     echo "Cleaning up existing environment..."
@@ -235,6 +270,9 @@ fi
 
 cd "$INSTALL_DIR"
 
+fi
+# end of full-install vs start-only
+
 # Step 7: Start Xvfb
 echo "Starting Xvfb..."
 Xvfb :99 -screen 0 1024x768x24 &
@@ -408,7 +446,7 @@ fi
 # Start Flask screenshot server
 echo "Starting Flask screenshot server..."
 cd "$INSTALL_DIR"
-python3 screenshot_server.py --host localhost --port 8080 --screenshot-path "$INSTALL_DIR/screenshots/latest-preview.png" &
+python3 screenshot_server.py --host 0.0.0.0 --port 8080 --screenshot-path "$INSTALL_DIR/screenshots/latest-preview.png" &
 HTTP_PID=$!
 
 # Step 11: Start x11vnc
@@ -426,7 +464,7 @@ fi
 # Step 12: Start noVNC
 echo "Starting noVNC..."
 cd "$INSTALL_DIR/noVNC"
-./utils/novnc_proxy --vnc localhost:5900 --listen localhost:6080 &
+./utils/novnc_proxy --vnc localhost:5900 --listen 0.0.0.0:6080 &
 NOVNC_PID=$!
 
 # Wait for noVNC to start
@@ -525,6 +563,7 @@ show_help() {
     echo "OPTIONS:"
     echo "  --normal      Normal mode: Auto-apply saved element hiding rules (default)"
     echo "  --config      Zapper mode: Visual element picker for configuring rules"
+    echo "  --start-only  Skip install: only start services (use existing browser-remote, no rm -rf)"
     echo "  --help        Show this help message"
     echo ""
     echo "MODES:"

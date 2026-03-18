@@ -14,20 +14,20 @@ logger = get_logger(__name__)
 def _format_access_denied_log(attributes):
     """Extract namespace from resource_value_specification and return (category, message) for Access Denied log."""
     rv = attributes.get('resource_value_specification') or ''
+    action = attributes.get('action') or ''
     if not rv or ':' not in rv:
         return "❌ Access Denied for", f"{attributes}"
     namespace = rv.split(':')[0]
     # Strip namespace prefix from each segment: "Calendar:Year(2026)" -> "Year(2026)"
     shortened = '::'.join(part.split(':', 1)[-1] if ':' in part else part for part in rv.split('::'))
-    display_attrs = dict(attributes)
-    display_attrs['resource_value_specification'] = shortened
     category = f"❌ Access to {namespace} Denied"
-    return category, f"{display_attrs}"
+    message = f"{shortened} - {action}" if action else shortened
+    return category, message
 
 
 def _format_permission_log(event_type, target_key):
     """Format Permission Added/Removed: extract namespace and return (category, message) without namespace in spec.
-    target_key is like 'calendar:year(?)-write' -> category 'Permission Added for Calendar', message 'year(?)-write'.
+    target_key is like 'calendar:year(2026)::calendar:month(june)-read' -> category 'Permission Added for Calendar', message 'year(2026)::month(june)-read'.
     """
     if not target_key or '-' not in target_key:
         return event_type, target_key or ''
@@ -35,10 +35,26 @@ def _format_permission_log(event_type, target_key):
     if not spec_part or ':' not in spec_part:
         return event_type, target_key
     namespace = spec_part.split(':')[0]
-    rest = ':'.join(spec_part.split(':')[1:])
-    short_message = f"{rest}-{action_part}"
+    # Strip namespace from each ::-separated segment so we get year(2026)::month(june) not year(2026)::calendar:month(june)
+    shortened = '::'.join(part.split(':', 1)[-1] if ':' in part else part for part in spec_part.split('::'))
+    short_message = f"{shortened}-{action_part}"
     category = f"{event_type} for {namespace.title()}"
     return category, short_message
+
+
+def _format_access_granted_log(rule):
+    """Format Access Granted: extract namespace and return (category, message) without namespace in spec.
+    rule is like {'resource_value_specification': 'Calendar:Year(2026)::Calendar:Month(June)', 'action': 'Read'}.
+    """
+    rv = (rule or {}).get('resource_value_specification') or ''
+    action = (rule or {}).get('action') or ''
+    if not rv or ':' not in rv:
+        return "✅ Access Granted by", str(rule) if rule else ''
+    namespace = rv.split(':')[0]
+    shortened = '::'.join(part.split(':', 1)[-1] if ':' in part else part for part in rv.split('::'))
+    category = f"✅ Access to {namespace.title()} Granted"
+    message = f"{shortened} - {action}" if action else shortened
+    return category, message
 
 
 app = Flask(__name__)
@@ -325,7 +341,8 @@ class PolicySystem:
         if len(needs) == 0:
             if print_policy:
                 logger.info(f"✅ POLICY ALLOWED - Action is allowed by rule: {rule}")
-                send_custom_log("✅ Access Granted by", f"{rule}")
+                category, message = _format_access_granted_log(rule)
+                send_custom_log(category, message)
             return True
         else:
             if print_policy:

@@ -234,7 +234,7 @@ const LogsView: React.FC = () => {
                   if (level.startsWith('Permission Removed')) return 'red.500';
                   if (level === 'Calling') return 'blue.500';
                   if (level.startsWith('❌ Access') && level.includes('Denied')) return 'red.500';
-                  if (level === '✅ Access Granted by') return 'green.500';
+                  if (level.startsWith('✅ Access') && level.includes('Granted')) return 'green.500';
                   return 'gray.500';
                 };
 

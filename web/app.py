@@ -110,15 +110,17 @@ text_cache = {}
 
 
 def _format_permission_log(event_type, target_key):
-    """Format Permission Added/Removed: extract namespace, return (category, short_message) without namespace in spec."""
+    """Format Permission Added/Removed: extract namespace, return (category, short_message) without namespace in spec.
+    Strip namespace from each ::-separated segment so we get year(2026)::month(june)-read not year(2026)::calendar:month(june)-read.
+    """
     if not target_key or '-' not in target_key:
         return event_type, target_key or ''
     spec_part, _, action_part = target_key.rpartition('-')
     if not spec_part or ':' not in spec_part:
         return event_type, target_key
     namespace = spec_part.split(':')[0]
-    rest = ':'.join(spec_part.split(':')[1:])
-    return f"{event_type} for {namespace.title()}", f"{rest}-{action_part}"
+    shortened = '::'.join(part.split(':', 1)[-1] if ':' in part else part for part in spec_part.split('::'))
+    return f"{event_type} for {namespace.title()}", f"{shortened}-{action_part}"
 
 
 @app.route('/')

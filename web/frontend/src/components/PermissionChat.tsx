@@ -1,6 +1,6 @@
 /** @jsxImportSource @emotion/react */
 import React, { useState, useEffect, useRef, useMemo } from 'react'
-import { Box, Text, VStack, Spinner, Select, HStack, Badge, Button, Switch, Input, IconButton, Tooltip, Stack } from '@chakra-ui/react'
+import { Box, Text, VStack, Spinner, Select, HStack, Badge, Button, Switch, Input, IconButton, Tooltip, Stack, Heading } from '@chakra-ui/react'
 import { MdAccountTree, MdSubdirectoryArrowRight, MdLabel, MdTextFields, MdViewList } from 'react-icons/md'
 import { FaTrash } from 'react-icons/fa'
 import styles from './PermissionChat.module.css'
@@ -14,6 +14,8 @@ interface TreeNode {
   value: string;
   access: string;
   children: TreeNode[];
+  /** When set, shown in UI instead of label; label is kept for API/callbacks */
+  displayLabel?: string;
 }
 
 interface Policy {
@@ -135,7 +137,7 @@ const TreeView: React.FC<TreeViewProps> = ({
         display="flex" 
         alignItems="center" 
         cursor={hasChildren ? "pointer" : "default"}
-        py={1}
+        py={0.5}
         onClick={() => hasChildren && setIsOpen(!isOpen)}
         width="100%"
       >
@@ -144,8 +146,8 @@ const TreeView: React.FC<TreeViewProps> = ({
         ) : (
           <MdLabel color="#718096" size={20} />
         )}
-        <Text ml={2} fontWeight={hasChildren ? "medium" : "normal"} flex={1}>
-          {data.label}
+        <Text ml={2} fontSize="sm" fontWeight={hasChildren ? "medium" : "normal"} flex={1}>
+          {data.displayLabel ?? data.label}
           {/* show child values inline for permitted view */}
           {viewMode === 'permitted' && isRoot && (
             data.children.filter(child => child.value !== '' && child.value !== '?').length > 0 && (
@@ -1134,8 +1136,36 @@ const PermissionChat: React.FC = (): JSX.Element => {
     }
   };
 
+  // Extract namespace from a node label (e.g. "Calendar:Year" -> "Calendar")
+  const getNamespaceFromLabel = (label: string): string | null => {
+    const idx = label.indexOf(':');
+    return idx >= 0 ? label.slice(0, idx) : null;
+  };
+
+  // Return a copy of the tree with displayLabel set to strip namespace prefix; label is unchanged for API/callbacks
+  const stripNamespaceFromTree = (node: TreeNode, namespace: string): TreeNode => {
+    const prefix = namespace + ':';
+    const displayLabel = node.label.startsWith(prefix) ? node.label.slice(prefix.length) : node.label;
+    return {
+      ...node,
+      displayLabel,
+      children: (node.children || []).map(child => stripNamespaceFromTree(child, namespace)),
+    };
+  };
+
+  // Group tree roots by namespace; returns array of [namespace, trees] for stable ordering
+  const groupTreesByNamespace = (trees: TreeNode[]): [string, TreeNode[]][] => {
+    const map = new Map<string, TreeNode[]>();
+    for (const tree of trees) {
+      const ns = getNamespaceFromLabel(tree.label) ?? 'Other';
+      if (!map.has(ns)) map.set(ns, []);
+      map.get(ns)!.push(tree);
+    }
+    return Array.from(map.entries());
+  };
+
   const renderTree = (tree: TreeNode, index: number) => (
-    <Box key={index} p={2} borderRadius="md" bg="white" boxShadow="sm">
+    <Box key={index} px={2} py={1} borderRadius="md" bg="white" boxShadow="sm">
       <TreeView 
         data={tree} 
         isRoot={true}
@@ -1840,7 +1870,20 @@ const PermissionChat: React.FC = (): JSX.Element => {
               </VStack>
             ) : viewMode === 'permitted' ? (
               getAllPermissionNodes(permittedTrees).length > 0 ? (
-                getAllPermissionNodes(permittedTrees).map((tree, index) => renderTree(tree, index))
+                groupTreesByNamespace(getAllPermissionNodes(permittedTrees)).map(([namespace, trees], groupIndex) => (
+                  <Box key={namespace}>
+                    <Heading size="sm" mb={1} mt={groupIndex === 0 ? 0 : 3} color="gray.700">
+                      {namespace}
+                    </Heading>
+                    <VStack align="stretch" spacing={1}>
+                      {trees.map((tree, index) => {
+                        const ns = getNamespaceFromLabel(tree.label) ?? 'Other';
+                        const strippedTree = stripNamespaceFromTree(tree, ns);
+                        return renderTree(strippedTree, index);
+                      })}
+                    </VStack>
+                  </Box>
+                ))
               ) : (
                 <Box p={8} textAlign="center" bg="gray.50" borderRadius="md">
                   <Text color="gray.500" fontSize="lg">No active permissions</Text>
@@ -1848,11 +1891,21 @@ const PermissionChat: React.FC = (): JSX.Element => {
               )
             ) : viewMode === 'edit' ? (
               <>
-                {editViewTrees.map((tree, index) => {
-                  const filteredTree = filterNodes(tree);
-                  return filteredTree ? renderTree(filteredTree, index) : null;
-                })}
-                <Box mt={4}>
+                {groupTreesByNamespace(editViewTrees).map(([namespace, trees], groupIndex) => (
+                  <Box key={namespace}>
+                    <Heading size="sm" mb={1} mt={groupIndex === 0 ? 0 : 3} color="gray.700">
+                      {namespace}
+                    </Heading>
+                    <VStack align="stretch" spacing={1}>
+                      {trees.map((tree, index) => {
+                        const filteredTree = filterNodes(tree);
+                        const strippedTree = filteredTree ? stripNamespaceFromTree(filteredTree, namespace) : null;
+                        return strippedTree ? renderTree(strippedTree, index) : null;
+                      })}
+                    </VStack>
+                  </Box>
+                ))}
+                <Box mt={3}>
                   <Tooltip label="Grant permissions using natural language text input" placement="top">
                     <Text 
                       fontSize="lg" 
@@ -1927,10 +1980,20 @@ const PermissionChat: React.FC = (): JSX.Element => {
                 </Box>
               </>
             ) : (
-              attributeTrees.map((tree, index) => {
-                const filteredTree = filterNodes(tree);
-                return filteredTree ? renderTree(filteredTree, index) : null;
-              })
+              groupTreesByNamespace(attributeTrees).map(([namespace, trees], groupIndex) => (
+                <Box key={namespace}>
+                  <Heading size="sm" mb={1} mt={groupIndex === 0 ? 0 : 3} color="gray.700">
+                    {namespace}
+                  </Heading>
+                  <VStack align="stretch" spacing={1}>
+                    {trees.map((tree, index) => {
+                      const filteredTree = filterNodes(tree);
+                      const strippedTree = filteredTree ? stripNamespaceFromTree(filteredTree, namespace) : null;
+                      return strippedTree ? renderTree(strippedTree, index) : null;
+                    })}
+                  </VStack>
+                </Box>
+              ))
             )}
           </VStack>
         )}

@@ -314,7 +314,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
   // Initialize socket connection
   useEffect(() => {
     // Use the full URL if we're in production, otherwise use the relative path
-    const port = import.meta.env.VITE_PORT || 5000;
+    const port = import.meta.env.VITE_PORT || 5002;
     const baseUrl = import.meta.env.PROD 
       ? `http://localhost:${port}` 
       : `http://localhost:${port}`;
@@ -834,7 +834,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
         setIsLoading(true);
         
         // Use the full URL if we're in production, otherwise use the relative path
-        const port = import.meta.env.VITE_PORT || 5000;
+        const port = import.meta.env.VITE_PORT || 5002;
         const baseUrl = import.meta.env.PROD 
           ? `http://localhost:${port}` 
           : `http://localhost:${port}`;
@@ -996,7 +996,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
   const handleSubmitChanges = async () => {
     try {
       setIsLoading(true);
-      const port = import.meta.env.VITE_PORT || 5000;
+      const port = import.meta.env.VITE_PORT || 5002;
       
       // If there's text in the policy text box, submit that first
       if (policyText.trim()) {
@@ -1210,7 +1210,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
       console.log('Deleting policy with data:', transformedPolicyData);
       
       // Send delete request to backend
-      const port = import.meta.env.VITE_PORT || 5000;
+      const port = import.meta.env.VITE_PORT || 5002;
       const apiUrl = import.meta.env.PROD 
         ? `http://localhost:${port}/delete_policy` 
         : `http://localhost:${port}/delete_policy`;
@@ -1527,7 +1527,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
         data_access: node.access.toLowerCase()
       };
 
-      const port = import.meta.env.VITE_PORT || 5000;
+      const port = import.meta.env.VITE_PORT || 5002;
       const apiUrl = import.meta.env.PROD 
         ? `http://localhost:${port}/convert_to_text` 
         : `http://localhost:${port}/convert_to_text`;
@@ -1578,7 +1578,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
     if (!policyText.trim()) return;
     
     try {
-      const port = import.meta.env.VITE_PORT || 5000;
+      const port = import.meta.env.VITE_PORT || 5002;
       const apiUrl = import.meta.env.PROD 
         ? `http://localhost:${port}/add_policy_from_text` 
         : `http://localhost:${port}/add_policy_from_text`;
@@ -1607,7 +1607,7 @@ const PermissionChat: React.FC = (): JSX.Element => {
   // Handler to send mode to backend
   const handleModeChange = (mode: string) => {
     console.log("Setting mode in backend:", mode);
-    const port = import.meta.env.VITE_PORT || 5000;
+    const port = import.meta.env.VITE_PORT || 5002;
     fetch(`http://localhost:${port}/set_permission_mode`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

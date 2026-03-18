@@ -46,7 +46,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
     }
   }
   
-  const port = import.meta.env.VITE_PORT || 5000;
+  const port = import.meta.env.VITE_PORT || 5002;
 
   useEffect(() => {
     // Create socket connection with debugging
@@ -310,7 +310,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
             >
               {/* Preview Image (Default, hidden when hovered) */}
               <img
-                src={`http://localhost:8080/screenshot?t=${previewTimestamp}`}
+                src={`http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:${import.meta.env.VITE_SCREENSHOT_PORT || '8080'}/screenshot?t=${previewTimestamp}`}
                 style={{
                   position: 'absolute',
                   width: '563px',
@@ -359,7 +359,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
               >
                 <iframe
                   ref={iframeRef}
-                  src="http://localhost:6080/vnc_lite.html?autoconnect=true"
+                  src={`http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:${import.meta.env.VITE_VNC_PORT || '6080'}/vnc_lite.html?autoconnect=true`}
                   style={{
                     border: 'none',
                     backgroundColor: 'black',

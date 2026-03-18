@@ -47,7 +47,7 @@ const LogsView: React.FC = () => {
 
   // On mount: fetch initial logs to backfill any missed events
   useEffect(() => {
-    const port = import.meta.env.VITE_PORT || '5000';
+    const port = import.meta.env.VITE_PORT || '5002';
     const baseUrl = import.meta.env.PROD ? `http://localhost:${port}` : `http://localhost:${port}`;
     fetch(`${baseUrl}/get_logs`)
       .then(res => res.json())

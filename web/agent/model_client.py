@@ -2,7 +2,7 @@ import os
 import re
 import logging
 from dotenv import load_dotenv
-from autogen_core.models import ChatCompletionClient
+from autogen_core.models import ChatCompletionClient, ModelFamily
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_ext.models.openai import AzureOpenAIChatCompletionClient
 from azure.identity import DefaultAzureCredential, ChainedTokenCredential, AzureCliCredential, get_bearer_token_provider
@@ -20,9 +20,18 @@ def setup_model_client():
     openai_api_key = os.getenv('OPENAI_API_KEY')
     if openai_api_key:
         logger.info("Using OpenAI configuration")
+        model_name = f"{os.getenv('CHAT_MODEL')}-{os.getenv('CHAT_MODEL_DATE')}"
+        # model_info is required for custom/newer model names not in autogen's built-in list
+        model_info = {
+            "vision": True,
+            "function_calling": True,
+            "json_output": True,
+            "family": ModelFamily.UNKNOWN,
+        }
         base_client = OpenAIChatCompletionClient(
-            model=f"{os.getenv('CHAT_MODEL')}-{os.getenv('CHAT_MODEL_DATE')}",
-            api_key=openai_api_key
+            model=model_name,
+            api_key=openai_api_key,
+            model_info=model_info,
         )
     else:
         # Fallback to Azure OpenAI

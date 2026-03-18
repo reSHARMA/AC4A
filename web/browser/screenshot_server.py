@@ -7,9 +7,10 @@ import logging
 import json
 import requests
 import websocket
-from flask import Flask, jsonify, send_file, request
+from flask import Flask, jsonify, send_file, request, Response
 from flask_cors import CORS
 import threading
+import base64
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -531,26 +532,33 @@ def clear_injected_css():
             'message': str(e)
         }), 500
 
+# Minimum size for a valid 1024x768 PNG (avoid serving empty or half-written files)
+MIN_SCREENSHOT_BYTES = 5000
+
+# 1x1 transparent PNG so the frontend <img> loads without onError when screenshot isn't ready
+_PLACEHOLDER_PNG = base64.b64decode(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+)
+
 @app.route('/screenshot', methods=['GET'])
 def get_screenshot():
     """
-    Get the latest screenshot
-    
-    Returns:
-        File: PNG image file or error message
+    Get the latest screenshot. When not ready (missing or too small), serves a
+    tiny placeholder PNG so the frontend img doesn't fire onError.
     """
     try:
         if not SCREENSHOT_PATH or not os.path.exists(SCREENSHOT_PATH):
-            return jsonify({
-                'error': 'Screenshot not available',
-                'message': 'Screenshot file not found'
-            }), 404
-            
+            return Response(_PLACEHOLDER_PNG, mimetype='image/png')
+
+        size = os.path.getsize(SCREENSHOT_PATH)
+        if size < MIN_SCREENSHOT_BYTES:
+            return Response(_PLACEHOLDER_PNG, mimetype='image/png')
+
         # Check if file was modified recently (within last 10 seconds)
         file_age = time.time() - os.path.getmtime(SCREENSHOT_PATH)
         if file_age > 10:
             logger.warning(f"Screenshot file is {file_age:.1f} seconds old")
-            
+
         return send_file(
             SCREENSHOT_PATH,
             mimetype='image/png',

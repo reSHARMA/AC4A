@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 
-const port = import.meta.env.VITE_PORT || '5000';
+const port = import.meta.env.VITE_PORT || '5002';
 export const socket = io(`http://localhost:${port}/`, {
   transports: ['websocket'],
   upgrade: false,

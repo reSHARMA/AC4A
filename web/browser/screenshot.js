@@ -1,4 +1,9 @@
 const { chromium } = require('playwright');
+const fs = require('fs');
+const path = require('path');
+
+// Minimum size to accept a frame (skip dark/blank so we don't overwrite good with bad)
+const MIN_FRAME_BYTES = 5000;
 
 async function waitForServer(url, maxRetries = 30) {
   for (let i = 0; i < maxRetries; i++) {
@@ -13,8 +18,21 @@ async function waitForServer(url, maxRetries = 30) {
   return false;
 }
 
+// Write to .tmp then rename atomically so readers never get a half-written file
+function writeScreenshotAtomically(buffer, outputPath) {
+  const dir = path.dirname(outputPath);
+  const tmpPath = path.join(dir, path.basename(outputPath) + '.tmp');
+  fs.writeFileSync(tmpPath, buffer);
+  fs.renameSync(tmpPath, outputPath);
+}
+
 async function takeScreenshot() {
-  // Wait for noVNC server to be ready
+  const outputPath = process.argv[2];
+  if (!outputPath) {
+    console.error('Usage: node screenshot.js <output.png>');
+    process.exit(1);
+  }
+
   const serverReady = await waitForServer('http://localhost:6080/vnc_lite.html');
   if (!serverReady) {
     console.error('Failed to connect to noVNC server');
@@ -36,33 +54,28 @@ async function takeScreenshot() {
     isMobile: false
   });
   const page = await context.newPage();
-  
+
   try {
     await page.goto('http://localhost:6080/vnc_lite.html');
     await page.waitForLoadState('networkidle');
     await page.waitForSelector('#screen canvas', { timeout: 10000 });
 
-    // Take initial screenshot
-    await page.screenshot({ 
-      path: process.argv[2],
-      fullPage: false,
-      omitBackground: false,
-      type: 'png',
-      scale: 'device'
-    });
+    // Give noVNC time to paint the first frame
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    // Keep taking screenshots every second
+    // Loop: capture noVNC canvas every second, write atomically, skip bad/dark frames
     while (true) {
-      await page.screenshot({ 
-        path: process.argv[2],
+      const buffer = await page.screenshot({
         fullPage: false,
         omitBackground: false,
         type: 'png',
         scale: 'device'
       });
+      if (buffer && buffer.length >= MIN_FRAME_BYTES) {
+        writeScreenshotAtomically(buffer, outputPath);
+      }
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
-
   } catch (error) {
     console.error('Screenshot failed:', error);
     process.exit(1);
@@ -71,4 +84,4 @@ async function takeScreenshot() {
   }
 }
 
-takeScreenshot().catch(console.error); 
+takeScreenshot().catch(console.error);

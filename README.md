@@ -2,7 +2,7 @@
 
 **AC4A (Access Control for Agents)** is a comprehensive framework that provides fine-grained access control for Large Language Model (LLM) agents. It enables users to define and enforce precise permissions over what data and capabilities agents can access, addressing the critical security challenge of agent autonomy.
 
-📄 [AC4A Technical Paper](AC4A.pdf) 
+📄 [AC4A Technical Paper](https://arxiv.org/abs/2603.20933v1)
 
 ## 🎯 Problem Statement
 

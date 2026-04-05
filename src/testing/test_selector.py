@@ -157,7 +157,8 @@ def _build_result(selected: List[Dict[str, Any]]) -> Dict[str, Any]:
     return {
         "selected": selected,
         "predicted_coverage": {
-            "branches_covered": sorted(all_predicted, key=lambda b: int(b[1:])),
+            # Same keys as PermissionCoverageTracker.get_cumulative_report / frontend CoverageReport
+            "branches_hit": sorted(all_predicted, key=lambda b: int(b[1:])),
             "branches_missing": sorted(
                 set(ALL_BRANCH_IDS) - all_predicted, key=lambda b: int(b[1:])
             ),

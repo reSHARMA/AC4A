@@ -645,17 +645,20 @@ const TestingMode: React.FC = () => {
 const ALL_BRANCHES = Array.from({ length: 25 }, (_, i) => `B${i + 1}`)
 
 const CoverageBar: React.FC<{ report: CoverageReport }> = ({ report }) => {
-  const hitSet = new Set(report.branches_hit)
+  const hits = report.branches_hit ?? []
+  const pct = report.branch_coverage_pct ?? 0
+  const total = report.total_branches ?? hits.length
+  const hitSet = new Set(hits)
   return (
     <VStack align="stretch" spacing={2}>
       <Progress
-        value={report.branch_coverage_pct}
-        colorScheme={report.branch_coverage_pct > 75 ? 'green' : report.branch_coverage_pct > 40 ? 'yellow' : 'red'}
+        value={pct}
+        colorScheme={pct > 75 ? 'green' : pct > 40 ? 'yellow' : 'red'}
         size="sm"
         borderRadius="md"
       />
       <Text fontSize="xs" color="gray.600">
-        {report.branches_hit.length}/{report.total_branches} branches ({report.branch_coverage_pct}%)
+        {hits.length}/{total} branches ({pct}%)
       </Text>
       <SimpleGrid columns={{ base: 5, md: 13 }} spacing={1}>
         {ALL_BRANCHES.map(b => (

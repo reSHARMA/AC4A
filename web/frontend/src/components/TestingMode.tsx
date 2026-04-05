@@ -115,6 +115,7 @@ const traceRoleColor: Record<string, string> = {
   warning: 'orange.600',
   tool_call: 'cyan.600',
   tool_result: 'gray.500',
+  screenshot: 'pink.500',
 }
 
 // -----------------------------------------------------------------------
@@ -590,50 +591,83 @@ const TestingMode: React.FC = () => {
             </Text>
           ) : (
             <VStack align="stretch" spacing={2}>
-              {traces.map((t, i) => (
-                <Box
-                  key={i}
-                  p={2}
-                  bg={
-                    t.role === 'error' ? 'red.50'
-                      : t.role === 'success' ? 'green.50'
-                        : t.role === 'tool_call' ? 'cyan.50'
-                          : t.role === 'tool_result' ? 'gray.50'
-                            : 'white'
-                  }
-                  borderRadius="md"
-                  borderLeft="3px solid"
-                  borderColor={traceRoleColor[t.role] || 'gray.300'}
-                >
-                  <HStack spacing={2} mb={1}>
-                    <Badge
-                      fontSize="10px"
-                      colorScheme={
-                        t.role === 'error' ? 'red'
-                          : t.role === 'success' ? 'green'
-                            : t.role === 'agent' ? 'purple'
-                              : t.role === 'user' ? 'teal'
-                                : t.role === 'warning' ? 'orange'
-                                  : t.role === 'tool_call' ? 'cyan'
-                                    : t.role === 'tool_result' ? 'gray'
-                                      : 'blue'
-                      }
+              {traces.map((t, i) => {
+                if (t.role === 'screenshot') {
+                  const src = t.content.startsWith('data:')
+                    ? t.content
+                    : `data:image/png;base64,${t.content}`
+                  return (
+                    <Box
+                      key={i}
+                      p={2}
+                      bg="white"
+                      borderRadius="md"
+                      borderLeft="3px solid"
+                      borderColor="pink.400"
                     >
-                      {t.role === 'tool_call' ? 'tool call' : t.role === 'tool_result' ? 'tool result' : t.role}
-                    </Badge>
-                    <Code fontSize="10px" color="gray.400">{t.test_id}</Code>
-                  </HStack>
-                  <Text
-                    fontSize="xs"
-                    whiteSpace="pre-wrap"
-                    dangerouslySetInnerHTML={{
-                      __html: t.content
-                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                        .replace(/`(.*?)`/g, '<code style="background:#eee;padding:0 3px;border-radius:3px">$1</code>')
-                    }}
-                  />
-                </Box>
-              ))}
+                      <HStack spacing={2} mb={1}>
+                        <Badge fontSize="10px" colorScheme="pink">screenshot</Badge>
+                        <Code fontSize="10px" color="gray.400">{t.test_id}</Code>
+                      </HStack>
+                      <Box
+                        as="img"
+                        src={src}
+                        alt="Browser screenshot"
+                        w="100%"
+                        borderRadius="sm"
+                        border="1px solid"
+                        borderColor="gray.200"
+                        cursor="pointer"
+                        onClick={() => window.open(src, '_blank')}
+                      />
+                    </Box>
+                  )
+                }
+                return (
+                  <Box
+                    key={i}
+                    p={2}
+                    bg={
+                      t.role === 'error' ? 'red.50'
+                        : t.role === 'success' ? 'green.50'
+                          : t.role === 'tool_call' ? 'cyan.50'
+                            : t.role === 'tool_result' ? 'gray.50'
+                              : 'white'
+                    }
+                    borderRadius="md"
+                    borderLeft="3px solid"
+                    borderColor={traceRoleColor[t.role] || 'gray.300'}
+                  >
+                    <HStack spacing={2} mb={1}>
+                      <Badge
+                        fontSize="10px"
+                        colorScheme={
+                          t.role === 'error' ? 'red'
+                            : t.role === 'success' ? 'green'
+                              : t.role === 'agent' ? 'purple'
+                                : t.role === 'user' ? 'teal'
+                                  : t.role === 'warning' ? 'orange'
+                                    : t.role === 'tool_call' ? 'cyan'
+                                      : t.role === 'tool_result' ? 'gray'
+                                        : 'blue'
+                        }
+                      >
+                        {t.role === 'tool_call' ? 'tool call' : t.role === 'tool_result' ? 'tool result' : t.role}
+                      </Badge>
+                      <Code fontSize="10px" color="gray.400">{t.test_id}</Code>
+                    </HStack>
+                    <Text
+                      fontSize="xs"
+                      whiteSpace="pre-wrap"
+                      dangerouslySetInnerHTML={{
+                        __html: t.content
+                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                          .replace(/`(.*?)`/g, '<code style="background:#eee;padding:0 3px;border-radius:3px">$1</code>')
+                      }}
+                    />
+                  </Box>
+                )
+              })}
               <div ref={traceEndRef} />
             </VStack>
           )}

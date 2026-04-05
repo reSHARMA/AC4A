@@ -51,20 +51,24 @@ def check_cdp_reachable():
 
 
 def get_active_tab():
-    """Get the active Chrome tab using DevTools Protocol"""
+    """Get the active (most-recently-focused) Chrome tab via CDP.
+
+    Chrome's ``/json`` endpoint returns tabs ordered by activation time
+    (most recent first).  We pick the first ``page``-type entry that
+    isn't a DevTools page — this naturally follows tab switches and
+    new-tab creation.
+    """
     try:
         response = requests.get(f"{CDP_BASE_URL}/json", timeout=5)
         tabs = response.json()
-        
-        # Find the first tab that's not a DevTools tab
+
         for tab in tabs:
             if tab.get('type') == 'page' and not tab.get('url', '').startswith('devtools://'):
                 return tab
-        
-        # If no regular tab found, return the first available tab
+
         if tabs:
             return tabs[0]
-        
+
         return None
     except Exception as e:
         logger.error(f"Error getting active tab: {str(e)}")

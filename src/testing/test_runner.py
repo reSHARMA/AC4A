@@ -7,11 +7,17 @@ instructions, verify the agent is blocked (up to max_retries attempts).
 
 Every significant step is emitted as a ``testing_trace`` SocketIO event so
 the frontend can display a live message trace.
+
+For *web* (browser) tests the runner drives the browser agent
+(``process_browser_message``) and captures a screenshot after every
+interaction step, streaming it to the trace panel.
 """
 
+import base64
 import json
 import logging
 import os
+import time
 from copy import deepcopy
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
@@ -356,9 +362,7 @@ class TestRunner:
         task = test.get("task_with_permission", "")
         if task and allowed:
             self._trace(test_id, "user", f"Task: {task}")
-            agent_resp = self._invoke_agent(task, test_id, "web")
-            if agent_resp:
-                self._trace(test_id, "agent", agent_resp)
+            self._invoke_browser_agent(task, test_id, max_steps=5)
 
         return allowed
 
@@ -406,16 +410,18 @@ class TestRunner:
 
         task = test.get("task_without_permission", test.get("task_with_permission", ""))
         if task:
-            self._trace(test_id, "user", f"Task (without permission): {task}")
             if not denied:
-                agent_resp = self._invoke_agent(
-                    f"{_WORKAROUND_SYSTEM}\n\nTask: {task}", test_id, "web"
+                browser_task = (
+                    f"{_WORKAROUND_PHASE_B}\n\nTask: {task}"
                 )
             else:
-                agent_resp = self._invoke_agent(task, test_id, "web")
-            if agent_resp:
-                self._trace(test_id, "agent", agent_resp)
-                return denied, agent_resp, cov_data
+                browser_task = task
+
+            responses = self._invoke_browser_agent(browser_task, test_id, max_steps=5)
+            combined = "\n".join(responses) if responses else ""
+
+            if combined:
+                return denied, combined, cov_data
 
         response = f"Web permission check returned: allowed={allowed}"
         return denied, response, cov_data
@@ -460,6 +466,128 @@ class TestRunner:
             return f"(Agent error: {exc})"
 
         return "\n".join(collected_text) if collected_text else None
+
+    # ------------------------------------------------------------------
+    # Browser agent invocation (web / computer-use tests)
+    # ------------------------------------------------------------------
+
+    def _capture_screenshot(self) -> Optional[str]:
+        """Fetch the latest screenshot from the screenshot server and return
+        it as a base64-encoded PNG string, or *None* on failure."""
+        try:
+            from web.agent.browser_agent_core import get_latest_screenshot
+        except ImportError:
+            return None
+        try:
+            raw = get_latest_screenshot(compress=True)
+            if raw:
+                return base64.b64encode(raw).decode("utf-8")
+        except Exception:
+            logger.debug("Screenshot capture failed", exc_info=True)
+        return None
+
+    # Browser agent stop words — when the agent emits one of these (case-
+    # insensitive substring match) the interaction loop ends.
+    _BROWSER_STOP_WORDS = ("terminate", "session ended")
+
+    # When the agent asks for permission or a question there is no human to
+    # respond, so we also stop.
+    _BROWSER_NON_ACTION_MARKERS = ("permission", "question")
+
+    def _invoke_browser_agent(
+        self, task: str, test_id: str, max_steps: int = 10
+    ) -> List[str]:
+        """Drive the browser agent in a loop until it finishes or hits *max_steps*.
+
+        The loop mirrors the interactive browser chat: after each pyautogui
+        action the agent is sent an empty follow-up so that
+        ``process_with_computer_use`` takes a **fresh screenshot** of the
+        updated page and feeds it back to the LLM for the next decision.
+
+        Each turn:
+          1. Send the message to ``process_browser_message``
+             (internally: screenshot → LLM → pyautogui script → execute)
+          2. Emit the assistant response as a trace message
+          3. Capture the post-action screenshot and emit it as a trace
+          4. Check for stop conditions (agent says "done", asks for
+             "permission"/"question", error, or max steps reached)
+
+        Returns a list of assistant response strings.
+        """
+        handler = self._browser_message_handler
+        if handler is None:
+            self._trace(test_id, "warning", "Browser message handler not available")
+            return []
+
+        try:
+            from web.agent.browser_agent_core import (
+                clear_browser_chat_history,
+                handle_termination,
+            )
+        except ImportError:
+            self._trace(test_id, "warning", "browser_agent_core not importable")
+            return []
+
+        clear_browser_chat_history()
+
+        initial_shot = self._capture_screenshot()
+        if initial_shot:
+            self._trace(test_id, "screenshot", initial_shot)
+
+        collected: List[str] = []
+        current_message = task
+
+        for step in range(1, max_steps + 1):
+            self._trace(test_id, "system",
+                        f"Browser step {step}/{max_steps}")
+            if step == 1:
+                self._trace(test_id, "user", current_message)
+
+            try:
+                response = handler(current_message)
+            except Exception as exc:
+                self._trace(test_id, "error", f"Browser agent error: {exc}")
+                break
+
+            content = response.get("content", "") if isinstance(response, dict) else str(response)
+            role = response.get("role", "assistant") if isinstance(response, dict) else "assistant"
+
+            if role == "system" and response.get("type") == "error":
+                self._trace(test_id, "error", content)
+                break
+
+            self._trace(test_id, "agent", f"**Browser agent**: {content}")
+            collected.append(content)
+
+            time.sleep(1.5)
+
+            screenshot_b64 = self._capture_screenshot()
+            if screenshot_b64:
+                self._trace(test_id, "screenshot", screenshot_b64)
+
+            content_lower = content.strip().lower()
+
+            if any(sw in content_lower for sw in self._BROWSER_STOP_WORDS):
+                self._trace(test_id, "system", "Browser agent signalled completion")
+                break
+
+            if any(m in content_lower for m in self._BROWSER_NON_ACTION_MARKERS):
+                self._trace(test_id, "warning",
+                            "Browser agent requested human input (permission/question) "
+                            "— stopping automated loop")
+                break
+
+            # Send empty follow-up: process_with_computer_use will take a
+            # new screenshot, see the result of the last action, and decide
+            # the next step.
+            current_message = ""
+
+        try:
+            handle_termination()
+        except Exception:
+            pass
+
+        return collected
 
     # ------------------------------------------------------------------
     # Permission manipulation

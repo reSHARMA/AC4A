@@ -532,6 +532,7 @@ class TestRunner:
                 handle_termination,
                 set_browser_permission_mode,
                 reset_browser_permission_mode,
+                _run_pyautogui_script,
             )
         except ImportError:
             self._trace(test_id, "warning", "browser_agent_core not importable")
@@ -539,6 +540,24 @@ class TestRunner:
 
         set_browser_permission_mode("test")
         clear_browser_chat_history()
+
+        # Reset browser to a clean state by navigating the current tab to
+        # about:blank.  We deliberately do NOT close tabs — closing the last
+        # tab kills the Chrome process.  The task itself will navigate to the
+        # target URL so leftover tabs are harmless.
+        self._trace(test_id, "system", "Resetting browser to blank state...")
+        _run_pyautogui_script(
+            "import pyautogui, time\n"
+            "pyautogui.PAUSE = 0.3\n"
+            "pyautogui.hotkey('ctrl', 'l')\n"
+            "time.sleep(0.3)\n"
+            "pyautogui.hotkey('ctrl', 'a')\n"
+            "pyautogui.write('https://www.google.com', interval=0.02)\n"
+            "pyautogui.press('enter')\n"
+            "time.sleep(0.5)\n",
+            timeout_seconds=10,
+        )
+        time.sleep(1)
 
         initial_shot = self._capture_screenshot()
         if initial_shot:

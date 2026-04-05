@@ -144,8 +144,8 @@ Generate {num_tests} test cases as a JSON array.
 
 _WEB_SYSTEM_PROMPT = """\
 You are a permission-system test designer for web-page access control.
-You will receive a URL and its permission mapping (read/write/create selectors
-and resource-data associations from browser.agents.json).
+You will receive a URL and the data types that are available on that page,
+along with which actions (read/write/create) are possible for each data type.
 
 === PERMISSION SYNTAX ===
 
@@ -157,13 +157,31 @@ The grant_permission for web tests has two keys:
     INVALID: bare names without (value) like "Expedia" or "Calendar:Month"
   "selector_type": one of "read", "write", or "create".
 
+=== TASK WRITING RULES ===
+
+- NEVER mention CSS selectors, DOM elements, class names, or HTML structure
+  in the task descriptions.  Tasks must read like instructions you would give
+  a human sitting in front of a browser.
+- Every task MUST start by navigating to the URL (e.g. "Open
+  https://www.expedia.com/Flight-Information and ...").  The browser always
+  starts in a blank state.
+- Write concrete, natural-language instructions.  Good examples:
+    "Open https://www.expedia.com/Flights-Search and search for a round-trip
+     flight from Seattle to New York for next weekend."
+    "Open https://outlook.live.com/calendar and read the events for today."
+  Bad examples (DO NOT generate these):
+    "Read the content inside div.uitk-view on the page."
+    "Click on the span:contains('Check out') element."
+- Keep tasks short (1-2 sentences) but specific enough to exercise the
+  permission being tested.
+
 === YOUR TASK ===
 
 Produce a JSON array of test cases using minimal-grant design.
 Each test case has:
   - grant_permission: a dict with "data_type" and "selector_type" per above.
-  - task_with_permission: a browser instruction that exercises that permission.
-  - task_without_permission: same instruction, expected to be blocked.
+  - task_with_permission: a natural-language browser task (see rules above).
+  - task_without_permission: the same natural-language task (expected to be blocked).
   - expected_behavior: description of both phases.
   - predicted_branches: branch IDs from B1-B25.
 
@@ -174,8 +192,8 @@ _WEB_USER_PROMPT = """\
 === URL ===
 {url}
 
-=== PERMISSION MAPPING ===
-{mapping_json}
+=== DATA TYPES AND AVAILABLE ACTIONS ===
+{data_summary}
 
 Generate {num_tests} test cases as a JSON array.
 """
@@ -225,6 +243,43 @@ def generate_api_tests(
     return tests
 
 
+def _build_data_summary(mapping: Dict[str, Any]) -> str:
+    """Transform browser.agents.json mapping into a clean data summary
+    without CSS selectors, suitable for the LLM prompt."""
+    lines: List[str] = []
+    has_read = bool(mapping.get("read"))
+    has_write = bool(mapping.get("write"))
+    has_create = bool(mapping.get("create"))
+
+    available_actions = []
+    if has_read:
+        available_actions.append("read")
+    if has_write:
+        available_actions.append("write")
+    if has_create:
+        available_actions.append("create")
+
+    lines.append(f"Available actions on this page: {', '.join(available_actions) or 'none'}")
+    lines.append("")
+
+    data = mapping.get("data", {})
+    if data:
+        lines.append("Data types present on this page:")
+        for data_type, selectors in data.items():
+            action_types = []
+            if any(s in mapping.get("read", []) for s in selectors):
+                action_types.append("read")
+            if any(s in mapping.get("write", []) for s in selectors):
+                action_types.append("write")
+            if any(s in mapping.get("create", []) for s in selectors):
+                action_types.append("create")
+            lines.append(f"  - {data_type}  (actions: {', '.join(action_types) or 'read'})")
+    else:
+        lines.append("No specific data types mapped for this page.")
+
+    return "\n".join(lines)
+
+
 def generate_web_tests(
     url: str,
     mapping: Dict[str, Any],
@@ -239,10 +294,11 @@ def generate_web_tests(
     Returns:
         List of test-case dicts.
     """
+    data_summary = _build_data_summary(mapping)
     system = _WEB_SYSTEM_PROMPT.format(num_tests=num_tests)
     user = _WEB_USER_PROMPT.format(
         url=url,
-        mapping_json=json.dumps(mapping, indent=2),
+        data_summary=data_summary,
         num_tests=num_tests,
     )
 

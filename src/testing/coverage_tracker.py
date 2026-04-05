@@ -1,122 +1,171 @@
-"""Permission-function branch coverage tracker.
+"""Coverage trackers for the permission testing system.
 
-Provides both *runtime* coverage (using Python's ``coverage`` library) and a
-*static predictor* that estimates which branches a test case will hit without
-executing it, so the test selector can maximise coverage before any tests run.
+Two distinct coverage models:
 
-Branch IDs (B1-B25) map to specific decision points in the permission
-checking code — see the plan for the full branch map.
+1. **BrowserMappingCoverageTracker** — for web/browser tests.
+   Tracks which ``(data_type, selector_type)`` entries from
+   ``browser.agents.json`` were exercised during tests.  This is a
+   *data-coverage* metric (not code-coverage).
+
+2. **AnnotationCoverageTracker** — for API tests.
+   Uses Python's ``coverage`` library to measure line-level coverage of
+   the annotation class file (the ``generate_attributes`` / ``get_hierarchy``
+   / ``get_access_level`` mapping functions).
+
+Both expose the same report shape so the frontend can render them uniformly:
+``branches_hit`` / ``branches_missing`` / ``branch_coverage_pct`` /
+``total_branches``.  For browser tests, each "branch" is a
+``data_type::selector_type`` entry.  For API tests, each "branch" is a
+line in the annotation file that was executed.
 """
 
+import json
 import logging
 import os
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Branch catalogue — the canonical set of branch IDs we track
-# ---------------------------------------------------------------------------
 
-BRANCH_CATALOG: Dict[str, str] = {
-    # is_action_allowed
-    "B1": "system disabled -> True",
-    "B2": "OR over attributes, first match -> True",
-    "B3": "no match -> denied",
-    # _check_single_attribute
-    "B4": "needs emptied by a rule -> allowed",
-    "B5": "needs remain after all rules -> denied",
-    # check_subsumption
-    "B6": "rule_value == '?' -> skip attribute",
-    "B7": "expiry check (datetime comparison)",
-    "B8": "all attributes satisfied -> fully covers",
-    "B9": "partial coverage -> still needed",
-    "B10": "all have remaining values -> build new needs",
-    # validate_attribute
-    "B11": "no rule value -> return attribute",
-    "B12": "resource_difference callable -> delegate",
-    "B13": "tree comparison, sub_result >= 0 -> covers",
-    "B14": "tree comparison, sub_result < 0 -> no match",
-    # build_tree_from_values
-    "B15": "has_special_value path",
-    "B16": "non-special path (all wildcards/defaults)",
-    "B17": "parent_has_special -> fill with '?'",
-    "B18": "node_value is None -> fill with '?'",
-    # check_subtree
-    "B19": "key mismatch -> recurse into children",
-    "B20": "value1 == value2 -> exact match",
-    "B21": "value2 == '?' (request wildcard) -> match",
-    "B22": "value1 == '?' (rule wildcard) -> match",
-    "B23": "value mismatch -> -1",
-    "B24": "children comparison (recursive)",
-    "B25": "no corresponding child in node2 -> continue",
-}
+# =========================================================================
+# 1. Browser Mapping Coverage
+# =========================================================================
 
-ALL_BRANCH_IDS: List[str] = sorted(BRANCH_CATALOG.keys(), key=lambda b: int(b[1:]))
+class BrowserMappingCoverageTracker:
+    """Track which ``(data_type, selector_type)`` entries from
+    ``browser.agents.json`` were exercised during browser tests.
 
-# ---------------------------------------------------------------------------
-# Runtime coverage using Python's `coverage` library
-# ---------------------------------------------------------------------------
+    Each entry in the config's ``data`` dict, combined with whether its
+    selectors appear in ``read`` / ``write`` / ``create``, produces one
+    coverable unit.  The "branch ID" for display is
+    ``"data_type::selector_type"`` (e.g. ``"Expedia:Flight(?)::read"``).
+    """
 
-_POLICY_SYSTEM_FILE = os.path.join("src", "policy_system", "policy_system.py")
-_RESOURCE_TREE_FILE = os.path.join("src", "utils", "resource_type_tree.py")
+    def __init__(self, url_pattern: str = ""):
+        self._universe: Set[str] = set()
+        self._hits: Set[str] = set()
+        self._url_pattern = url_pattern
+        self._load_universe()
 
-# Line ranges for each branch (approximate — adjusted to the actual source).
-# We store sets of line numbers that, when executed, indicate a branch was hit.
-# These are derived from reading the source files.
-_BRANCH_LINE_MAP: Dict[str, Dict[str, List[int]]] = {
-    "B1":  {_POLICY_SYSTEM_FILE: [304, 305, 306]},
-    "B2":  {_POLICY_SYSTEM_FILE: [317, 318, 319]},
-    "B3":  {_POLICY_SYSTEM_FILE: [321, 322]},
-    "B4":  {_POLICY_SYSTEM_FILE: [347, 348, 352]},
-    "B5":  {_POLICY_SYSTEM_FILE: [353, 354, 358]},
-    "B6":  {_POLICY_SYSTEM_FILE: [380, 381]},
-    "B7":  {_POLICY_SYSTEM_FILE: [374, 376, 377]},
-    "B8":  {_POLICY_SYSTEM_FILE: [395, 396, 397]},
-    "B9":  {_POLICY_SYSTEM_FILE: [398, 399, 400]},
-    "B10": {_POLICY_SYSTEM_FILE: [403, 404, 405, 408]},
-    "B11": {_POLICY_SYSTEM_FILE: [421, 422, 423]},
-    "B12": {_POLICY_SYSTEM_FILE: [427, 428, 429]},
-    "B13": {_POLICY_SYSTEM_FILE: [456, 460, 461]},
-    "B14": {_POLICY_SYSTEM_FILE: [456, 462]},
-    "B15": {_POLICY_SYSTEM_FILE: [481, 483]},
-    "B16": {_POLICY_SYSTEM_FILE: [534, 536]},
-    "B17": {_POLICY_SYSTEM_FILE: [496, 497, 498]},
-    "B18": {_POLICY_SYSTEM_FILE: [514, 515, 516]},
-    "B19": {_RESOURCE_TREE_FILE: [49, 50, 52, 53, 54]},
-    "B20": {_RESOURCE_TREE_FILE: [59, 60, 61]},
-    "B21": {_RESOURCE_TREE_FILE: [63, 64, 65]},
-    "B22": {_RESOURCE_TREE_FILE: [67, 68, 69]},
-    "B23": {_RESOURCE_TREE_FILE: [72, 73, 74]},
-    "B24": {_RESOURCE_TREE_FILE: [77, 78, 82, 83, 86]},
-    "B25": {_RESOURCE_TREE_FILE: [88, 89, 90]},
-}
+    def _load_universe(self):
+        """Build the set of all coverable entries from browser.agents.json."""
+        config_path = os.path.join(
+            os.path.dirname(__file__), "..", "..", "web", "agent", "agents",
+            "browser.agents.json",
+        )
+        config_path = os.path.normpath(config_path)
+        if not os.path.exists(config_path):
+            logger.warning("browser.agents.json not found at %s", config_path)
+            return
+
+        try:
+            with open(config_path) as f:
+                config = json.load(f)
+        except Exception as exc:
+            logger.warning("Failed to load browser.agents.json: %s", exc)
+            return
+
+        import re
+        for url, mapping in config.items():
+            if self._url_pattern:
+                pattern = self._url_pattern.replace("*", ".*")
+                if not re.match(pattern, url):
+                    continue
+
+            read_sels = set(mapping.get("read", []))
+            write_sels = set(mapping.get("write", []))
+            create_sels = set(mapping.get("create", []))
+
+            for data_type, selectors in mapping.get("data", {}).items():
+                for sel in selectors:
+                    if sel in read_sels:
+                        self._universe.add(f"{data_type}::read")
+                    if sel in write_sels:
+                        self._universe.add(f"{data_type}::write")
+                    if sel in create_sels:
+                        self._universe.add(f"{data_type}::create")
+
+        logger.info("Browser mapping universe: %d entries for pattern '%s'",
+                     len(self._universe), self._url_pattern)
+
+    def record_hit(self, data_type: str, selector_type: str):
+        """Mark a (data_type, selector_type) pair as exercised."""
+        key = f"{data_type}::{selector_type.lower()}"
+        self._hits.add(key)
+
+    def get_report(self) -> Dict[str, Any]:
+        total = len(self._universe)
+        hit = self._hits & self._universe
+        missing = self._universe - hit
+        return {
+            "coverage_type": "browser_mapping",
+            "branches_hit": sorted(hit),
+            "branches_missing": sorted(missing),
+            "branch_coverage_pct": round(
+                100 * len(hit) / max(total, 1), 1
+            ),
+            "total_branches": total,
+        }
+
+    def get_cumulative_report(self) -> Dict[str, Any]:
+        return self.get_report()
+
+    def reset(self):
+        self._hits.clear()
+
+    @staticmethod
+    def empty_report() -> Dict[str, Any]:
+        return {
+            "coverage_type": "browser_mapping",
+            "branches_hit": [],
+            "branches_missing": [],
+            "branch_coverage_pct": 0.0,
+            "total_branches": 0,
+        }
 
 
-class PermissionCoverageTracker:
-    """Wraps Python's ``coverage`` library to measure permission-function
-    branch coverage on a per-test and cumulative basis."""
+# =========================================================================
+# 2. Annotation (API) Coverage
+# =========================================================================
 
-    def __init__(self):
-        self._cumulative_lines: Dict[str, Set[int]] = {}
-        self._cumulative_branches_hit: Set[str] = set()
+class AnnotationCoverageTracker:
+    """Measure line-level coverage of an API annotation class file.
+
+    Instead of the old B1-B25 branch IDs mapped to policy_system.py, this
+    instruments the *annotation file* (e.g. ``calendar_agent.py``) which
+    contains ``generate_attributes``, ``get_hierarchy``, ``get_access_level``
+    — the mapping from API calls to resource specs.
+
+    "Branches" reported are individual source lines in the annotation file
+    that were executed, labelled as ``L<line_number>``.
+    """
+
+    def __init__(self, annotation_file: str):
+        """
+        Args:
+            annotation_file: relative path to the annotation source file,
+                e.g. ``"web/agent/agents/calendar_agent.py"``
+        """
+        self._annotation_file = annotation_file
+        self._abs_path = os.path.abspath(
+            os.path.join(os.getcwd(), annotation_file)
+        )
+        self._cumulative_executed: Set[int] = set()
+        self._cumulative_missing: Set[int] = set()
+        self._total_lines: int = 0
 
     def run_with_coverage(
         self, func: Callable, *args: Any, **kwargs: Any
     ) -> Tuple[Any, Dict[str, Any]]:
-        """Execute *func* while collecting line-level coverage, then map
-        executed lines back to our branch IDs."""
+        """Execute *func* while collecting line coverage of the annotation file."""
         try:
             import coverage as cov_lib
         except ImportError:
-            logger.warning("coverage library not installed — running without instrumentation")
+            logger.warning("coverage library not installed")
             result = func(*args, **kwargs)
             return result, self._empty_report()
 
-        cov = cov_lib.Coverage(branch=True, include=[
-            os.path.abspath(os.path.join(os.getcwd(), _POLICY_SYSTEM_FILE)),
-            os.path.abspath(os.path.join(os.getcwd(), _RESOURCE_TREE_FILE)),
-        ])
+        cov = cov_lib.Coverage(branch=True, include=[self._abs_path])
         cov.start()
         try:
             result = func(*args, **kwargs)
@@ -127,154 +176,138 @@ class PermissionCoverageTracker:
         report = self._extract(cov)
         return result, report
 
-    # ------------------------------------------------------------------
-
     def _extract(self, cov) -> Dict[str, Any]:
-        """Map raw coverage data to our branch catalogue."""
-        executed_per_file: Dict[str, Set[int]] = {}
-        line_cov_data: Dict[str, Dict[str, Any]] = {}
+        executed: Set[int] = set()
+        missing: Set[int] = set()
 
         for measured_file in cov.get_data().measured_files():
+            if os.path.abspath(measured_file) != self._abs_path:
+                continue
             try:
                 analysis = cov.analysis2(measured_file)
-                # analysis2 returns (filename, executed, excluded, missing, formatted_missing)
                 executed = set(analysis[1])
                 missing = set(analysis[3])
             except Exception:
                 continue
 
-            # Normalise path for matching
-            for ref_path in [_POLICY_SYSTEM_FILE, _RESOURCE_TREE_FILE]:
-                abs_ref = os.path.abspath(os.path.join(os.getcwd(), ref_path))
-                if os.path.abspath(measured_file) == abs_ref:
-                    executed_per_file[ref_path] = executed
-                    total = len(executed) + len(missing)
-                    line_cov_data[ref_path] = {
-                        "executed_lines": sorted(executed),
-                        "missing_lines": sorted(missing),
-                        "line_coverage_pct": round(100 * len(executed) / max(total, 1), 1),
-                    }
+        self._cumulative_executed |= executed
+        self._cumulative_missing = (
+            (self._cumulative_missing | missing) - self._cumulative_executed
+        )
+        total = len(executed) + len(missing)
+        if total > self._total_lines:
+            self._total_lines = total
 
-        branches_hit = self._lines_to_branches(executed_per_file)
-        self._cumulative_branches_hit |= branches_hit
-
-        for fpath, lines in executed_per_file.items():
-            self._cumulative_lines.setdefault(fpath, set())
-            self._cumulative_lines[fpath] |= lines
-
+        pct = round(100 * len(executed) / max(total, 1), 1)
         return {
-            "branches_hit": sorted(branches_hit, key=lambda b: int(b[1:])),
-            "branch_coverage_pct": round(
-                100 * len(branches_hit) / max(len(ALL_BRANCH_IDS), 1), 1
-            ),
-            "line_data": line_cov_data,
+            "coverage_type": "annotation",
+            "annotation_file": self._annotation_file,
+            "branches_hit": [f"L{ln}" for ln in sorted(executed)],
+            "branches_missing": [f"L{ln}" for ln in sorted(missing)],
+            "branch_coverage_pct": pct,
+            "total_branches": total,
+            "executed_count": len(executed),
+            "missing_count": len(missing),
         }
 
-    def _lines_to_branches(
-        self, executed_per_file: Dict[str, Set[int]]
-    ) -> Set[str]:
-        """Determine which branch IDs were hit based on executed lines."""
-        hit: Set[str] = set()
-        for branch_id, file_lines in _BRANCH_LINE_MAP.items():
-            for fpath, lines in file_lines.items():
-                executed = executed_per_file.get(fpath, set())
-                if any(ln in executed for ln in lines):
-                    hit.add(branch_id)
-                    break
-        return hit
-
     def get_cumulative_report(self) -> Dict[str, Any]:
-        """Return aggregate coverage across all tests run so far."""
+        total = self._total_lines or (
+            len(self._cumulative_executed) + len(self._cumulative_missing)
+        )
+        executed = len(self._cumulative_executed)
         return {
-            "branches_hit": sorted(
-                self._cumulative_branches_hit, key=lambda b: int(b[1:])
-            ),
-            "branches_missing": sorted(
-                set(ALL_BRANCH_IDS) - self._cumulative_branches_hit,
-                key=lambda b: int(b[1:]),
-            ),
+            "coverage_type": "annotation",
+            "annotation_file": self._annotation_file,
+            "branches_hit": [f"L{ln}" for ln in sorted(self._cumulative_executed)],
+            "branches_missing": [f"L{ln}" for ln in sorted(self._cumulative_missing)],
             "branch_coverage_pct": round(
-                100 * len(self._cumulative_branches_hit) / max(len(ALL_BRANCH_IDS), 1),
-                1,
+                100 * executed / max(total, 1), 1
             ),
-            "total_branches": len(ALL_BRANCH_IDS),
+            "total_branches": total,
+            "executed_count": executed,
+            "missing_count": len(self._cumulative_missing),
         }
 
     def reset(self):
-        self._cumulative_lines.clear()
-        self._cumulative_branches_hit.clear()
+        self._cumulative_executed.clear()
+        self._cumulative_missing.clear()
+        self._total_lines = 0
 
-    @staticmethod
-    def _empty_report() -> Dict[str, Any]:
+    def _empty_report(self) -> Dict[str, Any]:
         return {
+            "coverage_type": "annotation",
+            "annotation_file": self._annotation_file,
             "branches_hit": [],
+            "branches_missing": [],
             "branch_coverage_pct": 0.0,
-            "line_data": {},
+            "total_branches": 0,
+            "executed_count": 0,
+            "missing_count": 0,
         }
 
 
-# ---------------------------------------------------------------------------
-# Static branch predictor — estimates coverage *before* running a test
-# ---------------------------------------------------------------------------
+# =========================================================================
+# Static predictors for test selection
+# =========================================================================
 
+def predict_coverage_units(test_case: Dict[str, Any]) -> List[str]:
+    """Predict which coverage units a test will hit.
+
+    For web tests: returns ``["data_type::selector_type"]`` entries.
+    For API tests: returns a small set of heuristic labels derived from
+    the grant structure.
+    """
+    grant = test_case.get("grant_permission", {})
+    if not isinstance(grant, dict):
+        grant = {}
+
+    is_web = "data_type" in grant or "selector_type" in grant
+
+    if is_web:
+        data_type = grant.get("data_type", "")
+        selector_type = grant.get("selector_type", "read").lower()
+        if data_type:
+            return [f"{data_type}::{selector_type}"]
+        return []
+
+    spec = grant.get("resource_value_specification", "")
+    action = grant.get("action", "Read")
+    units: List[str] = []
+    if spec:
+        units.append(f"spec::{spec}")
+    if action:
+        units.append(f"action::{action}")
+    depth = spec.count("::")
+    units.append(f"depth::{depth}")
+    if "(?)" in spec:
+        units.append("wildcard::yes")
+    else:
+        units.append("wildcard::no")
+
+    llm_predicted = test_case.get("predicted_branches", [])
+    if isinstance(llm_predicted, list):
+        for b in llm_predicted:
+            units.append(str(b).strip())
+
+    return units
+
+
+# Keep old names importable for backward compatibility
 def branch_sort_key(branch_id: str) -> int:
-    """Sort B1..B25 safely (ignore malformed LLM output)."""
+    """Sort branch/coverage IDs safely."""
     b = str(branch_id).strip()
-    if len(b) >= 2 and b[0] == "B":
+    if b.startswith("B") and len(b) >= 2:
         try:
             return int(b[1:])
         except ValueError:
             return 0
-    return 0
+    if b.startswith("L") and len(b) >= 2:
+        try:
+            return int(b[1:])
+        except ValueError:
+            return 0
+    return hash(b) % 10000
 
 
-def predict_branches(test_case: Dict[str, Any]) -> List[str]:
-    """Estimate which branch IDs a test case will hit, based on its structure.
-
-    This is intentionally a heuristic — it cannot be exact without execution —
-    but it gives the test selector a useful signal for the set-cover algorithm.
-    """
-    predicted: Set[str] = set()
-    grant = test_case.get("grant_permission", {})
-    if not isinstance(grant, dict):
-        grant = {}
-    # API tests use resource_value_specification; web tests use data_type
-    spec = grant.get("resource_value_specification") or grant.get("data_type", "")
-    _ = grant.get("action") or grant.get("selector_type", "")
-
-    has_wildcard = "(?)" in spec
-    depth = spec.count("::")  # 0 = root-only, 1 = two levels, etc.
-
-    # Phase A (with permission) will exercise the "allowed" path
-    predicted.update({"B2", "B4", "B8", "B13"})
-
-    # Phase B (without permission) will exercise the "denied" path
-    predicted.update({"B3", "B5"})
-
-    # Tree building
-    if has_wildcard:
-        predicted.add("B16")  # non-special path
-        predicted.add("B22")  # rule-wildcard match
-    else:
-        predicted.add("B15")  # has_special_value path
-        predicted.add("B20")  # exact-value match
-
-    if depth >= 1:
-        predicted.add("B24")  # children comparison
-        predicted.add("B17")  # parent_has_special
-
-    if depth >= 2:
-        predicted.add("B18")  # node_value None fill
-
-    # Phase B denial means the tree won't match -> B14
-    predicted.add("B14")
-
-    # If there are already predicted_branches from the LLM, merge them
-    llm_predicted = test_case.get("predicted_branches", [])
-    if isinstance(llm_predicted, list):
-        for b in llm_predicted:
-            key = str(b).strip()
-            if key in BRANCH_CATALOG:
-                predicted.add(key)
-
-    return sorted(predicted, key=branch_sort_key)
+# Legacy alias
+predict_branches = predict_coverage_units

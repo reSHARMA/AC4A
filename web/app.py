@@ -936,6 +936,7 @@ def testing_run():
     with open(config_path) as f:
         config = json.load(f)
     max_retries = config.get('execution', {}).get('max_retries', 3)
+    app_config = config.get('applications', {}).get(app_name, {})
 
     runner = TestRunner(
         agent_manager.policy_system,
@@ -943,6 +944,7 @@ def testing_run():
         max_retries,
         socketio=socketio,
         browser_message_handler=process_browser_message,
+        app_config=app_config,
     )
     _test_runner_instance = runner
 
@@ -969,6 +971,7 @@ def handle_testing_run_single(data):
     with open(config_path) as f:
         config = json.load(f)
     max_retries = config.get('execution', {}).get('max_retries', 3)
+    app_config = config.get('applications', {}).get(test.get('app', ''), {})
 
     runner = TestRunner(
         agent_manager.policy_system,
@@ -976,6 +979,7 @@ def handle_testing_run_single(data):
         max_retries,
         socketio=socketio,
         browser_message_handler=process_browser_message,
+        app_config=app_config,
     )
     _test_runner_instance = runner
 
@@ -1015,6 +1019,7 @@ def handle_testing_run_batch(data):
     with open(config_path) as f:
         config = json.load(f)
     max_retries = config.get('execution', {}).get('max_retries', 3)
+    app_config = config.get('applications', {}).get(app_name, {})
 
     runner = TestRunner(
         agent_manager.policy_system,
@@ -1022,6 +1027,7 @@ def handle_testing_run_batch(data):
         max_retries,
         socketio=socketio,
         browser_message_handler=process_browser_message,
+        app_config=app_config,
     )
     _test_runner_instance = runner
 
@@ -1064,12 +1070,11 @@ def testing_coverage():
     """Get cumulative coverage report from the latest run."""
     global _test_runner_instance
     if _test_runner_instance is None:
-        from src.testing.coverage_tracker import ALL_BRANCH_IDS
         return jsonify({
             "branches_hit": [],
-            "branches_missing": ALL_BRANCH_IDS,
+            "branches_missing": [],
             "branch_coverage_pct": 0.0,
-            "total_branches": len(ALL_BRANCH_IDS),
+            "total_branches": 0,
         })
     return jsonify(_test_runner_instance.coverage.get_cumulative_report())
 

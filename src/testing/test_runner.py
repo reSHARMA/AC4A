@@ -22,7 +22,10 @@ from copy import deepcopy
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
-from src.testing.coverage_tracker import PermissionCoverageTracker
+from src.testing.coverage_tracker import (
+    AnnotationCoverageTracker,
+    BrowserMappingCoverageTracker,
+)
 from src.testing.test_store import save_test_results
 
 logger = logging.getLogger(__name__)
@@ -103,16 +106,35 @@ class TestRunner:
         max_retries: int = 3,
         socketio=None,
         browser_message_handler: Optional[Callable] = None,
+        app_config: Optional[Dict[str, Any]] = None,
     ):
         self.policy_system = policy_system
         self.agent_manager = agent_manager
         self.max_retries = max_retries
-        self.coverage = PermissionCoverageTracker()
         self._results: List[Dict[str, Any]] = []
         self._running = False
         self._current_test_id: Optional[str] = None
         self._socketio = socketio
         self._browser_message_handler = browser_message_handler
+
+        # Build the right coverage tracker based on application type
+        app_config = app_config or {}
+        app_type = app_config.get("type", "api")
+        if app_type == "web":
+            url_pattern = app_config.get("url_pattern", "")
+            self.coverage = BrowserMappingCoverageTracker(url_pattern)
+        else:
+            annotation_file = self._resolve_annotation_file(app_config)
+            self.coverage = AnnotationCoverageTracker(annotation_file)
+
+    @staticmethod
+    def _resolve_annotation_file(app_config: Dict[str, Any]) -> str:
+        """Turn an agent_module like 'web.agent.agents.calendar_agent' into a
+        relative file path like 'web/agent/agents/calendar_agent.py'."""
+        module = app_config.get("agent_module", "")
+        if module:
+            return module.replace(".", os.sep) + ".py"
+        return os.path.join("src", "policy_system", "policy_system.py")
 
     def _emit(self, event: str, data: Dict[str, Any]):
         """Emit a SocketIO event if a socketio instance is available."""
@@ -359,6 +381,9 @@ class TestRunner:
         self._trace(test_id, "agent",
                     f"Policy check → **{'ALLOWED' if allowed else 'DENIED'}**")
 
+        if isinstance(self.coverage, BrowserMappingCoverageTracker):
+            self.coverage.record_hit(data_type, selector_type)
+
         task = test.get("task_with_permission", "")
         if task and allowed:
             self._trace(test_id, "user", f"Task: {task}")
@@ -372,19 +397,32 @@ class TestRunner:
 
     def _phase_b_api(self, grant: Dict, task: str, test_id: str):
         attributes = self._build_attributes(grant)
-
-        def check():
-            return self.policy_system.is_action_allowed(attributes, False)
-
-        allowed, cov_data = self.coverage.run_with_coverage(check)
+        allowed = self.policy_system.is_action_allowed(attributes, False)
         denied = not allowed
         self._trace(test_id, "agent",
                     f"Policy check → **{'DENIED' if denied else 'ALLOWED'}**")
 
-        if task:
+        if task and isinstance(self.coverage, AnnotationCoverageTracker):
+            # Wrap the agent invocation in coverage so we capture
+            # generate_attributes / get_hierarchy / get_access_level hits
+            agent_resp_holder: List[Optional[str]] = [None]
+
+            def run_agent():
+                agent_resp_holder[0] = self._invoke_agent(task, test_id, "api")
+                return allowed
+
+            _, cov_data = self.coverage.run_with_coverage(run_agent)
+            if agent_resp_holder[0]:
+                return denied, agent_resp_holder[0], cov_data
+        elif task:
             agent_resp = self._invoke_agent(task, test_id, "api")
+            cov_data = (self.coverage.get_cumulative_report()
+                        if hasattr(self.coverage, "get_cumulative_report") else {})
             if agent_resp:
                 return denied, agent_resp, cov_data
+        else:
+            cov_data = (self.coverage.get_cumulative_report()
+                        if hasattr(self.coverage, "get_cumulative_report") else {})
 
         response = f"Permission check returned: allowed={allowed}"
         return denied, response, cov_data
@@ -400,13 +438,15 @@ class TestRunner:
             "action": action,
         }
 
-        def check():
-            return self.policy_system.is_action_allowed([policy], False)
-
-        allowed, cov_data = self.coverage.run_with_coverage(check)
+        allowed = self.policy_system.is_action_allowed([policy], False)
         denied = not allowed
         self._trace(test_id, "agent",
                     f"Web policy check → **{'DENIED' if denied else 'ALLOWED'}**")
+
+        if isinstance(self.coverage, BrowserMappingCoverageTracker):
+            self.coverage.record_hit(data_type, selector_type)
+
+        cov_data = self.coverage.get_report() if hasattr(self.coverage, "get_report") else {}
 
         task = test.get("task_without_permission", test.get("task_with_permission", ""))
         if task:

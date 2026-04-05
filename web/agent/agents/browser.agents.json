@@ -15,14 +15,13 @@
     "write": [
       "span:contains('Check out')"
     ],
-    "create": [
-    ],
+    "create": [],
     "data": {
-      "Expedia:Flight(*)": [
+      "Expedia:Flight(?)": [
         "div.uitk-view",
         "span:contains('Check out')"
       ],
-      "Expedia:Destination(*)": [
+      "Expedia:Destination(?)": [
         "div:contains('Shop travel')"
       ]
     }
@@ -37,13 +36,13 @@
     "write": [],
     "create": [],
     "data": {
-      "Expedia:Flight(*)": [
+      "Expedia:Flight(?)": [
         "div.uitk-view"
       ],
-      "Expedia:Hotel(*)": [
+      "Expedia:Hotel(?)": [
         "a[aria-label='Explore packages. undefined']"
       ],
-      "Expedia:Destination(*)": [
+      "Expedia:Destination(?)": [
         "div:contains('Shop travel')"
       ]
     }
@@ -75,27 +74,27 @@
     "write": [],
     "create": [],
     "data": {
-      "Expedia:Hotel(*)": [
+      "Expedia:Hotel(?)": [
         "span:contains('Stays')",
         "#search_form_product_selector_lodging",
         "div.lazyload-wrapper:nth-child(18)",
         "div.uitk-spacing:nth-child(16)",
         "div.lazyload-wrapper:nth-child(22)"
       ],
-      "Expedia:Flight(*)": [
+      "Expedia:Flight(?)": [
         "span:contains('Flights')",
         "#search_form_product_selector_flights",
         "div.lazyload-wrapper:nth-child(13)"
       ],
-      "Expedia:CarRental(*)": [
+      "Expedia:CarRental(?)": [
         "span:contains('Cars')",
         "#search_form_product_selector_cars"
       ],
-      "Expedia:Destination(*)": [
+      "Expedia:Destination(?)": [
         "div.lazyload-wrapper:nth-child(25)",
         "div:contains('Shop travel')"
       ],
-      "Expedia:Experience(*)": [
+      "Expedia:Experience(?)": [
         "span:contains('Things to do')",
         "span:contains('Packages')",
         "#search_form_product_selector_activities",
@@ -103,7 +102,7 @@
         "div.lazyload-wrapper:nth-child(14)",
         "div.lazyload-wrapper:nth-child(19)"
       ],
-      "Expedia:Cruise(*)": [
+      "Expedia:Cruise(?)": [
         "span:contains('Cruises')",
         "#search_form_product_selector_cruises"
       ]
@@ -177,7 +176,7 @@
         "span:contains('Save')"
       ],
       "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(?)": [
-        "button[aria-label*='select to change the month']"
+        "div.ZlutZ"
       ],
       "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(1)": [
         "span:contains('1')"
@@ -272,19 +271,16 @@
       "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(31)": [
         "span:contains('31')"
       ],
-      "Calendar:Year($data{button[aria-label*='select to change the month'] > span}[1])::Calendar:Month($data{button[aria-label*='select to change the month'] > span}[0])::Calendar:Day(*)": [
-        "div.ZlutZ"
-      ],
-      "Calendar:Month(*)": [
+      "Calendar:Month(?)": [
         "span:contains('Month')",
         "span:contains('Work week')",
         "span:contains('Week')"
       ],
-      "Calendar:Day(*)": [
+      "Calendar:Day(?)": [
         "span:contains('Day')",
         "span:contains('Today')"
       ],
-      "Calendar:Year(*)": [
+      "Calendar:Year(?)": [
         "div:contains('Add calendar')",
         "span:contains('My calendars')",
         "span:contains('Filter')",
@@ -308,7 +304,7 @@
       "button:contains('New Game')"
     ],
     "data": {
-      "Game:GameId(*)": [
+      "Game:GameId(?)": [
         "button:contains('Delete')",
         "#historyList",
         "button:contains('New Game')"
@@ -318,41 +314,38 @@
   "https://trello.com/u/*/boards": {
     "verified": true,
     "read": [
-        "button:contains('View all closed boards')",
-        "span:contains('Boards')",
-        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:first-of-type",
-        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:first-of-type > nav > div:nth-of-type(3)",
-        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1)",
-        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > div:first-of-type",
-        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > div:nth-of-type(2)",
-        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > div:nth-of-type(3)",
-        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2)",
-        "html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1)",
-        "html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2)",
-        "html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(3)"
+      "button:contains('View all closed boards')",
+      "span:contains('Boards')",
+      "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:first-of-type",
+      "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:first-of-type > nav > div:nth-of-type(3)",
+      "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1)",
+      "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > div:first-of-type",
+      "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > div:nth-of-type(2)",
+      "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > div:nth-of-type(3)",
+      "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2)",
+      "html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1)",
+      "html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2)",
+      "html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(3)"
     ],
     "write": [
-        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > button",
-        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > button"
+      "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > button",
+      "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > button"
     ],
     "create": [
-        "button[aria-label='Create board or Workspace']"
+      "button[aria-label='Create board or Workspace']"
     ],
     "data": {
-      "Trello:Workspace(*)": [
+      "Trello:Workspace(?)": [
         "button[aria-label='Create board or Workspace']",
         "button:contains('View all closed boards')",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:first-of-type",
         "span:contains('Boards')",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:first-of-type > nav > div:nth-of-type(3)"
       ],
-
-
       "Trello:Workspace($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > h3}{none}[:])::Trello:Board(?)": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1)",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > button"
       ],
-
       "Trello:Workspace($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > h3}{none}[:])::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > div:first-of-type > a > div > div:nth-of-type(2) > span}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > div:first-of-type"
       ],
@@ -362,24 +355,19 @@
       "Trello:Workspace($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > h3}{none}[:])::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > div:nth-of-type(3) > a > div > div:nth-of-type(2) > span}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:first-of-type > div:nth-of-type(2) > div:nth-of-type(3)"
       ],
-
-
       "Trello:Workspace($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > h3}{none}[:])::Trello:Board(?)": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2)",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > button"
       ],
-
       "Trello:Workspace($data{html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > h3}{none}[:])::Trello:Board($data{html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > a > div > div:nth-of-type(2) > span}{none}[:])": [
         "html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1)"
-
-      ], 
+      ],
       "Trello:Workspace($data{html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > h3}{none}[:])::Trello:Board($data{html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > a > div > div:nth-of-type(2) > span}{none}[:])": [
         "html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2)"
       ],
       "Trello:Workspace($data{html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > h3}{none}[:])::Trello:Board($data{html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(3) > a > div > div:nth-of-type(2) > span}{none}[:])": [
         "html > body > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(3)"
       ]
-
     }
   },
   "https://trello.com/b/*/*": {
@@ -425,7 +413,6 @@
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > ol > li:nth-of-type(2) > div > div > div:nth-of-type(2) > div > button > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > ol > li:nth-of-type(1) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > ol > li:nth-of-type(1) > div > div > div:nth-of-type(2) > div > button > span",
-
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(5) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(5) > div > div > div:nth-of-type(2) > div > button > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(4) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
@@ -436,7 +423,6 @@
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(2) > div > div > div:nth-of-type(2) > div > button > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(1) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(1) > div > div > div:nth-of-type(2) > div > button > span",
-
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(3) > div > ol > li:nth-of-type(5) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(3) > div > ol > li:nth-of-type(5) > div > div > div:nth-of-type(2) > div > button > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(3) > div > ol > li:nth-of-type(4) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
@@ -447,7 +433,6 @@
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(3) > div > ol > li:nth-of-type(2) > div > div > div:nth-of-type(2) > div > button > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(3) > div > ol > li:nth-of-type(1) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(3) > div > ol > li:nth-of-type(1) > div > div > div:nth-of-type(2) > div > button > span",
-
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > ol > li:nth-of-type(5) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > ol > li:nth-of-type(5) > div > div > div:nth-of-type(2) > div > button > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > ol > li:nth-of-type(4) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
@@ -496,7 +481,6 @@
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > ol > li:nth-of-type(2) > div > div > div:nth-of-type(2) > div > button > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > ol > li:nth-of-type(1) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > ol > li:nth-of-type(1) > div > div > div:nth-of-type(2) > div > button > span",
-
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(5) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(5) > div > div > div:nth-of-type(2) > div > button > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(4) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
@@ -507,7 +491,6 @@
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(2) > div > div > div:nth-of-type(2) > div > button > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(1) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(1) > div > div > div:nth-of-type(2) > div > button > span",
-
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(3) > div > ol > li:nth-of-type(5) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(3) > div > ol > li:nth-of-type(5) > div > div > div:nth-of-type(2) > div > button > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(3) > div > ol > li:nth-of-type(4) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
@@ -518,7 +501,6 @@
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(3) > div > ol > li:nth-of-type(2) > div > div > div:nth-of-type(2) > div > button > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(3) > div > ol > li:nth-of-type(1) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(3) > div > ol > li:nth-of-type(1) > div > div > div:nth-of-type(2) > div > button > span",
-
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > ol > li:nth-of-type(5) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > ol > li:nth-of-type(5) > div > div > div:nth-of-type(2) > div > button > span",
       "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > ol > li:nth-of-type(4) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
@@ -537,16 +519,14 @@
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:nth-of-type(2)",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5)",
-      "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > div > button",
-      "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:first-of-type > nav > div:nth-of-type(2) > div:nth-of-type(2)"
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > div > button",
+        "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:first-of-type > nav > div:nth-of-type(2) > div:nth-of-type(2)"
       ],
-      
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(1) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(1)",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:first-of-type > div > div:first-of-type > div:nth-of-type(2)",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(1) > div > div:nth-of-type(3)"
       ],
-      
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])::Trello:Card($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(1) > div > ol > li:nth-of-type(1) > div > div > div:first-of-type > div:first-of-type > span:nth-of-type(2) > a}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(1) > div > ol > li:nth-of-type(1) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(1) > div > ol > li:nth-of-type(1) > div > div > div:nth-of-type(2) > div > button > span",
@@ -556,24 +536,19 @@
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])::Trello:Card($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(1) > div > ol > li:nth-of-type(2) > div > div > div:first-of-type > div:first-of-type > span:nth-of-type(2) > a}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(1) > div > ol > li:nth-of-type(2) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(1) > div > ol > li:nth-of-type(2) > div > div > div:nth-of-type(2) > div > button > span"
-
       ],
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])::Trello:Card($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(1) > div > ol > li:nth-of-type(3) > div > div > div:first-of-type > div:first-of-type > span:nth-of-type(2) > a}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(1) > div > ol > li:nth-of-type(3) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(1) > div > ol > li:nth-of-type(3) > div > div > div:nth-of-type(2) > div > button > span"
-
       ],
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])::Trello:Card($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(1) > div > ol > li:nth-of-type(4) > div > div > div:first-of-type > div:first-of-type > span:nth-of-type(2) > a}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(1) > div > ol > li:nth-of-type(4) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(1) > div > ol > li:nth-of-type(4) > div > div > div:nth-of-type(2) > div > button > span"
-
       ],
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])::Trello:Card($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(1) > div > ol > li:nth-of-type(5) > div > div > div:first-of-type > div:first-of-type > span:nth-of-type(2) > a}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(1) > div > ol > li:nth-of-type(5) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(1) > div > ol > li:nth-of-type(5) > div > div > div:nth-of-type(2) > div > button > span"
-
       ],
-
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2)",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > div:first-of-type > div:nth-of-type(2)",
@@ -586,17 +561,14 @@
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])::Trello:Card($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > ol > li:nth-of-type(2) > div > div > div:first-of-type > div:first-of-type > span:nth-of-type(2) > a}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > ol > li:nth-of-type(2) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > ol > li:nth-of-type(2) > div > div > div:nth-of-type(2) > div > button > span"
-
       ],
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])::Trello:Card($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > ol > li:nth-of-type(3) > div > div > div:first-of-type > div:first-of-type > span:nth-of-type(2) > a}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > ol > li:nth-of-type(3) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > ol > li:nth-of-type(3) > div > div > div:nth-of-type(2) > div > button > span"
-
       ],
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])::Trello:Card($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > ol > li:nth-of-type(4) > div > div > div:first-of-type > div:first-of-type > span:nth-of-type(2) > a}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > ol > li:nth-of-type(4) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > ol > li:nth-of-type(4) > div > div > div:nth-of-type(2) > div > button > span"
-
       ],
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])::Trello:Card($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > ol > li:nth-of-type(5) > div > div > div:first-of-type > div:first-of-type > span:nth-of-type(2) > a}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(2) > div > ol > li:nth-of-type(5) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
@@ -627,7 +599,6 @@
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(3) > div > ol > li:nth-of-type(5) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(3) > div > ol > li:nth-of-type(5) > div > div > div:nth-of-type(2) > div > button > span"
       ],
-
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4)",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > div:first-of-type > div:nth-of-type(2)",
@@ -640,23 +611,19 @@
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])::Trello:Card($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(2) > div > div > div:first-of-type > div:first-of-type > span:nth-of-type(2) > a}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(2) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(2) > div > div > div:nth-of-type(2) > div > button > span"
-
       ],
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])::Trello:Card($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(3) > div > div > div:first-of-type > div:first-of-type > span:nth-of-type(2) > a}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(3) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(3) > div > div > div:nth-of-type(2) > div > button > span"
-
       ],
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])::Trello:Card($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(4) > div > div > div:first-of-type > div:first-of-type > span:nth-of-type(2) > a}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(4) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(4) > div > div > div:nth-of-type(2) > div > button > span"
-
       ],
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])::Trello:Card($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(5) > div > div > div:first-of-type > div:first-of-type > span:nth-of-type(2) > a}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(5) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(4) > div > ol > li:nth-of-type(5) > div > div > div:nth-of-type(2) > div > button > span"
       ],
-
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5)",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > div:first-of-type > div:nth-of-type(2)",
@@ -669,29 +636,981 @@
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])::Trello:Card($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > ol > li:nth-of-type(2) > div > div > div:first-of-type > div:first-of-type > span:nth-of-type(2) > a}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > ol > li:nth-of-type(2) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > ol > li:nth-of-type(2) > div > div > div:nth-of-type(2) > div > button > span"
-
       ],
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])::Trello:Card($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > ol > li:nth-of-type(3) > div > div > div:first-of-type > div:first-of-type > span:nth-of-type(2) > a}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > ol > li:nth-of-type(3) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > ol > li:nth-of-type(3) > div > div > div:nth-of-type(2) > div > button > span"
-
       ],
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])::Trello:Card($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > ol > li:nth-of-type(4) > div > div > div:first-of-type > div:first-of-type > span:nth-of-type(2) > a}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > ol > li:nth-of-type(4) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > ol > li:nth-of-type(4) > div > div > div:nth-of-type(2) > div > button > span"
-
       ],
       "Trello:Workspace(?)::Trello:Board($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:first-of-type > div > span:first-of-type > div:first-of-type > h1}{none}[:])::Trello:List($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > div:first-of-type > div:first-of-type > h2 > button > span}{none}[:])::Trello:Card($data{html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > ol > li:nth-of-type(5) > div > div > div:first-of-type > div:first-of-type > span:nth-of-type(2) > a}{none}[:])": [
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > ol > li:nth-of-type(5) > div > div > div:first-of-type > div:first-of-type > span:first-of-type > div > button > div > span",
         "html > body > div:first-of-type > div:nth-of-type(2) > div:first-of-type > div > div:nth-of-type(2) > div > div > div:nth-of-type(2) > div > div > div:nth-of-type(5) > div > div > div > div > div:nth-of-type(2) > ol > li:nth-of-type(5) > div > ol > li:nth-of-type(5) > div > div > div:nth-of-type(2) > div > button > span"
       ]
     }
+  },
+  "https://www.google.com/?zx=1773813786565&no_sw_cr=1": {
+    "verified": false,
+    "read": [
+      "a:contains('About')",
+      "a:contains('Store')",
+      "a:contains('Gmail')",
+      "a:contains('Images')",
+      "span:contains('Sign in')",
+      "span:contains('Upload image')",
+      "span:contains('Upload file')",
+      "span:contains('AI Mode')",
+      "div:contains('Choose what you\u2019re giving feedback on')",
+      "span:contains('See more')",
+      "div:contains('Delete')",
+      "div:contains('Report inappropriate predictions')",
+      "span:contains('I\\'m Feeling Curious')",
+      "span:contains('I\\'m Feeling Hungry')",
+      "span:contains('I\\'m Feeling Adventurous')",
+      "span:contains('I\\'m Feeling Playful')",
+      "span:contains('I\\'m Feeling Stellar')",
+      "span:contains('I\\'m Feeling Doodley')",
+      "span:contains('I\\'m Feeling Trendy')",
+      "span:contains('I\\'m Feeling Artistic')",
+      "span:contains('I\\'m Feeling Funny')",
+      "span:contains('I\\'m Feeling Mindful')",
+      "[document]:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) > form:nth-of-type(1) > div:nth-of-type(1) > g-snackbar:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(1)",
+      "span:contains('New!')",
+      "[document]:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(4) > div:nth-of-type(1) > promo-middle-slot:nth-of-type(1) > div:nth-of-type(1) > a:nth-of-type(1)",
+      "a:contains('Advertising')",
+      "a:contains('Business')",
+      "a:contains('How Search works')",
+      "span:contains('Applying AI towards science and the environment')",
+      "a:contains('Privacy')",
+      "a:contains('Terms')",
+      "div:contains('Settings')",
+      "a:contains('Search settings')",
+      "a:contains('Advanced search')",
+      "a:contains('Your data in Search')",
+      "a:contains('Search history')",
+      "a:contains('Search help')",
+      "span:contains('Send feedback')",
+      "div:contains('Dark theme: Offretracted')",
+      "div:contains('Google apps')",
+      "[document]:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) > form:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(5) > div:nth-of-type(2) > div:nth-of-type(1) > img:nth-of-type(1)",
+      "[document]:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) > form:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(5) > div:nth-of-type(2) > div:nth-of-type(2) > img:nth-of-type(2)",
+      "[document]:nth-of-type(1) > div:nth-of-type(5) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > a:nth-of-type(1) > img:nth-of-type(1)"
+    ],
+    "write": [],
+    "create": [],
+    "data": {
+      "Trello:Workspace:*": [
+        "Text: About",
+        "Text: Store",
+        "Text: Gmail",
+        "Text: Images",
+        "Text: Sign in",
+        "Text: Upload image",
+        "Text: Upload file",
+        "Text: AI Mode",
+        "Text: Choose what you\u2019re giving feedback on",
+        "Text: See more",
+        "Text: Delete",
+        "Text: Report inappropriate predictions",
+        "Text: I'm Feeling Curious",
+        "Text: I'm Feeling Hungry",
+        "Text: I'm Feeling Adventurous",
+        "Text: I'm Feeling Playful",
+        "Text: I'm Feeling Stellar",
+        "Text: I'm Feeling Doodley",
+        "Text: I'm Feeling Trendy",
+        "Text: I'm Feeling Artistic",
+        "Text: I'm Feeling Funny",
+        "Text: I'm Feeling Mindful",
+        "Text: Can't upload. Use a file in one of these formats: .avif, .bmp, .jpeg, .pdf, .png, .webp\u201d",
+        "Text: New!",
+        "Text: Get responses uniquely relevant to you in Search and Gemini",
+        "Text: Advertising",
+        "Text: Business",
+        "Text: How Search works",
+        "Text: Applying AI towards science and the environment",
+        "Text: Privacy",
+        "Text: Terms",
+        "Text: Settings",
+        "Text: Search settings",
+        "Text: Advanced search",
+        "Text: Your data in Search",
+        "Text: Search history",
+        "Text: Search help",
+        "Text: Send feedback",
+        "Text: Dark theme: Off",
+        "Text: Google apps",
+        "Image: uHGFVd AZNDm",
+        "Image: uHGFVd EOLKOc",
+        "Image: Pb9hCb"
+      ]
+    }
+  },
+  "https://www.google.com/search?q=reed%2Fwww.expedia.com&sca_esv=82ec823d9eac6353&ei=JUa6aYCVEo6Y0PEP2u-I2Ag&biw=1024&bih=768&ved=0ahUKEwjAu9qG6aiTAxUODDQIHdo3AosQ4dUDCBE&uact=5&oq=reed%2Fwww.expedia.com&gs_lp=Egxnd3Mtd2l6LXNlcnAiFHJlZWQvd3d3LmV4cGVkaWEuY29tMg0QABiABBixAxiDARgNMgcQABiABBgNMgcQABiABBgNMgcQABiABBgNMgcQABiABBgNMgcQABiABBgNMgcQABiABBgNMgcQABiABBgNMgcQABiABBgNMgcQABiABBgNSLACUA9YQ3ABeAGQAQOYAUWgAe0BqgEBNLgBA8gBAPgBAZgCAqACOsICChAAGLADGNYEGEfCAg0QABiABBiwAxhDGIoFmAMA4gMFEgExICmIBgGQBgySBwEyoAe_DLIHATG4BzLCBwMyLTLIBwyACAA&sclient=gws-wiz-serp": {
+    "verified": false,
+    "read": [
+      "[name='q']",
+      "span:contains('Did you mean:')",
+      "a:contains('www.expedia.com')",
+      "div:contains('AI Overview')",
+      "span:contains('Expedia offers various travel options for Reed, including cheap flights, vacation packages, and hotel bookings')",
+      "a:contains('REED Luxury Hotel & Bistro by Balaton')",
+      "div:contains('Key Reed Travel Options on Expedia:')",
+      "strong:contains('Hotels & Rentals:')",
+      "strong:contains('Vacation Packages:')",
+      "a:contains('Expedi\\'s Reed Travel Guide')",
+      "div:contains('REED Boutique HOTEL & BISTRO - Expedia')",
+      "div:contains('Reed Vacation Packages 2026 from $1,395 - Expedia')",
+      "div:contains('$21 Cheap flights from Reed - Expedia.com')",
+      "div:contains('Top 10 Hotels in Reed from $133 - Competitive Prices - Expedia')",
+      "div:contains('Rhodes Vacation Packages 2026 from $1,418')",
+      "div:contains('The Best 4 Star Hotels in Reed, KY from $141 - Expedia')",
+      "div:contains('REED Boutique HOTEL & BISTRO - Expedia')",
+      "div:contains('Show all')",
+      "span:contains('Share')",
+      "a:contains('Facebook')",
+      "a:contains('WhatsApp')",
+      "a:contains('X')",
+      "a:contains('Email')",
+      "div:contains('Share link')",
+      "span:contains('Link copied')",
+      "span:contains('Facebook')",
+      "span:contains('WhatsApp')",
+      "span:contains('X')",
+      "span:contains('Email')",
+      "span:contains('People also ask')",
+      "span:contains('How can I get a refund from Expedia?')",
+      "span:contains('Step-by-Step Refund Process')",
+      "span:contains('Related Links')",
+      "span:contains('Summarize the cancellation policy')",
+      "span:contains('Explain how to check my booking policy')",
+      "span:contains('List common reasons for refunds')",
+      "span:contains('How do I contact Expedia com?')",
+      "h3:contains('Reed Vacation Packages 2026 from $1395')",
+      "h3:contains('$21 Cheap flights from Reed')",
+      "h3:contains('Reed Holidays & Package Deals')",
+      "h3:contains('Find hotels near Reed College, Portland from $70')",
+      "h3:contains('Top Marriott Hotels & Resorts in Reed, OR from $164')",
+      "h3:contains('David Reed - Expedia Group')",
+      "h3:contains('REED Boutique HOTEL & BISTRO')",
+      "h3:contains('the best hotels for every experience')",
+      "h3:contains('Reed College - Tours and Activities')",
+      "span:contains('Any time')",
+      "a:contains('Past hour')",
+      "a:contains('Past 24 hours')",
+      "a:contains('Past week')",
+      "a:contains('Past month')",
+      "a:contains('Past year')",
+      "span:contains('Custom range...')",
+      "div:contains('Custom date range')",
+      "div:contains('Go')",
+      "a:contains('All results')",
+      "a:contains('Verbatim')",
+      "span:contains('Advanced Search')",
+      "span:contains('Show more')",
+      "a:contains('Cancel for Any Reason (CFAR)')",
+      "a:contains('Booking.com')",
+      "a:contains('Airbnb')",
+      "a:contains('Tripadvisor')",
+      "a:contains('Hotels.com')",
+      "div:contains('Google apps')",
+      "a:contains('Help')",
+      "a:contains('Send feedback')",
+      "a:contains('Privacy')",
+      "a:contains('Terms')",
+      "span:contains('Search Results')",
+      "span:contains('About 1,020,000 results')",
+      "span:contains('AI Mode')",
+      "span:contains('All')",
+      "span:contains('Images')",
+      "span:contains('Forums')",
+      "span:contains('Videos')",
+      "span:contains('Shopping')",
+      "span:contains('News')",
+      "span:contains('More')",
+      "span:contains('Tools')",
+      "span:contains('Sign in')",
+      "h1:contains('Page Navigation')",
+      "a:contains('2')",
+      "a:contains('3')",
+      "a:contains('4')",
+      "a:contains('5')",
+      "a:contains('6')",
+      "a:contains('7')",
+      "a:contains('8')",
+      "a:contains('9')",
+      "a:contains('10')",
+      "span:contains('Next')"
+    ],
+    "write": [
+      "div:contains('Delete')",
+      "span:contains('Delete')",
+      "div:contains('Report inappropriate predictions')",
+      "div:contains('Quick Settings')",
+      "div:contains('Choose what you\u2019re giving feedback on')",
+      "span:contains('Share more feedback')",
+      "span:contains('Report a problem')",
+      "span:contains('Close')",
+      "span:contains('Positive feedback')",
+      "span:contains('Negative feedback')",
+      "span:contains('Feedback')",
+      "div:contains('Click to copy link')",
+      "update-location:nth-of-type(1) > div:nth-of-type(1)"
+    ],
+    "create": [],
+    "data": {
+      "Expedia:Destination:reed/www.expedia.com": [
+        "Text: reed/www.expedia.com"
+      ],
+      "Expedia:Destination:Reed": [
+        "Text: Did you mean:",
+        "Text: REED Luxury Hotel & Bistro by Balaton",
+        "Text: REED Boutique HOTEL & BISTRO",
+        "Text: Reed Vacation Packages 2026 from $1395",
+        "Text: $21 Cheap flights from Reed",
+        "Text: Reed Holidays & Package Deals",
+        "Text: Find hotels near Reed College, Portland from $70",
+        "Text: David Reed - Expedia Group",
+        "Text: Reed College - Tours and Activities",
+        "Text: Reed Vacation Packages 2026 from $1,395 - Expedia",
+        "Text: $21 Cheap flights from Reed - Expedia.com",
+        "Text: Rhodes Vacation Packages 2026 from $1,418"
+      ],
+      "Expedia:Hotel:REED Luxury Hotel & Bistro by Balaton": [
+        "Text: REED Luxury Hotel & Bistro by Balaton",
+        "Text: REED Boutique HOTEL & BISTRO - Expedia",
+        "Text: REED Boutique HOTEL & BISTRO"
+      ],
+      "Expedia:Hotel:The Best 4 Star Hotels in Reed, KY from $141 - Expedia": [
+        "Text: The Best 4 Star Hotels in Reed, KY from $141 - Expedia"
+      ],
+      "Expedia:Hotel:REED Boutique HOTEL & BISTRO": [
+        "Text: REED Boutique HOTEL & BISTRO - Expedia"
+      ],
+      "Expedia:Hotel:REED Boutique HOTEL & BISTRO by Balaton": [
+        "Text: REED Boutique HOTEL & BISTRO"
+      ],
+      "Expedia:Flight:": [
+        "Text: $21 Cheap flights from Reed - Expedia.com",
+        "Text: $21 Cheap flights from Reed"
+      ],
+      "Expedia:Experience:Reed College - Tours and Activities": [
+        "Text: Reed College - Tours and Activities"
+      ],
+      "Expedia:Experience:the best hotels for every experience": [
+        "Text: the best hotels for every experience"
+      ],
+      "Expedia:Experience:Hotels & Rentals": [
+        "Text: Hotels & Rentals:"
+      ],
+      "Expedia:Experience:Vacation Packages": [
+        "Text: Vacation Packages:"
+      ],
+      "Expedia:Experience:Cruise": [
+        "Text: Expedi's Reed Travel Guide"
+      ],
+      "Expedia:Payment:*": [
+        "Text: Go",
+        "Text: Custom date range",
+        "Text: Advanced Search",
+        "Text: Share",
+        "Text: Click to copy link"
+      ],
+      "GoogleSearch:All": [
+        "Text: All"
+      ],
+      "GoogleSearch:Images": [
+        "Text: Images"
+      ],
+      "GoogleSearch:Forums": [
+        "Text: Forums"
+      ],
+      "GoogleSearch:Videos": [
+        "Text: Videos"
+      ],
+      "GoogleSearch:Shopping": [
+        "Text: Shopping"
+      ],
+      "GoogleSearch:News": [
+        "Text: News"
+      ],
+      "GoogleSearch:More": [
+        "Text: More"
+      ],
+      "GoogleSearch:Tools": [
+        "Text: Tools"
+      ],
+      "GoogleSearch:PastHour": [
+        "Text: Past hour"
+      ],
+      "GoogleSearch:Past24Hours": [
+        "Text: Past 24 hours"
+      ],
+      "GoogleSearch:PastWeek": [
+        "Text: Past week"
+      ],
+      "GoogleSearch:PastMonth": [
+        "Text: Past month"
+      ],
+      "GoogleSearch:PastYear": [
+        "Text: Past year"
+      ],
+      "GoogleSearch:CustomRange": [
+        "Text: Custom range..."
+      ],
+      "GoogleSearch:CustomDateRange": [
+        "Text: Custom date range"
+      ],
+      "GoogleSearch:AllResults": [
+        "Text: All results"
+      ],
+      "GoogleSearch:Verbatim": [
+        "Text: Verbatim"
+      ],
+      "GoogleSearch:AdvancedSearch": [
+        "Text: Advanced Search"
+      ],
+      "GoogleSearch:AI Mode": [
+        "Text: AI Mode"
+      ],
+      "GoogleSearch:Sign in": [
+        "Text: Sign in"
+      ],
+      "GoogleSearch:Choose what you\u2019re giving feedback on": [
+        "Text: Choose what you\u2019re giving feedback on"
+      ],
+      "GoogleSearch:Delete": [
+        "Text: Delete"
+      ],
+      "GoogleSearch:Report inappropriate predictions": [
+        "Text: Report inappropriate predictions"
+      ],
+      "GoogleSearch:Quick Settings": [
+        "Text: Quick Settings"
+      ],
+      "GoogleSearch:AI Overview": [
+        "Text: AI Overview"
+      ],
+      "GoogleSearch:Share": [
+        "Text: Share"
+      ],
+      "GoogleSearch:Facebook": [
+        "Text: Facebook"
+      ],
+      "GoogleSearch:WhatsApp": [
+        "Text: WhatsApp"
+      ],
+      "GoogleSearch:X": [
+        "Text: X"
+      ],
+      "GoogleSearch:Email": [
+        "Text: Email"
+      ],
+      "GoogleSearch:Share link": [
+        "Text: Share link"
+      ],
+      "GoogleSearch:Share more feedback": [
+        "Text: Share more feedback"
+      ],
+      "GoogleSearch:Report a problem": [
+        "Text: Report a problem"
+      ],
+      "GoogleSearch:Close": [
+        "Text: Close"
+      ],
+      "GoogleSearch:Positive feedback": [
+        "Text: Positive feedback"
+      ],
+      "GoogleSearch:Negative feedback": [
+        "Text: Negative feedback"
+      ],
+      "GoogleSearch:Show more": [
+        "Text: Show more"
+      ],
+      "GoogleSearch:People also ask": [
+        "Text: People also ask"
+      ],
+      "GoogleSearch:How can I get a refund from Expedia?": [
+        "Text: How can I get a refund from Expedia?"
+      ],
+      "GoogleSearch:Step-by-Step Refund Process": [
+        "Text: Step-by-Step Refund Process"
+      ],
+      "GoogleSearch:Cancel for Any Reason": [
+        "Text: Cancel for Any Reason (CFAR)"
+      ],
+      "GoogleSearch:Summarize the cancellation policy": [
+        "Text: Summarize the cancellation policy"
+      ],
+      "GoogleSearch:Explain how to check my booking policy": [
+        "Text: Explain how to check my booking policy"
+      ],
+      "GoogleSearch:List common reasons for refunds": [
+        "Text: List common reasons for refunds"
+      ],
+      "GoogleSearch:How do I contact Expedia com?": [
+        "Text: How do I contact Expedia com?"
+      ],
+      "GoogleSearch:Booking.com": [
+        "Text: Booking.com"
+      ],
+      "GoogleSearch:Tripadvisor": [
+        "Text: Tripadvisor"
+      ],
+      "GoogleSearch:Airbnb": [
+        "Text: Airbnb"
+      ],
+      "GoogleSearch:Hotels.com": [
+        "Text: Hotels.com"
+      ],
+      "GoogleSearch:Feedback": [
+        "Text: Feedback"
+      ],
+      "GoogleSearch:Page Navigation": [
+        "Text: Page Navigation"
+      ],
+      "GoogleSearch:Page 2": [
+        "Text: 2"
+      ],
+      "GoogleSearch:Page 3": [
+        "Text: 3"
+      ],
+      "GoogleSearch:Page 4": [
+        "Text: 4"
+      ],
+      "GoogleSearch:Page 5": [
+        "Text: 5"
+      ],
+      "GoogleSearch:Page 6": [
+        "Text: 6"
+      ],
+      "GoogleSearch:Page 7": [
+        "Text: 7"
+      ],
+      "GoogleSearch:Page 8": [
+        "Text: 8"
+      ],
+      "GoogleSearch:Page 9": [
+        "Text: 9"
+      ],
+      "GoogleSearch:Page 10": [
+        "Text: 10"
+      ],
+      "GoogleSearch:Next": [
+        "Text: Next"
+      ],
+      "GoogleSearch:Help": [
+        "Text: Help"
+      ],
+      "GoogleSearch:Send feedback": [
+        "Text: Send feedback"
+      ],
+      "GoogleSearch:Privacy": [
+        "Text: Privacy"
+      ],
+      "GoogleSearch:Terms": [
+        "Text: Terms"
+      ],
+      "GoogleSearch:Google apps": [
+        "Text: Google apps"
+      ],
+      "GoogleSearch:www.expedia.com": [
+        "Text: .expedia.com"
+      ]
+    }
+  },
+  "https://outlook.live.com/calendar/view/workweek?deeplink=mail%2F": {
+    "verified": false,
+    "read": [
+      "span:contains('Outlook')",
+      "span:contains('Meet Now')",
+      "span:contains('Reshabh Sharma')",
+      "div:contains('RS')",
+      "span:contains('Home')",
+      "span:contains('View')",
+      "span:contains('Help')",
+      "span:contains('New event')",
+      "span:contains('Day')",
+      "span:contains('Work week')",
+      "span:contains('Week')",
+      "span:contains('Month')",
+      "span:contains('Split view')",
+      "span:contains('Filter')",
+      "span:contains('Share')",
+      "span:contains('Print')",
+      "span:contains('Selected date March 18, 2026')",
+      "span:contains('March 2026')",
+      "[title='Saturday']",
+      "[title='Monday']",
+      "[title='Thursday']",
+      "[title='Wednesday']",
+      "[title='Friday']",
+      "span:contains('22')",
+      "span:contains('23')",
+      "span:contains('24')",
+      "span:contains('25')",
+      "span:contains('26')",
+      "span:contains('27')",
+      "span:contains('28')",
+      "span:contains('1')",
+      "span:contains('2')",
+      "span:contains('3')",
+      "span:contains('4')",
+      "span:contains('5')",
+      "span:contains('6')",
+      "span:contains('7')",
+      "span:contains('8')",
+      "span:contains('9')",
+      "span:contains('10')",
+      "span:contains('11')",
+      "span:contains('12')",
+      "span:contains('13')",
+      "span:contains('14')",
+      "span:contains('15')",
+      "div:contains('16')",
+      "div:contains('17')",
+      "div:contains('18')",
+      "div:contains('19')",
+      "div:contains('20')",
+      "span:contains('21')",
+      "span:contains('29')",
+      "span:contains('30')",
+      "span:contains('31')",
+      "div:contains('Add calendar')",
+      "span:contains('My calendars')",
+      "div:contains('Calendar')",
+      "span:contains('Show all')",
+      "span:contains('Today')",
+      "span:contains('March 16\u201320, 2026')",
+      "[title='Monday']",
+      "[title='Tuesday']",
+      "[title='Wednesday']",
+      "[title='Thursday']",
+      "[title='Friday']",
+      "time:contains('12 AM')",
+      "time:contains('1 AM')",
+      "time:contains('2 AM')",
+      "time:contains('3 AM')",
+      "time:contains('4 AM')",
+      "time:contains('5 AM')",
+      "time:contains('6 AM')",
+      "time:contains('7 AM')",
+      "time:contains('8 AM')",
+      "time:contains('9 AM')",
+      "time:contains('10 AM')",
+      "time:contains('11 AM')",
+      "time:contains('12 PM')",
+      "time:contains('1 PM')",
+      "time:contains('2 PM')",
+      "time:contains('3 PM')",
+      "time:contains('4 PM')",
+      "time:contains('5 PM')",
+      "time:contains('6 PM')",
+      "time:contains('7 PM')",
+      "time:contains('8 PM')",
+      "time:contains('9 PM')",
+      "time:contains('10 PM')",
+      "time:contains('11 PM')",
+      "[document]:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > span:nth-of-type(1)",
+      "span:contains('Alt,')"
+    ],
+    "write": [
+      "span:contains('New event')",
+      "span:contains('Create a new event. (Alt+N)')",
+      "span:contains('Day')",
+      "span:contains('Work week')",
+      "span:contains('Week')",
+      "span:contains('Month')",
+      "span:contains('Split view')",
+      "span:contains('Filter')",
+      "span:contains('Share')",
+      "span:contains('Print')",
+      "span:contains('Today')",
+      "div:contains('Add calendar')"
+    ],
+    "create": [],
+    "data": {
+      "Calendar:Year: 2026": [
+        "Text: March 2026",
+        "Text: Selected date March 18, 2026",
+        "Text: March 16\u201320, 2026",
+        "Text: 2026"
+      ],
+      "Calendar:Month: March": [
+        "Text: March 2026",
+        "Text: Selected date March 18, 2026",
+        "Text: March 16\u201320, 2026"
+      ],
+      "Calendar:Day: 18": [
+        "Text: Selected date March 18, 2026",
+        "Text: 18"
+      ],
+      "Calendar:Day: 16": [
+        "Text: March 16\u201320, 2026",
+        "Text: 16"
+      ],
+      "Calendar:Day: 17": [
+        "Text: March 16\u201320, 2026",
+        "Text: 17"
+      ],
+      "Calendar:Day: 19": [
+        "Text: March 16\u201320, 2026",
+        "Text: 19"
+      ],
+      "Calendar:Day: 20": [
+        "Text: March 16\u201320, 2026",
+        "Text: 20"
+      ],
+      "Calendar:Day: 22": [
+        "Text: 22"
+      ],
+      "Calendar:Day: 23": [
+        "Text: 23"
+      ],
+      "Calendar:Day: 24": [
+        "Text: 24"
+      ],
+      "Calendar:Day: 25": [
+        "Text: 25"
+      ],
+      "Calendar:Day: 26": [
+        "Text: 26"
+      ],
+      "Calendar:Day: 27": [
+        "Text: 27"
+      ],
+      "Calendar:Day: 28": [
+        "Text: 28"
+      ],
+      "Calendar:Day: 1": [
+        "Text: 1"
+      ],
+      "Calendar:Day: 2": [
+        "Text: 2"
+      ],
+      "Calendar:Day: 3": [
+        "Text: 3"
+      ],
+      "Calendar:Day: 4": [
+        "Text: 4"
+      ],
+      "Calendar:Day: 5": [
+        "Text: 5"
+      ],
+      "Calendar:Day: 6": [
+        "Text: 6"
+      ],
+      "Calendar:Day: 7": [
+        "Text: 7"
+      ],
+      "Calendar:Day: 8": [
+        "Text: 8"
+      ],
+      "Calendar:Day: 9": [
+        "Text: 9"
+      ],
+      "Calendar:Day: 10": [
+        "Text: 10"
+      ],
+      "Calendar:Day: 11": [
+        "Text: 11"
+      ],
+      "Calendar:Day: 12": [
+        "Text: 12"
+      ],
+      "Calendar:Day: 13": [
+        "Text: 13"
+      ],
+      "Calendar:Day: 14": [
+        "Text: 14"
+      ],
+      "Calendar:Day: 15": [
+        "Text: 15"
+      ],
+      "Calendar:Day: 21": [
+        "Text: 21"
+      ],
+      "Calendar:Day: 29": [
+        "Text: 29"
+      ],
+      "Calendar:Day: 30": [
+        "Text: 30"
+      ],
+      "Calendar:Day: 31": [
+        "Text: 31"
+      ],
+      "Calendar:Hour: 0": [
+        "Text: 12 AM"
+      ],
+      "Calendar:Hour: 1": [
+        "Text: 1 AM"
+      ],
+      "Calendar:Hour: 2": [
+        "Text: 2 AM"
+      ],
+      "Calendar:Hour: 3": [
+        "Text: 3 AM"
+      ],
+      "Calendar:Hour: 4": [
+        "Text: 4 AM"
+      ],
+      "Calendar:Hour: 5": [
+        "Text: 5 AM"
+      ],
+      "Calendar:Hour: 6": [
+        "Text: 6 AM"
+      ],
+      "Calendar:Hour: 7": [
+        "Text: 7 AM"
+      ],
+      "Calendar:Hour: 8": [
+        "Text: 8 AM"
+      ],
+      "Calendar:Hour: 9": [
+        "Text: 9 AM"
+      ],
+      "Calendar:Hour: 10": [
+        "Text: 10 AM"
+      ],
+      "Calendar:Hour: 11": [
+        "Text: 11 AM"
+      ],
+      "Calendar:Hour: 12": [
+        "Text: 12 PM"
+      ],
+      "Calendar:Hour: 13": [
+        "Text: 1 PM"
+      ],
+      "Calendar:Hour: 14": [
+        "Text: 2 PM"
+      ],
+      "Calendar:Hour: 15": [
+        "Text: 3 PM"
+      ],
+      "Calendar:Hour: 16": [
+        "Text: 4 PM"
+      ],
+      "Calendar:Hour: 17": [
+        "Text: 5 PM"
+      ],
+      "Calendar:Hour: 18": [
+        "Text: 6 PM"
+      ],
+      "Calendar:Hour: 19": [
+        "Text: 7 PM"
+      ],
+      "Calendar:Hour: 20": [
+        "Text: 8 PM"
+      ],
+      "Calendar:Hour: 21": [
+        "Text: 9 PM"
+      ],
+      "Calendar:Hour: 22": [
+        "Text: 10 PM"
+      ],
+      "Calendar:Hour: 23": [
+        "Text: 11 PM"
+      ],
+      "Calendar:Day: all": [
+        "Text: S",
+        "Text: M",
+        "Text: T",
+        "Text: W",
+        "Text: F",
+        "Text: Mon",
+        "Text: Tue",
+        "Text: Wed",
+        "Text: Thu",
+        "Text: Fri"
+      ],
+      "Calendar:Year: all": [
+        "Text: Outlook",
+        "Text: Meet Now",
+        "Text: Reshabh Sharma",
+        "Text: RS",
+        "Text: Home",
+        "Text: View",
+        "Text: Help",
+        "Text: New event",
+        "Text: Create a new event. (Alt+N)",
+        "Text: Day",
+        "Text: Work week",
+        "Text: Week",
+        "Text: Month",
+        "Text: Split view",
+        "Text: Filter",
+        "Text: Share",
+        "Text: Print",
+        "Text: Add calendar",
+        "Text: My calendars",
+        "Text: Calendar",
+        "Text: Show all",
+        "Text: Today",
+        "Text: Loaded 0 events in 1 selected calendars March 16\u201320, 2026.",
+        "Text: Alt,"
+      ],
+      "Calendar:Month: all": [
+        "Text: Outlook",
+        "Text: Meet Now",
+        "Text: Reshabh Sharma",
+        "Text: RS",
+        "Text: Home",
+        "Text: View",
+        "Text: Help",
+        "Text: New event",
+        "Text: Create a new event. (Alt+N)",
+        "Text: Day",
+        "Text: Work week",
+        "Text: Week",
+        "Text: Month",
+        "Text: Split view",
+        "Text: Filter",
+        "Text: Share",
+        "Text: Print",
+        "Text: Add calendar",
+        "Text: My calendars",
+        "Text: Calendar",
+        "Text: Show all",
+        "Text: Today",
+        "Text: Loaded 0 events in 1 selected calendars March 16\u201320, 2026.",
+        "Text: Alt,"
+      ],
+      "Calendar:Hour: all": [
+        "Text: Outlook",
+        "Text: Meet Now",
+        "Text: Reshabh Sharma",
+        "Text: RS",
+        "Text: Home",
+        "Text: View",
+        "Text: Help",
+        "Text: New event",
+        "Text: Create a new event. (Alt+N)",
+        "Text: Day",
+        "Text: Work week",
+        "Text: Week",
+        "Text: Month",
+        "Text: Split view",
+        "Text: Filter",
+        "Text: Share",
+        "Text: Print",
+        "Text: Add calendar",
+        "Text: My calendars",
+        "Text: Calendar",
+        "Text: Show all",
+        "Text: Today",
+        "Text: Loaded 0 events in 1 selected calendars March 16\u201320, 2026.",
+        "Text: Alt,"
+      ]
+    }
+  },
+  "https://www.google.com/": {
+    "verified": false,
+    "read": [
+      "a:contains('About')",
+      "a:contains('Store')",
+      "a:contains('Gmail')",
+      "a:contains('Images')",
+      "span:contains('Upload image')",
+      "span:contains('Upload file')",
+      "span:contains('AI Mode')",
+      "span:contains('See more')",
+      "span:contains('I\\'m Feeling Curious')",
+      "span:contains('I\\'m Feeling Hungry')",
+      "span:contains('I\\'m Feeling Adventurous')",
+      "span:contains('I\\'m Feeling Playful')",
+      "span:contains('I\\'m Feeling Stellar')",
+      "span:contains('I\\'m Feeling Doodley')",
+      "span:contains('I\\'m Feeling Trendy')",
+      "span:contains('I\\'m Feeling Artistic')",
+      "span:contains('I\\'m Feeling Funny')",
+      "span:contains('I\\'m Feeling Mindful')",
+      "[document]:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) > form:nth-of-type(1) > div:nth-of-type(1) > g-snackbar:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(1)",
+      "a:contains('Advertising')",
+      "a:contains('Business')",
+      "a:contains('How Search works')",
+      "a:contains('Privacy')",
+      "a:contains('Terms')",
+      "a:contains('Search settings')",
+      "a:contains('Advanced search')",
+      "a:contains('Your data in Search')",
+      "a:contains('Search history')",
+      "a:contains('Search help')",
+      "div:contains('Dark theme: Offretracted')",
+      "div:contains('Share')",
+      "a:contains('Facebook')",
+      "a:contains('WhatsApp')",
+      "a:contains('X')",
+      "a:contains('Email')",
+      "div:contains('Click to copy link')",
+      "div:contains('Share link')",
+      "div:contains('Link copied')",
+      "div:contains('Google apps')",
+      "[alt='Easter 2026']",
+      "[document]:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) > form:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(5) > div:nth-of-type(2) > div:nth-of-type(1) > img:nth-of-type(1)",
+      "[document]:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) > form:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(5) > div:nth-of-type(2) > div:nth-of-type(2) > img:nth-of-type(2)",
+      "[document]:nth-of-type(1) > div:nth-of-type(5) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > a:nth-of-type(1) > img:nth-of-type(1)",
+      "[document]:nth-of-type(1) > div:nth-of-type(10) > g-dialog:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > span:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(1) > a:nth-of-type(4) > div:nth-of-type(1) > div:nth-of-type(1) > img:nth-of-type(1)"
+    ],
+    "write": [
+      "div:contains('Delete')",
+      "div:contains('Report inappropriate predictions')",
+      "span:contains('Send feedback')",
+      "div:contains('Settings')"
+    ],
+    "create": [],
+    "data": {
+      "Expedia:Destination(?)": [
+        "a:contains('About')",
+        "a:contains('Store')",
+        "a:contains('Gmail')",
+        "a:contains('Images')",
+        "span:contains('Upload image')",
+        "span:contains('Upload file')",
+        "span:contains('AI Mode')",
+        "span:contains('See more')",
+        "div:contains('Delete')",
+        "div:contains('Report inappropriate predictions')",
+        "span:contains('I\\'m Feeling Curious')",
+        "span:contains('I\\'m Feeling Hungry')",
+        "span:contains('I\\'m Feeling Adventurous')",
+        "span:contains('I\\'m Feeling Playful')",
+        "span:contains('I\\'m Feeling Stellar')",
+        "span:contains('I\\'m Feeling Doodley')",
+        "span:contains('I\\'m Feeling Trendy')",
+        "span:contains('I\\'m Feeling Artistic')",
+        "span:contains('I\\'m Feeling Funny')",
+        "span:contains('I\\'m Feeling Mindful')",
+        "[document]:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) > form:nth-of-type(1) > div:nth-of-type(1) > g-snackbar:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(1)",
+        "a:contains('Advertising')",
+        "a:contains('Business')",
+        "a:contains('How Search works')",
+        "a:contains('Privacy')",
+        "a:contains('Terms')",
+        "div:contains('Settings')",
+        "a:contains('Search settings')",
+        "a:contains('Advanced search')",
+        "a:contains('Your data in Search')",
+        "a:contains('Search history')",
+        "a:contains('Search help')",
+        "span:contains('Send feedback')",
+        "div:contains('Dark theme: Offretracted')",
+        "div:contains('Share')",
+        "a:contains('Facebook')",
+        "a:contains('WhatsApp')",
+        "a:contains('X')",
+        "a:contains('Email')",
+        "div:contains('Click to copy link')",
+        "div:contains('Share link')",
+        "div:contains('Link copied')",
+        "div:contains('Google apps')",
+        "[alt='Easter 2026']",
+        "[document]:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) > form:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(5) > div:nth-of-type(2) > div:nth-of-type(1) > img:nth-of-type(1)",
+        "[document]:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) > form:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(5) > div:nth-of-type(2) > div:nth-of-type(2) > img:nth-of-type(2)",
+        "[document]:nth-of-type(1) > div:nth-of-type(5) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > a:nth-of-type(1) > img:nth-of-type(1)",
+        "[document]:nth-of-type(1) > div:nth-of-type(10) > g-dialog:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > span:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(1) > a:nth-of-type(4) > div:nth-of-type(1) > div:nth-of-type(1) > img:nth-of-type(1)"
+      ]
+    }
   }
 }
-
-
-
-
-
-
-        

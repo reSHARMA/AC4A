@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Box, VStack, HStack, Heading, Text, Button, Select, Input,
-  Table, Thead, Tbody, Tr, Th, Td, Badge, Progress, Spinner,
+  Badge, Progress, Spinner,
   Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon,
   useToast, Stat, StatLabel, StatNumber, StatGroup, Divider,
-  SimpleGrid, Tooltip, Code, IconButton, Flex, Tag, TagLabel,
+  Tooltip, Code, IconButton, Flex, Tag, TagLabel,
 } from '@chakra-ui/react'
 import { DeleteIcon, TriangleUpIcon } from '@chakra-ui/icons'
 import { socket } from '../socket'
@@ -46,15 +46,19 @@ interface TestResult {
   attempts: number
   agent_responses: string[]
   workaround_description: string | null
-  coverage: { branches_hit?: string[]; branch_coverage_pct?: number }
+  coverage: CoverageReport | { branches_hit?: string[]; branch_coverage_pct?: number }
   timestamp: string
 }
 
 interface CoverageReport {
+  coverage_type?: 'browser_mapping' | 'annotation'
   branches_hit: string[]
   branches_missing: string[]
   branch_coverage_pct: number
   total_branches: number
+  annotation_file?: string
+  executed_count?: number
+  missing_count?: number
 }
 
 interface RunReport {
@@ -413,10 +417,10 @@ const TestingMode: React.FC = () => {
         {/* --- Predicted coverage (after strategic selection) --- */}
         {predictedCoverage && (
           <Box>
-            <Text fontWeight="bold" mb={1}>Predicted branch coverage (selection)</Text>
+            <Text fontWeight="bold" mb={1}>Predicted Coverage (selection)</Text>
             <Text fontSize="xs" color="gray.600" mb={2}>
-              Static estimate from test structure and LLM branch hints — not measured execution.
-              After <b>Run All</b>, compare with <b>Cumulative Branch Coverage</b> in Results (runtime).
+              Static estimate from test structure — not measured execution.
+              After <b>Run All</b>, compare with <b>Cumulative Coverage</b> in Results (runtime).
             </Text>
             <CoverageBar report={predictedCoverage} />
           </Box>
@@ -523,9 +527,9 @@ const TestingMode: React.FC = () => {
                         <Text whiteSpace="pre-wrap" wordBreak="break-word"><b>Task (with):</b> {t.task_with_permission}</Text>
                         <Text whiteSpace="pre-wrap" wordBreak="break-word"><b>Task (without):</b> {t.task_without_permission}</Text>
                         <Text whiteSpace="pre-wrap" wordBreak="break-word"><b>Expected:</b> {t.expected_behavior}</Text>
-                        {t.predicted_branches && (
+                        {t.predicted_branches && t.predicted_branches.length > 0 && (
                           <HStack flexWrap="wrap">
-                            <Text><b>Branches:</b></Text>
+                            <Text><b>Coverage units:</b></Text>
                             {t.predicted_branches.map(b => <Badge key={b} size="sm" variant="outline">{b}</Badge>)}
                           </HStack>
                         )}
@@ -554,7 +558,7 @@ const TestingMode: React.FC = () => {
 
             {runReport.cumulative_coverage && (
               <Box>
-                <Text fontWeight="bold" mb={2}>Cumulative Branch Coverage</Text>
+                <Text fontWeight="bold" mb={2}>Cumulative Coverage</Text>
                 <CoverageBar report={runReport.cumulative_coverage} />
               </Box>
             )}
@@ -679,39 +683,78 @@ const TestingMode: React.FC = () => {
 // Coverage visualisation sub-component
 // -----------------------------------------------------------------------
 
-const ALL_BRANCHES = Array.from({ length: 25 }, (_, i) => `B${i + 1}`)
-
 const CoverageBar: React.FC<{ report: CoverageReport }> = ({ report }) => {
   const hits = report.branches_hit ?? []
+  const missing = report.branches_missing ?? []
   const pct = report.branch_coverage_pct ?? 0
-  const total = report.total_branches ?? hits.length
-  const hitSet = new Set(hits)
+  const total = report.total_branches ?? (hits.length + missing.length)
+  const coverageType = report.coverage_type
+
+  const colorScheme = pct > 75 ? 'green' : pct > 40 ? 'yellow' : 'red'
+
+  if (coverageType === 'browser_mapping') {
+    const allEntries = [...hits, ...missing].sort()
+    const hitSet = new Set(hits)
+    return (
+      <VStack align="stretch" spacing={2}>
+        <HStack spacing={2}>
+          <Badge colorScheme="purple" fontSize="xs">Mapping Coverage</Badge>
+          <Text fontSize="xs" color="gray.600">
+            {hits.length}/{total} data-type entries ({pct}%)
+          </Text>
+        </HStack>
+        <Progress value={pct} colorScheme={colorScheme} size="sm" borderRadius="md" />
+        {allEntries.length > 0 && allEntries.length <= 50 && (
+          <VStack align="stretch" spacing={1} mt={1}>
+            {allEntries.map(entry => {
+              const isHit = hitSet.has(entry)
+              const [dt, sel] = entry.split('::')
+              return (
+                <HStack key={entry} spacing={2}>
+                  <Box
+                    w="10px" h="10px" borderRadius="full" flexShrink={0}
+                    bg={isHit ? 'green.400' : 'gray.300'}
+                  />
+                  <Text fontSize="xs" color={isHit ? 'green.700' : 'gray.500'}>
+                    {dt}
+                  </Text>
+                  <Badge fontSize="9px" variant="outline" colorScheme={isHit ? 'green' : 'gray'}>
+                    {sel}
+                  </Badge>
+                </HStack>
+              )
+            })}
+          </VStack>
+        )}
+      </VStack>
+    )
+  }
+
+  if (coverageType === 'annotation') {
+    const fileName = report.annotation_file?.split('/').pop() || 'annotation'
+    return (
+      <VStack align="stretch" spacing={2}>
+        <HStack spacing={2}>
+          <Badge colorScheme="blue" fontSize="xs">Annotation Coverage</Badge>
+          <Text fontSize="xs" color="gray.600">
+            {report.executed_count ?? hits.length}/{total} lines ({pct}%)
+          </Text>
+        </HStack>
+        <Progress value={pct} colorScheme={colorScheme} size="sm" borderRadius="md" />
+        <Text fontSize="xs" color="gray.500">
+          File: <Code fontSize="xs">{fileName}</Code>
+        </Text>
+      </VStack>
+    )
+  }
+
+  // Fallback: generic display
   return (
     <VStack align="stretch" spacing={2}>
-      <Progress
-        value={pct}
-        colorScheme={pct > 75 ? 'green' : pct > 40 ? 'yellow' : 'red'}
-        size="sm"
-        borderRadius="md"
-      />
+      <Progress value={pct} colorScheme={colorScheme} size="sm" borderRadius="md" />
       <Text fontSize="xs" color="gray.600">
-        {hits.length}/{total} branches ({pct}%)
+        {hits.length}/{total} coverage units ({pct}%)
       </Text>
-      <SimpleGrid columns={{ base: 5, md: 13 }} spacing={1}>
-        {ALL_BRANCHES.map(b => (
-          <Tooltip key={b} label={b} fontSize="xs">
-            <Box
-              w="100%" h="20px" borderRadius="sm"
-              bg={hitSet.has(b) ? 'green.400' : 'gray.200'}
-              border="1px solid"
-              borderColor={hitSet.has(b) ? 'green.600' : 'gray.300'}
-              display="flex" alignItems="center" justifyContent="center"
-            >
-              <Text fontSize="8px" color={hitSet.has(b) ? 'white' : 'gray.500'}>{b}</Text>
-            </Box>
-          </Tooltip>
-        ))}
-      </SimpleGrid>
     </VStack>
   )
 }

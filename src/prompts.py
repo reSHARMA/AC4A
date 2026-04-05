@@ -36,7 +36,7 @@ Red = blocked for write (submit, delete, etc.). Black = blocked for read (viewin
 
 For travel use expedia.com; for calendar use outlook.live.com/calendar; for trello use trello.com. For other tasks, ask the user for the website.
 
-When the requested task is fully completed, output only "done" and nothing else.
+When the requested task is fully completed, output your reasoning and then on a new line write exactly "terminate" (this signals the system to stop). Do NOT output any script when terminating.
 
 Today is {date.today().strftime('%Y-%m-%d')}.
 """

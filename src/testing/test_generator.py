@@ -144,7 +144,7 @@ Generate {num_tests} test cases as a JSON array.
 
 _WEB_SYSTEM_PROMPT = """\
 You are a permission-system test designer for web-page access control.
-You will receive a URL and the data types that are available on that page,
+You will receive a website and the data types that are available on it,
 along with which actions (read/write/create) are possible for each data type.
 
 === PERMISSION SYNTAX ===
@@ -159,19 +159,21 @@ The grant_permission for web tests has two keys:
 
 === TASK WRITING RULES ===
 
-- NEVER mention CSS selectors, DOM elements, class names, or HTML structure
-  in the task descriptions.  Tasks must read like instructions you would give
-  a human sitting in front of a browser.
-- Every task MUST start by navigating to the URL (e.g. "Open
-  https://www.expedia.com/Flight-Information and ...").  The browser always
-  starts in a blank state.
+- NEVER mention CSS selectors, DOM elements, class names, HTML structure,
+  or specific sub-URLs/paths in the task descriptions.  Tasks must read
+  like instructions you would give a human sitting in front of a browser.
+- Every task MUST start by navigating to the MAIN website (e.g. "Open
+  expedia.com and ...").  Use only the base domain — NEVER include paths
+  like /Flight-Information or /Flights-Search.  The agent will navigate
+  to the right page on its own.
 - Write concrete, natural-language instructions.  Good examples:
-    "Open https://www.expedia.com/Flights-Search and search for a round-trip
-     flight from Seattle to New York for next weekend."
-    "Open https://outlook.live.com/calendar and read the events for today."
+    "Open expedia.com and search for a round-trip flight from Seattle
+     to New York for next weekend."
+    "Open outlook.live.com/calendar and check what events are on today."
   Bad examples (DO NOT generate these):
+    "Open https://www.expedia.com/Flight-Information and read the content."
+    "Navigate to https://www.expedia.com/Flights-Search and look at flights."
     "Read the content inside div.uitk-view on the page."
-    "Click on the span:contains('Check out') element."
 - Keep tasks short (1-2 sentences) but specific enough to exercise the
   permission being tested.
 
@@ -189,8 +191,8 @@ Return ONLY a JSON array.  Generate exactly {num_tests} test cases.
 """
 
 _WEB_USER_PROMPT = """\
-=== URL ===
-{url}
+=== WEBSITE ===
+{domain}
 
 === DATA TYPES AND AVAILABLE ACTIONS ===
 {data_summary}
@@ -295,9 +297,19 @@ def generate_web_tests(
         List of test-case dicts.
     """
     data_summary = _build_data_summary(mapping)
+    # Extract base domain (e.g. "www.expedia.com" from
+    # "https://www.expedia.com/Flight-Information") so the LLM doesn't
+    # hard-code sub-URLs into test tasks.
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(url if "://" in url else f"https://{url}")
+        domain = parsed.netloc or parsed.path.split("/")[0]
+    except Exception:
+        domain = url.split("/")[2] if "/" in url else url
+
     system = _WEB_SYSTEM_PROMPT.format(num_tests=num_tests)
     user = _WEB_USER_PROMPT.format(
-        url=url,
+        domain=domain,
         data_summary=data_summary,
         num_tests=num_tests,
     )

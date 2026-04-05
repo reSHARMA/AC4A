@@ -255,6 +255,7 @@ const TestingMode: React.FC = () => {
     if (!selectedApp) return
     setGenerating(true)
     setSelectedTests([])
+    setPredictedCoverage(null)
     setRunReport(null)
     setTraces([])
     try {
@@ -410,10 +411,14 @@ const TestingMode: React.FC = () => {
 
         <Divider />
 
-        {/* --- Predicted coverage (after selection) --- */}
+        {/* --- Predicted coverage (after strategic selection) --- */}
         {predictedCoverage && (
           <Box>
-            <Text fontWeight="bold" mb={2}>Predicted Branch Coverage</Text>
+            <Text fontWeight="bold" mb={1}>Predicted branch coverage (selection)</Text>
+            <Text fontSize="xs" color="gray.600" mb={2}>
+              Static estimate from test structure and LLM branch hints — not measured execution.
+              After <b>Run All</b>, compare with <b>Cumulative Branch Coverage</b> in Results (runtime).
+            </Text>
             <CoverageBar report={predictedCoverage} />
           </Box>
         )}

@@ -8,7 +8,7 @@ heuristic, breaking ties with the LLM-assigned priority score.
 import logging
 from typing import Any, Dict, List, Optional, Set
 
-from src.testing.coverage_tracker import ALL_BRANCH_IDS, predict_branches
+from src.testing.coverage_tracker import ALL_BRANCH_IDS, branch_sort_key, predict_branches
 
 logger = logging.getLogger(__name__)
 
@@ -158,9 +158,9 @@ def _build_result(selected: List[Dict[str, Any]]) -> Dict[str, Any]:
         "selected": selected,
         "predicted_coverage": {
             # Same keys as PermissionCoverageTracker.get_cumulative_report / frontend CoverageReport
-            "branches_hit": sorted(all_predicted, key=lambda b: int(b[1:])),
+            "branches_hit": sorted(all_predicted, key=branch_sort_key),
             "branches_missing": sorted(
-                set(ALL_BRANCH_IDS) - all_predicted, key=lambda b: int(b[1:])
+                set(ALL_BRANCH_IDS) - all_predicted, key=branch_sort_key
             ),
             "branch_coverage_pct": round(
                 100 * len(all_predicted) / max(len(ALL_BRANCH_IDS), 1), 1

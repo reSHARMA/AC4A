@@ -217,6 +217,17 @@ class PermissionCoverageTracker:
 # Static branch predictor — estimates coverage *before* running a test
 # ---------------------------------------------------------------------------
 
+def branch_sort_key(branch_id: str) -> int:
+    """Sort B1..B25 safely (ignore malformed LLM output)."""
+    b = str(branch_id).strip()
+    if len(b) >= 2 and b[0] == "B":
+        try:
+            return int(b[1:])
+        except ValueError:
+            return 0
+    return 0
+
+
 def predict_branches(test_case: Dict[str, Any]) -> List[str]:
     """Estimate which branch IDs a test case will hit, based on its structure.
 
@@ -225,8 +236,11 @@ def predict_branches(test_case: Dict[str, Any]) -> List[str]:
     """
     predicted: Set[str] = set()
     grant = test_case.get("grant_permission", {})
-    spec = grant.get("resource_value_specification", "")
-    action = grant.get("action", "")
+    if not isinstance(grant, dict):
+        grant = {}
+    # API tests use resource_value_specification; web tests use data_type
+    spec = grant.get("resource_value_specification") or grant.get("data_type", "")
+    _ = grant.get("action") or grant.get("selector_type", "")
 
     has_wildcard = "(?)" in spec
     depth = spec.count("::")  # 0 = root-only, 1 = two levels, etc.
@@ -257,8 +271,10 @@ def predict_branches(test_case: Dict[str, Any]) -> List[str]:
 
     # If there are already predicted_branches from the LLM, merge them
     llm_predicted = test_case.get("predicted_branches", [])
-    for b in llm_predicted:
-        if b in BRANCH_CATALOG:
-            predicted.add(b)
+    if isinstance(llm_predicted, list):
+        for b in llm_predicted:
+            key = str(b).strip()
+            if key in BRANCH_CATALOG:
+                predicted.add(key)
 
-    return sorted(predicted, key=lambda b: int(b[1:]))
+    return sorted(predicted, key=branch_sort_key)

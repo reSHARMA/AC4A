@@ -490,27 +490,34 @@ class TestRunner:
     # insensitive substring match) the interaction loop ends.
     _BROWSER_STOP_WORDS = ("terminate", "session ended")
 
-    # When the agent asks for permission or a question there is no human to
-    # respond, so we also stop.
-    _BROWSER_NON_ACTION_MARKERS = ("permission", "question")
+    # Markers that indicate the agent hit a permission wall.
+    _BROWSER_PERMISSION_MARKERS = (
+        "permission", "not authorized", "blocked", "access denied",
+    )
+
+    _BROWSER_WORKAROUND_MSG = (
+        "The action was blocked by a permission restriction. "
+        "Try a completely different approach — use another element, "
+        "navigate to a different page section, or find an indirect way "
+        "to accomplish the same goal. Do NOT repeat the same action."
+    )
 
     def _invoke_browser_agent(
         self, task: str, test_id: str, max_steps: int = 10
     ) -> List[str]:
         """Drive the browser agent in a loop until it finishes or hits *max_steps*.
 
-        The loop mirrors the interactive browser chat: after each pyautogui
-        action the agent is sent an empty follow-up so that
-        ``process_with_computer_use`` takes a **fresh screenshot** of the
-        updated page and feeds it back to the LLM for the next decision.
+        Sets the browser permission mode to ``test`` so the system prompt
+        instructs the LLM to find workarounds on permission errors instead
+        of asking the user.  On a permission failure the agent is retried up
+        to ``self.max_retries`` times with explicit workaround instructions.
 
         Each turn:
           1. Send the message to ``process_browser_message``
              (internally: screenshot → LLM → pyautogui script → execute)
           2. Emit the assistant response as a trace message
           3. Capture the post-action screenshot and emit it as a trace
-          4. Check for stop conditions (agent says "done", asks for
-             "permission"/"question", error, or max steps reached)
+          4. Check for stop / permission / error conditions
 
         Returns a list of assistant response strings.
         """
@@ -523,11 +530,14 @@ class TestRunner:
             from web.agent.browser_agent_core import (
                 clear_browser_chat_history,
                 handle_termination,
+                set_browser_permission_mode,
+                reset_browser_permission_mode,
             )
         except ImportError:
             self._trace(test_id, "warning", "browser_agent_core not importable")
             return []
 
+        set_browser_permission_mode("test")
         clear_browser_chat_history()
 
         initial_shot = self._capture_screenshot()
@@ -536,56 +546,73 @@ class TestRunner:
 
         collected: List[str] = []
         current_message = task
-
-        for step in range(1, max_steps + 1):
-            self._trace(test_id, "system",
-                        f"Browser step {step}/{max_steps}")
-            if step == 1:
-                self._trace(test_id, "user", current_message)
-
-            try:
-                response = handler(current_message)
-            except Exception as exc:
-                self._trace(test_id, "error", f"Browser agent error: {exc}")
-                break
-
-            content = response.get("content", "") if isinstance(response, dict) else str(response)
-            role = response.get("role", "assistant") if isinstance(response, dict) else "assistant"
-
-            if role == "system" and response.get("type") == "error":
-                self._trace(test_id, "error", content)
-                break
-
-            self._trace(test_id, "agent", f"**Browser agent**: {content}")
-            collected.append(content)
-
-            time.sleep(1.5)
-
-            screenshot_b64 = self._capture_screenshot()
-            if screenshot_b64:
-                self._trace(test_id, "screenshot", screenshot_b64)
-
-            content_lower = content.strip().lower()
-
-            if any(sw in content_lower for sw in self._BROWSER_STOP_WORDS):
-                self._trace(test_id, "system", "Browser agent signalled completion")
-                break
-
-            if any(m in content_lower for m in self._BROWSER_NON_ACTION_MARKERS):
-                self._trace(test_id, "warning",
-                            "Browser agent requested human input (permission/question) "
-                            "— stopping automated loop")
-                break
-
-            # Send empty follow-up: process_with_computer_use will take a
-            # new screenshot, see the result of the last action, and decide
-            # the next step.
-            current_message = ""
+        permission_retries = 0
 
         try:
-            handle_termination()
-        except Exception:
-            pass
+            for step in range(1, max_steps + 1):
+                self._trace(test_id, "system",
+                            f"Browser step {step}/{max_steps}")
+                if step == 1:
+                    self._trace(test_id, "user", current_message)
+
+                try:
+                    response = handler(current_message)
+                except Exception as exc:
+                    self._trace(test_id, "error", f"Browser agent error: {exc}")
+                    break
+
+                content = (response.get("content", "")
+                           if isinstance(response, dict) else str(response))
+                role = (response.get("role", "assistant")
+                        if isinstance(response, dict) else "assistant")
+
+                if role == "system" and response.get("type") == "error":
+                    self._trace(test_id, "error", content)
+                    break
+
+                self._trace(test_id, "agent", f"**Browser agent**: {content}")
+                collected.append(content)
+
+                time.sleep(1.5)
+
+                screenshot_b64 = self._capture_screenshot()
+                if screenshot_b64:
+                    self._trace(test_id, "screenshot", screenshot_b64)
+
+                content_lower = content.strip().lower()
+
+                # ---- stop words ----
+                if any(sw in content_lower for sw in self._BROWSER_STOP_WORDS):
+                    self._trace(test_id, "system",
+                                "Browser agent signalled completion")
+                    break
+
+                # ---- permission failure → retry with workaround ----
+                if any(m in content_lower
+                       for m in self._BROWSER_PERMISSION_MARKERS):
+                    permission_retries += 1
+                    if permission_retries <= self.max_retries:
+                        self._trace(
+                            test_id, "warning",
+                            f"Permission issue detected (retry "
+                            f"{permission_retries}/{self.max_retries})")
+                        current_message = self._BROWSER_WORKAROUND_MSG
+                        continue
+                    else:
+                        self._trace(
+                            test_id, "warning",
+                            "Max permission retries reached — stopping")
+                        break
+
+                # ---- normal continuation ----
+                current_message = ""
+
+        finally:
+            try:
+                handle_termination()
+            except Exception:
+                pass
+            reset_browser_permission_mode()
 
         return collected
 

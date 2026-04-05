@@ -40,6 +40,97 @@ class MessageVisibility(Enum):
 # Store browser chat history
 browser_chat_history = []
 
+# ---------------------------------------------------------------------------
+# Browser-specific permission mode management
+# ---------------------------------------------------------------------------
+# Reads PERMISSION_MANAGEMENT_MODE from the environment (same env var as the
+# autogen agents) but implements mode semantics specific to the browser agent.
+#
+# Modes:
+#   ask   – (default) enforce policy, inject CSS blocks, prompt user for
+#           permission when blocked
+#   infer – enforce policy, inject CSS blocks, but auto-infer needed
+#           permissions and ask user to approve
+#   skip  – enforce policy, inject CSS blocks, but auto-approve everything
+#           (the policy system still runs so coverage can be measured)
+#   yolo  – NO enforcement at all: skip permission inference, skip CSS
+#           blocks, let the agent interact freely
+#   test  – (internal) like skip but on a permission error the agent is
+#           retried up to 3 times with workaround instructions instead of
+#           asking the user.  Set by the test runner during web test execution.
+
+_BROWSER_PERMISSION_MODE = None  # lazily initialised
+
+def get_browser_permission_mode() -> str:
+    """Return the active browser permission mode."""
+    global _BROWSER_PERMISSION_MODE
+    if _BROWSER_PERMISSION_MODE is not None:
+        return _BROWSER_PERMISSION_MODE
+    return os.environ.get("PERMISSION_MANAGEMENT_MODE", "ask").lower()
+
+def set_browser_permission_mode(mode: str):
+    """Override the browser permission mode (e.g. 'test' during web tests)."""
+    global _BROWSER_PERMISSION_MODE
+    _BROWSER_PERMISSION_MODE = mode.lower()
+    logger.info("Browser permission mode set to: %s", _BROWSER_PERMISSION_MODE)
+
+def reset_browser_permission_mode():
+    """Clear the override so the env var is used again."""
+    global _BROWSER_PERMISSION_MODE
+    _BROWSER_PERMISSION_MODE = None
+
+
+def _build_system_prompt() -> str:
+    """Return the browser agent system prompt, adapted to the active mode."""
+    mode = get_browser_permission_mode()
+
+    if mode == "yolo":
+        # No permission enforcement — strip all permission/blocking instructions
+        return BROWSER_AGENT.replace(
+            '**When you do NOT have permission** (you see a blocked area 🚫, or red/black blocked content):\n'
+            '- Output your reasoning on the first line.\n'
+            '- On the second line output exactly: "permission"\n'
+            '- Then output only the permission you need (e.g. "Please grant read access to Calendar Month data for December") '
+            'so the user can grant it. Do NOT output any script.\n',
+            ''
+        ).replace(
+            'Red = blocked for write (submit, delete, etc.). Black = blocked for read (viewing data). '
+            'When blocked, always output "permission" and the permission message only—no script.\n',
+            ''
+        ) + (
+            "\n\nYou are in autonomous (yolo) mode. There are NO permission "
+            "restrictions — every element on the page is accessible. Never "
+            "output 'permission'. Always proceed with actions directly."
+        )
+
+    if mode == "skip":
+        return BROWSER_AGENT + (
+            "\n\nYou are in skip mode. If you encounter a blocked area, "
+            "proceed anyway — permissions are auto-approved. Do not ask the "
+            "user for permission; just execute the action."
+        )
+
+    if mode == "test":
+        return BROWSER_AGENT + (
+            "\n\nYou are in automated testing mode. If you encounter a "
+            "permission error, blocked area, or 'Action not authorized' "
+            "response, do NOT ask the user or output 'permission'. Instead, "
+            "try a completely different approach — use another element, "
+            "navigate to a different page, or find an indirect way to "
+            "accomplish the same goal. Keep trying until you succeed or "
+            "have exhausted all options, then output 'terminate'."
+        )
+
+    if mode == "infer":
+        return BROWSER_AGENT + (
+            "\n\nYou are in infer mode. If you encounter a blocked area, "
+            "output 'permission' with the specific permission needed. The "
+            "system will attempt to auto-infer and approve the permission."
+        )
+
+    # Default: "ask" mode — use the base prompt as-is
+    return BROWSER_AGENT
+
 # Add selector cache implementation
 class SelectorCache:
     def __init__(self, cache_duration_minutes: int = 30):
@@ -652,25 +743,31 @@ def _run_pyautogui_script(script: str, timeout_seconds: int = 15) -> Tuple[bool,
 def process_with_computer_use(user_input: str) -> Dict[str, Any]:
     """
     For each user message:
-    1. Process permissions and enforce them (infer from current page + HTML, then
-       inject blocks for not-allowed elements via handle_not_allowed_elements).
+    1. Process permissions and enforce them (unless mode is yolo/test).
     2. Take the screenshot that will be sent to the LLM (after enforcement, so
        the image shows the same view as the user, including any blocks).
     3. Send that screenshot to the LLM; run returned pyautogui script or show message.
     """
     try:
-        # --- Step 1: Process and enforce permissions ---
-        # Use current screenshot for permission inference (analyze structure, policy check, then enforce)
-        screenshot_for_permissions = get_latest_screenshot()
-        if not screenshot_for_permissions:
-            return create_message(
-                content="Failed to get screenshot",
-                role="system",
-                msg_type=MessageType.ERROR
-            )
-        infer_permissions_from_html(screenshot_for_permissions)  # infers + enforces (injects blocks into page)
+        mode = get_browser_permission_mode()
 
-        time.sleep(1)  # allow injected blocks to render
+        # --- Step 1: Process and enforce permissions ---
+        if mode == "yolo":
+            # No enforcement at all — skip permission inference and CSS blocks
+            logger.info("Browser mode=yolo — skipping permission enforcement")
+        else:
+            # All other modes (ask, infer, skip, test) still run policy
+            # checks and inject CSS blocks so the screenshot reflects the
+            # permission state.  The *prompt* tells the LLM how to react.
+            screenshot_for_permissions = get_latest_screenshot()
+            if not screenshot_for_permissions:
+                return create_message(
+                    content="Failed to get screenshot",
+                    role="system",
+                    msg_type=MessageType.ERROR
+                )
+            infer_permissions_from_html(screenshot_for_permissions)
+            time.sleep(1)  # allow injected blocks to render
 
         # --- Step 2: Take the screenshot that goes to the LLM (after enforcement) ---
         screenshot_data = get_latest_screenshot(compress=False)
@@ -679,9 +776,8 @@ def process_with_computer_use(user_input: str) -> Dict[str, Any]:
         screenshot_base64 = base64.b64encode(screenshot_data).decode('utf-8')
 
         # --- Step 3: Send to LLM and run script or return message ---
-        
-        # Create the system prompt for computer use
-        system_prompt = BROWSER_AGENT
+
+        system_prompt = _build_system_prompt()
         
         global browser_chat_history
         _input = f"""

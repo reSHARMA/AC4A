@@ -174,18 +174,12 @@ const TestingMode: React.FC = () => {
     try {
       const suites = await api<SavedSuite[]>('/testing/suites')
       setSavedSuites(suites)
-      if (suites.length > 0 && !activeTests.length) {
-        const first = suites[0]
-        setActiveTests(first.tests || [])
-        setActiveTreeHash(first.tree_hash || '')
-        if (first.app && !selectedApp) setSelectedApp(first.app)
-      }
     } catch {
       // suites endpoint may not exist yet
     } finally {
       setLoadingSuites(false)
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => { loadSuites() }, [loadSuites])
 
@@ -267,7 +261,11 @@ const TestingMode: React.FC = () => {
       setActiveTests(resp.tests)
       setActiveTreeHash(resp.tree_hash)
       toast({ title: `Generated ${resp.tests.length} tests`, status: 'success', duration: 3000, isClosable: true })
-      loadSuites()
+      // Reload suites for the *current* app only, so we don't overwrite
+      // the just-generated tests with a different app's suite.
+      api<SavedSuite[]>(`/testing/suites?app=${encodeURIComponent(selectedApp)}`)
+        .then(setSavedSuites)
+        .catch(() => {})
     } catch (e: any) {
       toast({ title: 'Generation failed', description: e.message, status: 'error', duration: 5000, isClosable: true })
     } finally {

@@ -1,0 +1,55 @@
+{
+    "applications": {
+        "calendar": {
+            "max_tests": 20,
+            "enabled": true,
+            "type": "api",
+            "agent_module": "web.agent.agents.calendar_agent",
+            "annotation_class": "CalendarAPIAnnotation"
+        },
+        "wallet": {
+            "max_tests": 15,
+            "enabled": true,
+            "type": "api",
+            "agent_module": "web.agent.agents.wallet_agent",
+            "annotation_class": "WalletAPIAnnotation"
+        },
+        "expedia": {
+            "max_tests": 20,
+            "enabled": true,
+            "type": "api",
+            "agent_module": "web.agent.agents.expedia_agent",
+            "annotation_class": "ExpediaAPIAnnotation"
+        },
+        "github": {
+            "max_tests": 15,
+            "enabled": true,
+            "type": "api",
+            "agent_module": "web.agent.agents.github_agent",
+            "annotation_class": "GitHubAPIAnnotation"
+        },
+        "game": {
+            "max_tests": 10,
+            "enabled": true,
+            "type": "api",
+            "agent_module": "web.agent.agents.game_agent",
+            "annotation_class": "GameAPIAnnotation"
+        },
+        "outlook_calendar": {
+            "max_tests": 10,
+            "enabled": true,
+            "type": "web",
+            "url_pattern": "https://outlook.live.com/calendar/*"
+        },
+        "expedia_web": {
+            "max_tests": 10,
+            "enabled": true,
+            "type": "web",
+            "url_pattern": "https://www.expedia.com/*"
+        }
+    },
+    "execution": {
+        "max_retries": 3,
+        "workaround_mode": true
+    }
+}

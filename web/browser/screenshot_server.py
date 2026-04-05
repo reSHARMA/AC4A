@@ -794,6 +794,51 @@ def evaluate_javascript():
             'message': str(e)
         }), 500
 
+def _capture_via_cdp(output_path):
+    """Take a screenshot of the active tab via CDP and write it atomically."""
+    try:
+        tab = get_active_tab()
+        if not tab or 'webSocketDebuggerUrl' not in tab:
+            return False
+
+        ws = websocket.create_connection(tab['webSocketDebuggerUrl'], timeout=10)
+
+        ws.send(json.dumps({"id": 1, "method": "Page.captureScreenshot",
+                            "params": {"format": "png"}}))
+        while True:
+            resp = json.loads(ws.recv())
+            if 'id' in resp and resp['id'] == 1:
+                break
+            if 'method' in resp:
+                continue
+        ws.close()
+
+        data = resp.get('result', {}).get('data')
+        if not data:
+            return False
+
+        buf = base64.b64decode(data)
+        if len(buf) < MIN_SCREENSHOT_BYTES:
+            return False
+
+        tmp = output_path + '.tmp'
+        with open(tmp, 'wb') as f:
+            f.write(buf)
+        os.replace(tmp, output_path)
+        return True
+    except Exception as e:
+        logger.debug(f"CDP screenshot failed: {e}")
+        return False
+
+
+def _screenshot_loop(output_path, interval=1.0):
+    """Background thread that updates the screenshot file every `interval` seconds."""
+    logger.info(f"Screenshot capture loop started (interval={interval}s, path={output_path})")
+    while True:
+        _capture_via_cdp(output_path)
+        time.sleep(interval)
+
+
 def run_server(host='localhost', port=8080, screenshot_path=None):
     """
     Run the Flask server
@@ -805,6 +850,8 @@ def run_server(host='localhost', port=8080, screenshot_path=None):
     """
     if screenshot_path:
         set_screenshot_path(screenshot_path)
+        t = threading.Thread(target=_screenshot_loop, args=(screenshot_path,), daemon=True)
+        t.start()
     
     logger.info(f"Starting screenshot server on {host}:{port}")
     app.run(host=host, port=port, debug=False, threaded=True)

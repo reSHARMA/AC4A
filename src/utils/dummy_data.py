@@ -8,6 +8,8 @@ import logging as logger
 from web.utils.openai_logger import setup_openai_logging
 logger = logger.getLogger(__name__)
 # Load environment variables from .env file
+_env_path = os.path.join(os.path.dirname(__file__), '..', '..', 'web', '.env')
+load_dotenv(_env_path)
 load_dotenv()
 
 # Set up OpenAI logger

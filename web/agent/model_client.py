@@ -14,7 +14,10 @@ logger = logging.getLogger(__name__)
 def setup_model_client():
     """Set up the model client for autogen"""
     logger.info("Setting up model client")
-    load_dotenv()
+    # Look for .env in the web/ directory (sibling of this agent/ package)
+    _env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+    load_dotenv(_env_path)
+    load_dotenv()  # also try cwd as fallback
     
     # Try OpenAI configuration first
     openai_api_key = os.getenv('OPENAI_API_KEY')

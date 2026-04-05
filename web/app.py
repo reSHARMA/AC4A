@@ -785,8 +785,300 @@ def eval_permission():
         logger.error("/eval top-level failure", exc_info=True)
         return jsonify({"allowed": False, "reason": "internal error", "details": str(outer)}), 500
 
+# ---------------------------------------------------------------------------
+# Testing mode routes
+# ---------------------------------------------------------------------------
+
+# Singleton runner kept across requests so status polling works
+_test_runner_instance = None
+_test_runner_thread = None
+
+@app.route('/testing/config', methods=['GET'])
+def testing_config():
+    """Return the test configuration."""
+    config_path = os.path.join(os.path.dirname(__file__), '..', 'test_config.json')
+    try:
+        with open(config_path) as f:
+            return jsonify(json.load(f))
+    except FileNotFoundError:
+        return jsonify({"error": "test_config.json not found"}), 404
+
+@app.route('/testing/generate', methods=['POST'])
+def testing_generate():
+    """Generate tests for an application."""
+    from importlib import import_module
+    from src.testing.test_generator import generate_api_tests, generate_web_tests
+    from src.testing.test_store import save_test_suite, compute_api_hash, compute_web_hash
+
+    data = request.get_json(force=True, silent=True) or {}
+    app_name = data.get('app', '')
+    num_tests = int(data.get('num_tests', 20))
+
+    if not app_name:
+        return jsonify({"error": "app is required"}), 400
+
+    config_path = os.path.join(os.path.dirname(__file__), '..', 'test_config.json')
+    with open(config_path) as f:
+        config = json.load(f)
+
+    app_cfg = config.get('applications', {}).get(app_name)
+    if not app_cfg:
+        return jsonify({"error": f"Unknown application: {app_name}"}), 400
+
+    num_tests = min(num_tests, app_cfg.get('max_tests', 20))
+
+    try:
+        if app_cfg.get('type') == 'api':
+            mod = import_module(app_cfg['agent_module'])
+            annotation_cls = getattr(mod, app_cfg['annotation_class'])
+            annotation = annotation_cls()
+            resource_trees = annotation.attributes.get('resource_value_specification', [])
+            action_names = [list(a.value.keys())[0] for a in annotation.attributes.get('action', [])]
+            tree_hash = compute_api_hash(resource_trees, annotation_cls, action_names)
+            tests = generate_api_tests(app_name, resource_trees, annotation_cls, action_names, num_tests)
+        else:
+            # Web type — load from browser.agents.json
+            agents_json_path = os.path.join(os.path.dirname(__file__), 'agent', 'agents', 'browser.agents.json')
+            with open(agents_json_path) as f:
+                agents_config = json.load(f)
+            url_pattern = app_cfg.get('url_pattern', '')
+            matching = {k: v for k, v in agents_config.items() if _url_matches(k, url_pattern)}
+            if not matching:
+                return jsonify({"error": f"No URLs match pattern: {url_pattern}"}), 400
+            url = next(iter(matching))
+            mapping = matching[url]
+            tree_hash = compute_web_hash(mapping)
+            tests = generate_web_tests(url, mapping, num_tests)
+
+        path = save_test_suite(app_name, tree_hash, tests)
+        return jsonify({
+            "app": app_name,
+            "tree_hash": tree_hash,
+            "test_count": len(tests),
+            "tests": tests,
+            "saved_to": path,
+        })
+    except Exception as e:
+        logger.error("Test generation failed for %s: %s", app_name, e, exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/testing/list', methods=['GET'])
+def testing_list():
+    """List available test suites."""
+    from src.testing.test_store import list_test_suites
+    return jsonify(list_test_suites())
+
+@app.route('/testing/suites', methods=['GET'])
+def testing_suites_all():
+    """Return full suite data (with tests) for all apps or a specific one."""
+    from src.testing.test_store import load_all_suites, load_all_suites_for_app
+    app_name = request.args.get('app', '')
+    if app_name:
+        return jsonify(load_all_suites_for_app(app_name))
+    return jsonify(load_all_suites())
+
+@app.route('/testing/delete_test', methods=['POST'])
+def testing_delete_test():
+    """Delete a single test from a suite."""
+    from src.testing.test_store import delete_test_from_suite
+    data = request.get_json(force=True, silent=True) or {}
+    app_name = data.get('app', '')
+    tree_hash = data.get('tree_hash', '')
+    test_id = data.get('test_id', '')
+    if not all([app_name, tree_hash, test_id]):
+        return jsonify({"error": "app, tree_hash, and test_id are required"}), 400
+    ok = delete_test_from_suite(app_name, tree_hash, test_id)
+    if ok:
+        return jsonify({"status": "deleted", "test_id": test_id})
+    return jsonify({"error": "Test not found"}), 404
+
+@app.route('/testing/select', methods=['POST'])
+def testing_select():
+    """Strategically select N tests from a suite."""
+    from src.testing.test_store import load_test_suite
+    from src.testing.test_selector import select_tests
+
+    data = request.get_json(force=True, silent=True) or {}
+    app_name = data.get('app', '')
+    tree_hash = data.get('tree_hash', '')
+    num = int(data.get('num_tests', 5))
+
+    suite = load_test_suite(app_name, tree_hash)
+    if not suite:
+        return jsonify({"error": "Test suite not found or hash mismatch"}), 404
+
+    result = select_tests(suite['tests'], num)
+    return jsonify(result)
+
+@app.route('/testing/run', methods=['POST'])
+def testing_run():
+    """Run selected tests (blocking — returns when done)."""
+    global _test_runner_instance
+    from src.testing.test_runner import TestRunner
+
+    data = request.get_json(force=True, silent=True) or {}
+    tests = data.get('tests', [])
+    app_name = data.get('app', '')
+    tree_hash = data.get('tree_hash', '')
+
+    if not tests:
+        return jsonify({"error": "No tests provided"}), 400
+
+    if not agent_manager.initialized:
+        agent_manager.initialize_agents()
+        agent_manager.enable_policy_system()
+
+    config_path = os.path.join(os.path.dirname(__file__), '..', 'test_config.json')
+    with open(config_path) as f:
+        config = json.load(f)
+    max_retries = config.get('execution', {}).get('max_retries', 3)
+
+    runner = TestRunner(
+        agent_manager.policy_system,
+        agent_manager,
+        max_retries,
+        socketio=socketio,
+        browser_message_handler=process_browser_message,
+    )
+    _test_runner_instance = runner
+
+    report = runner.run_all(tests, app_name, tree_hash)
+    return jsonify(report)
+
+
+@socketio.on('testing_run_single')
+def handle_testing_run_single(data):
+    """Run a single test in a background greenlet with real-time traces."""
+    global _test_runner_instance
+    from src.testing.test_runner import TestRunner
+
+    test = data.get('test')
+    if not test:
+        emit('testing_trace', {'test_id': '?', 'role': 'error', 'content': 'No test provided'})
+        return
+
+    if not agent_manager.initialized:
+        agent_manager.initialize_agents()
+        agent_manager.enable_policy_system()
+
+    config_path = os.path.join(os.path.dirname(__file__), '..', 'test_config.json')
+    with open(config_path) as f:
+        config = json.load(f)
+    max_retries = config.get('execution', {}).get('max_retries', 3)
+
+    runner = TestRunner(
+        agent_manager.policy_system,
+        agent_manager,
+        max_retries,
+        socketio=socketio,
+        browser_message_handler=process_browser_message,
+    )
+    _test_runner_instance = runner
+
+    def _run():
+        try:
+            runner.run_single(test)
+        except Exception as e:
+            logger.error("Single test run failed: %s", e, exc_info=True)
+            socketio.emit('testing_trace', {
+                'test_id': test.get('test_id', '?'),
+                'role': 'error',
+                'content': f'Runner crashed: {e}',
+            })
+
+    eventlet.spawn(_run)
+
+
+@socketio.on('testing_run_batch')
+def handle_testing_run_batch(data):
+    """Run multiple tests in a background greenlet with real-time traces."""
+    global _test_runner_instance
+    from src.testing.test_runner import TestRunner
+
+    tests = data.get('tests', [])
+    app_name = data.get('app', '')
+    tree_hash = data.get('tree_hash', '')
+
+    if not tests:
+        emit('testing_trace', {'test_id': '?', 'role': 'error', 'content': 'No tests provided'})
+        return
+
+    if not agent_manager.initialized:
+        agent_manager.initialize_agents()
+        agent_manager.enable_policy_system()
+
+    config_path = os.path.join(os.path.dirname(__file__), '..', 'test_config.json')
+    with open(config_path) as f:
+        config = json.load(f)
+    max_retries = config.get('execution', {}).get('max_retries', 3)
+
+    runner = TestRunner(
+        agent_manager.policy_system,
+        agent_manager,
+        max_retries,
+        socketio=socketio,
+        browser_message_handler=process_browser_message,
+    )
+    _test_runner_instance = runner
+
+    def _run():
+        try:
+            runner.run_all(tests, app_name, tree_hash)
+        except Exception as e:
+            logger.error("Batch test run failed: %s", e, exc_info=True)
+            socketio.emit('testing_trace', {
+                'test_id': '?',
+                'role': 'error',
+                'content': f'Runner crashed: {e}',
+            })
+
+    eventlet.spawn(_run)
+
+@app.route('/testing/status', methods=['GET'])
+def testing_status():
+    """Poll the current test run status."""
+    global _test_runner_instance
+    if _test_runner_instance is None:
+        return jsonify({"running": False, "completed": 0, "results_so_far": []})
+    return jsonify(_test_runner_instance.get_status())
+
+@app.route('/testing/results', methods=['GET'])
+def testing_results():
+    """Get stored test results."""
+    from src.testing.test_store import list_test_results, load_latest_results
+
+    app_name = request.args.get('app', '')
+    if app_name:
+        data = load_latest_results(app_name)
+        if data:
+            return jsonify(data)
+        return jsonify({"error": "No results found"}), 404
+    return jsonify(list_test_results())
+
+@app.route('/testing/coverage', methods=['GET'])
+def testing_coverage():
+    """Get cumulative coverage report from the latest run."""
+    global _test_runner_instance
+    if _test_runner_instance is None:
+        from src.testing.coverage_tracker import ALL_BRANCH_IDS
+        return jsonify({
+            "branches_hit": [],
+            "branches_missing": ALL_BRANCH_IDS,
+            "branch_coverage_pct": 0.0,
+            "total_branches": len(ALL_BRANCH_IDS),
+        })
+    return jsonify(_test_runner_instance.coverage.get_cumulative_report())
+
+
+def _url_matches(url: str, pattern: str) -> bool:
+    """Simple wildcard URL matching (only trailing * is supported)."""
+    if pattern.endswith('*'):
+        return url.startswith(pattern[:-1])
+    return url == pattern
+
+
 if __name__ == '__main__':
     # Don't initialize the agent session when the application starts
     # socketio.run(app, debug=True, port=5000, use_reloader=False)
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5002))
     socketio.run(app, debug=True, port=port, use_reloader=False)

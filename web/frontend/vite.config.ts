@@ -30,6 +30,21 @@ export default defineConfig(({ mode }) => {
         '/get_logs': {
           target: `http://localhost:${port}`,
           changeOrigin: true,
+        },
+        '/testing': {
+          target: `http://localhost:${port}`,
+          changeOrigin: true,
+        },
+        '/vnc': {
+          target: 'http://localhost:6080',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/vnc/, ''),
+          ws: true,
+        },
+        '/websockify': {
+          target: 'http://localhost:6080',
+          changeOrigin: true,
+          ws: true,
         }
       }
     }

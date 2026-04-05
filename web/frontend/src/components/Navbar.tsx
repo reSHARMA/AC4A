@@ -1,6 +1,11 @@
-import { Box, Container, Flex, Heading, Text } from '@chakra-ui/react'
+import { Box, Container, Flex, Heading, Text, Button, HStack } from '@chakra-ui/react'
 
-const Navbar = () => {
+interface NavbarProps {
+  activeView?: 'main' | 'testing'
+  onViewChange?: (view: 'main' | 'testing') => void
+}
+
+const Navbar: React.FC<NavbarProps> = ({ activeView = 'main', onViewChange }) => {
   return (
     <Box 
       as="nav" 
@@ -22,6 +27,8 @@ const Navbar = () => {
               color="brand.800"
               letterSpacing="tight"
               fontWeight="extrabold"
+              cursor="pointer"
+              onClick={() => onViewChange?.('main')}
               position="relative"
               _after={{
                 content: '""',
@@ -45,6 +52,24 @@ const Navbar = () => {
               AC4A: <Text as="span" fontWeight="medium" color="brand.600">Access Control for Agents</Text>
             </Heading>
           </Box>
+          <HStack spacing={2}>
+            <Button
+              size="sm"
+              variant={activeView === 'main' ? 'solid' : 'ghost'}
+              colorScheme="blue"
+              onClick={() => onViewChange?.('main')}
+            >
+              Dashboard
+            </Button>
+            <Button
+              size="sm"
+              variant={activeView === 'testing' ? 'solid' : 'ghost'}
+              colorScheme="blue"
+              onClick={() => onViewChange?.('testing')}
+            >
+              Testing
+            </Button>
+          </HStack>
         </Flex>
       </Container>
     </Box>

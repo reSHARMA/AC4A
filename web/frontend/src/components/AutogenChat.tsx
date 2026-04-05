@@ -359,7 +359,7 @@ const AutogenChat = ({ messages, setMessages }: AutogenChatProps) => {
               >
                 <iframe
                   ref={iframeRef}
-                  src={`http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:${import.meta.env.VITE_VNC_PORT || '6080'}/vnc_lite.html?autoconnect=true`}
+                  src={`/vnc/vnc_lite.html?autoconnect=true`}
                   style={{
                     border: 'none',
                     backgroundColor: 'black',

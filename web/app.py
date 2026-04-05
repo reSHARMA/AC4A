@@ -849,6 +849,10 @@ def testing_generate():
             mapping = matching[url]
             tree_hash = compute_web_hash(mapping)
             tests = generate_web_tests(url, mapping, num_tests)
+            # Ensure test.app matches the config app_name (not the URL domain)
+            # so delete/lookup by app_name works correctly.
+            for t in tests:
+                t["app"] = app_name
 
         path = save_test_suite(app_name, tree_hash, tests)
         return jsonify({
